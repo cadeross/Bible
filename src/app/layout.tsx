@@ -4,7 +4,10 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MobileNav } from "@/components/mobile-nav";
 import { ReadingPreferencesProvider } from "@/contexts/reading-preferences";
-
+import { Header } from "@/components/header";
+import { CommandMenu } from "@/components/command-menu";
+import { Footer } from "@/components/footer";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,10 +39,6 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 }
 
-import { CommandMenu } from "@/components/command-menu";
-import { Footer } from "@/components/footer";
-
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -48,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${merriweather.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${merriweather.variable} antialiased min-h-screen flex flex-col`}
       >
         <ThemeProvider
           attribute="data-theme"
@@ -56,16 +55,17 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-
           <ReadingPreferencesProvider>
             {/* <MobileHeader /> Removed global header */}
+            <Header />
             <CommandMenu />
-            <main className="pb-16 md:pb-0">
+            <main className="pb-16 md:pb-0 flex-1 flex flex-col">
               {children}
             </main>
 
             <Footer />
             <MobileNav />
+            <Toaster />
           </ReadingPreferencesProvider>
         </ThemeProvider>
       </body>
