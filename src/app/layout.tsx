@@ -37,6 +37,8 @@ export const viewport: Viewport = {
 }
 
 import { CommandMenu } from "@/components/command-menu";
+import { Footer } from "@/components/footer";
+
 
 export default function RootLayout({
   children,
@@ -61,6 +63,8 @@ export default function RootLayout({
             <main className="pb-16 md:pb-0">
               {children}
             </main>
+
+            <Footer />
             <MobileNav />
           </ReadingPreferencesProvider>
         </ThemeProvider>

@@ -5,6 +5,7 @@ import { BibleChapter } from "@/lib/bible-api"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
+import { isRedLetterVerse } from "@/lib/red-letter-data"
 
 interface ReadingContentProps {
     chapter: BibleChapter
@@ -103,7 +104,7 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                                     )}
                                     <span className={cn(
                                         "transition-colors duration-200",
-                                        // Placeholder for red letters logic
+                                        redLetters && isRedLetterVerse(bookName, chapterNum, verse.verse) && "text-red-700 dark:text-red-400"
                                     )}>
                                         {verse.text}
                                     </span>
