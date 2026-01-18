@@ -8,6 +8,8 @@ import { Header } from "@/components/header";
 import { CommandMenu } from "@/components/command-menu";
 import { Footer } from "@/components/footer";
 import { Toaster } from "sonner";
+import { MainLayout } from "@/components/main-layout";
+import { FocusProvider } from "@/contexts/focus-mode";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,16 +58,18 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ReadingPreferencesProvider>
-            {/* <MobileHeader /> Removed global header */}
-            <Header />
-            <CommandMenu />
-            <main className="pb-16 md:pb-0 flex-1 flex flex-col">
-              {children}
-            </main>
+            <FocusProvider>
+              {/* <MobileHeader /> Removed global header */}
+              <Header />
+              <CommandMenu />
+              <MainLayout>
+                {children}
+              </MainLayout>
 
-            <Footer />
-            <MobileNav />
-            <Toaster />
+              <Footer />
+              <MobileNav />
+              <Toaster />
+            </FocusProvider>
           </ReadingPreferencesProvider>
         </ThemeProvider>
       </body>

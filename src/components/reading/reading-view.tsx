@@ -4,9 +4,11 @@ import React, { useEffect } from "react"
 import { BibleChapter, BOOK_LIST } from "@/lib/bible-api"
 import { ReadingContent } from "./reading-content"
 import { ReadingToolbar } from "./reading-toolbar"
+import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useFocusMode } from "@/contexts/focus-mode"
 
 interface ReadingViewProps {
     chapter: BibleChapter
@@ -17,6 +19,7 @@ interface ReadingViewProps {
 
 export function ReadingView({ chapter, book, chapterNum, translation = "dra" }: ReadingViewProps) {
     const router = useRouter()
+    const { isFocusMode, toggleFocusMode } = useFocusMode()
 
     // Navigation Logic
     const handleNext = () => {
@@ -46,7 +49,19 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra" }: 
         <div className="min-h-screen bg-background flex flex-col items-center py-8">
 
             {/* Top Controls */}
-            <ReadingToolbar currentBook={book} currentTranslation={translation} />
+            <div className={cn("transition-opacity duration-500", isFocusMode ? "opacity-0 hover:opacity-100" : "opacity-100")}>
+                <ReadingToolbar currentBook={book} currentTranslation={translation} />
+            </div>
+
+            {/* Focus Toggle */}
+            <Button
+                variant="ghost"
+                size="icon"
+                className="fixed bottom-24 right-8 z-50 opacity-50 hover:opacity-100 transition-opacity"
+                onClick={toggleFocusMode}
+            >
+                {isFocusMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
 
             {/* Main Content Area */}
             <main className="flex-1 w-full max-w-4xl relative flex items-start justify-center">
@@ -68,19 +83,7 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra" }: 
                 </div>
             </main>
 
-            {/* Footer / Mobile Nav */}
-            <footer className="w-full mt-12 py-8 border-t border-border/20 text-center text-muted-foreground text-xs font-mono opacity-50 hover:opacity-100 transition-opacity">
-                <div className="flex justify-center gap-8 mb-4 lg:hidden">
-                    <Button variant="ghost" size="sm" onClick={handlePrev} disabled={chapterNum <= 1}>
-                        Previous
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={handleNext}>
-                        Next
-                    </Button>
-                </div>
-                <p>{chapter.reference} • {chapter.translation_name}</p>
-                <p className="mt-2 text-[10px]">Shortcuts: Arrow Keys to Navigate</p>
-            </footer>
+            {/* Footer / Mobile Nav - Removed (Global Fixed Footer is used) */}
         </div>
     )
 }

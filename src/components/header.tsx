@@ -2,11 +2,39 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { Command, Book, BookOpen, User, Settings, Home } from "lucide-react"
 
+import { useFocusMode } from "@/contexts/focus-mode"
+
 export function Header() {
     const pathname = usePathname()
+    const { isFocusMode } = useFocusMode()
+    const [username, setUsername] = useState<string | null>(null)
+    const supabase = createClient()
+
+    useEffect(() => {
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user?.user_metadata?.username) {
+                setUsername(user.user_metadata.username)
+            }
+        }
+        getUser()
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (session?.user?.user_metadata?.username) {
+                setUsername(session.user.user_metadata.username)
+            } else if (event === 'SIGNED_OUT') {
+                setUsername(null)
+            }
+        })
+
+        return () => subscription.unsubscribe()
+    }, [supabase])
 
     const navItems = [
         {
@@ -28,7 +56,7 @@ export function Header() {
 
     const rightItems = [
         {
-            name: "profile",
+            name: username || "profile",
             href: "/profile",
             icon: User
         },
@@ -46,7 +74,11 @@ export function Header() {
     }
 
     return (
-        <header className="w-full p-6 hidden md:flex justify-between items-start z-40">
+        <header className={cn(
+            "w-full p-6 hidden md:flex justify-between items-start z-50 transition-all duration-500",
+            "fixed top-0 left-0 right-0", // Always fixed
+            isFocusMode ? "opacity-0 hover:opacity-100" : "opacity-100"
+        )}>
             {/* Left side: Logo & Main Nav */}
             <div className="flex gap-6 text-xs font-mono text-muted-foreground/50">
                 {/* Logo Removed */}

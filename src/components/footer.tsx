@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import {
@@ -15,9 +16,13 @@ import {
 } from "lucide-react"
 import { ChangelogDialog } from "@/components/changelog-dialog"
 
+import { useFocusMode } from "@/contexts/focus-mode"
+
 export function Footer() {
+    const pathname = usePathname()
     const { theme, setTheme } = useTheme()
     const [mounted, setMounted] = React.useState(false)
+    const { isFocusMode } = useFocusMode()
 
     React.useEffect(() => {
         setMounted(true)
@@ -32,18 +37,16 @@ export function Footer() {
     }
 
     // Icon map for visual flair
-    const iconMap: Record<string, React.ReactNode> = {
-        light: <Sun className="h-3 w-3" />,
-        dark: <Moon className="h-3 w-3" />,
-        sepia: <Sun className="h-3 w-3 text-amber-700" />,
-        oled: <Moon className="h-3 w-3 fill-current" />,
-        system: <Laptop className="h-3 w-3" />,
-    }
+    // ...
 
     if (!mounted) return null
 
     return (
-        <footer className="w-full p-6 hidden md:flex justify-between items-end z-40 mt-12">
+        <footer className={cn(
+            "w-full p-6 hidden md:flex justify-between items-end z-50 transition-all duration-500",
+            "fixed bottom-0 left-0 right-0", // Always fixed
+            isFocusMode ? "opacity-0 hover:opacity-100" : "opacity-100"
+        )}>
             {/* Left side: Socials & Support */}
             <div className="flex gap-6 text-xs font-mono text-muted-foreground/50">
                 <a

@@ -6,10 +6,10 @@ import { ActivityHeatmap } from "@/components/home/activity-heatmap"
 export default function Home() {
   return (
     <div className="bg-background text-foreground md:pb-0 flex-1 flex flex-col justify-center">
-      <div className="flex flex-col w-full max-w-5xl mx-auto px-6 py-8 gap-8 md:gap-12">
+      <div className="flex flex-col w-full max-w-5xl mx-auto px-6 gap-6 md:gap-8">
 
         {/* Top Section: Greeting & Stats */}
-        <section className="flex flex-col md:flex-row justify-between items-start gap-8 md:gap-0 animate-in fade-in slide-in-from-top-4 duration-700">
+        <section className="flex flex-col md:flex-row justify-between items-start gap-6 md:gap-0 animate-in fade-in slide-in-from-top-4 duration-700">
           <Greeting />
           <StatsOverview />
         </section>
