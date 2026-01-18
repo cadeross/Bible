@@ -12,6 +12,7 @@ export interface Highlight {
     chapter: number;
     verse: number;
     color: string;
+    content?: string; // Verse text
     created_at: string;
 }
 
@@ -22,10 +23,16 @@ export async function saveHighlight(highlight: Highlight) {
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session) {
+        // Upsert to avoid duplicates if possible, though ID might be new. 
+        // We'll rely on simple insert for now, assuming UI prevents double click spam or handling it gracefully.
         const { error } = await supabase.from('highlights').insert([
             {
-                ...highlight,
-                user_id: session.user.id
+                user_id: session.user.id,
+                book: highlight.book,
+                chapter: highlight.chapter,
+                verse: highlight.verse,
+                content: highlight.content,
+                color: highlight.color
             }
         ]);
         if (error) {
@@ -33,11 +40,12 @@ export async function saveHighlight(highlight: Highlight) {
             throw error;
         }
     } else {
-        console.log("User not logged in. Highlight not saved to cloud.");
-        // TODO: Implement local storage fallback here if desired
-        const local = JSON.parse(localStorage.getItem('local_highlights') || '[]');
-        local.push(highlight);
-        localStorage.setItem('local_highlights', JSON.stringify(local));
+        // Helper to get local data safely
+        if (typeof window !== 'undefined') {
+            const local = JSON.parse(localStorage.getItem('local_highlights') || '[]');
+            local.push(highlight);
+            localStorage.setItem('local_highlights', JSON.stringify(local));
+        }
     }
 }
 
@@ -47,7 +55,6 @@ export async function removeHighlight(book: string, chapter: number, verse: numb
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session) {
-        // Cloud delete (mock)
         const { error } = await supabase.from('highlights').delete().match({ book, chapter, verse, user_id: session.user.id });
         if (error) {
             console.error("Error removing highlight", error);
@@ -62,18 +69,48 @@ export async function removeHighlight(book: string, chapter: number, verse: numb
 }
 
 export async function getHighlights(book: string, chapter: number): Promise<Highlight[]> {
-
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session) {
-        // Mock fetch for now as we don't have the table yet
-        // logic: const { data } = await supabase.from('highlights').select('*')...
-        return [];
+        const { data, error } = await supabase
+            .from('highlights')
+            .select('*')
+            .eq('book', book)
+            .eq('chapter', chapter);
+
+        if (error) {
+            console.error("Error fetching highlights", error);
+            return [];
+        }
+        return data || [];
     } else {
         if (typeof window !== 'undefined') {
             const local = JSON.parse(localStorage.getItem('local_highlights') || '[]');
             return local.filter((h: Highlight) => h.book === book && h.chapter === chapter) as Highlight[];
+        }
+    }
+    return [];
+}
+
+export async function getAllHighlights(): Promise<Highlight[]> {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session) {
+        const { data, error } = await supabase
+            .from('highlights')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error("Error fetching all highlights", error);
+            return [];
+        }
+        return data || [];
+    } else {
+        if (typeof window !== 'undefined') {
+            return JSON.parse(localStorage.getItem('local_highlights') || '[]');
         }
     }
     return [];

@@ -12,7 +12,9 @@ import {
     Palette,
     Moon,
     Sun,
-    Laptop
+    Laptop,
+    Eye,
+    EyeOff
 } from "lucide-react"
 import { ChangelogDialog } from "@/components/changelog-dialog"
 
@@ -22,7 +24,7 @@ export function Footer() {
     const pathname = usePathname()
     const { theme, setTheme } = useTheme()
     const [mounted, setMounted] = React.useState(false)
-    const { isFocusMode } = useFocusMode()
+    const { isFocusMode, toggleFocusMode } = useFocusMode()
 
     React.useEffect(() => {
         setMounted(true)
@@ -88,6 +90,19 @@ export function Footer() {
 
             {/* Right side: Theme & Version */}
             <div className="flex gap-6 text-xs font-mono text-muted-foreground/50">
+                {pathname?.startsWith("/read") && (
+                    <button
+                        onClick={toggleFocusMode}
+                        className="flex items-center gap-2 hover:text-primary transition-colors group"
+                    >
+                        {isFocusMode ? (
+                            <EyeOff className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+                        ) : (
+                            <Eye className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+                        )}
+                        <span className="opacity-50 group-hover:opacity-100 transition-opacity pb-px">focus</span>
+                    </button>
+                )}
                 <button
                     onClick={cycleTheme}
                     className="flex items-center gap-2 hover:text-primary transition-colors group"

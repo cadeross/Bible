@@ -54,14 +54,7 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra" }: 
             </div>
 
             {/* Focus Toggle */}
-            <Button
-                variant="ghost"
-                size="icon"
-                className="fixed bottom-24 right-8 z-50 opacity-50 hover:opacity-100 transition-opacity"
-                onClick={toggleFocusMode}
-            >
-                {isFocusMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
+            {/* Focus Toggle - Moved to Footer */}
 
             {/* Main Content Area */}
             <main className="flex-1 w-full max-w-4xl relative flex items-start justify-center">

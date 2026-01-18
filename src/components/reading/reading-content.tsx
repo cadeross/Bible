@@ -29,7 +29,7 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
         })
     }, [bookName, chapterNum])
 
-    const toggleHighlight = async (verseNum: number) => {
+    const toggleHighlight = async (verseNum: number, verseText: string) => {
         const isHighlighted = highlights.includes(verseNum)
         const newHighlights = isHighlighted
             ? highlights.filter(h => h !== verseNum)
@@ -46,6 +46,7 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                 book: bookName,
                 chapter: chapterNum,
                 verse: verseNum,
+                content: verseText, // Save the text
                 color: "yellow", // Default for now
                 created_at: new Date().toISOString()
             })
@@ -95,7 +96,7 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                                         "inline cursor-pointer transition-colors duration-200 hover:bg-primary/10 rounded px-[2px] -mx-[2px]",
                                         isHighlighted && "bg-primary/20 text-foreground"
                                     )}
-                                    onClick={() => toggleHighlight(verse.verse)}
+                                    onClick={() => toggleHighlight(verse.verse, verse.text)}
                                 >
                                     {showVerseNumbers && (
                                         <sup className="mr-1 text-[0.6em] text-muted-foreground/50 select-none font-mono">
