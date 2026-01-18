@@ -115,3 +115,58 @@ export async function getAllHighlights(): Promise<Highlight[]> {
     }
     return [];
 }
+
+export interface SavedWisdom {
+    id?: string;
+    content: string;
+    source?: string;
+    created_at: string;
+}
+
+export async function saveWisdom(wisdom: SavedWisdom) {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session) {
+        const { error } = await supabase.from('saved_wisdom').insert([
+            {
+                user_id: session.user.id,
+                content: wisdom.content,
+                source: wisdom.source
+            }
+        ]);
+        if (error) {
+            console.error("Error saving wisdom", error);
+            throw error;
+        }
+    } else {
+        if (typeof window !== 'undefined') {
+            const local = JSON.parse(localStorage.getItem('local_wisdom') || '[]');
+            local.push(wisdom);
+            localStorage.setItem('local_wisdom', JSON.stringify(local));
+        }
+    }
+}
+
+export async function getAllWisdom(): Promise<SavedWisdom[]> {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session) {
+        const { data, error } = await supabase
+            .from('saved_wisdom')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error("Error fetching wisdom", error);
+            return [];
+        }
+        return data || [];
+    } else {
+        if (typeof window !== 'undefined') {
+            return JSON.parse(localStorage.getItem('local_wisdom') || '[]');
+        }
+    }
+    return [];
+}

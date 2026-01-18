@@ -15,16 +15,51 @@ export function DailyContent() {
         author: "St. Augustine of Hippo"
     }
 
-    const handleHighlight = () => {
-        toast.success("Verse highlighted", {
-            description: "Added to your daily highlights."
-        })
+    const handleHighlight = async () => {
+        try {
+            // Parse reference: "John 1:1" -> Book: "John", Chapter: 1, Verse: 1
+            const lastSpaceIndex = verse.ref.lastIndexOf(' ')
+            const bookName = verse.ref.substring(0, lastSpaceIndex)
+            const referencePart = verse.ref.substring(lastSpaceIndex + 1) // "1:1"
+            const [chapterStr, verseStr] = referencePart.split(':')
+
+            const chapterNum = parseInt(chapterStr)
+            const verseNum = parseInt(verseStr)
+
+            const { saveHighlight } = await import("@/lib/persistence")
+
+            await saveHighlight({
+                book: bookName,
+                chapter: chapterNum,
+                verse: verseNum,
+                content: verse.text,
+                color: "yellow",
+                created_at: new Date().toISOString()
+            })
+
+            toast.success("Verse highlighted", {
+                description: "Added to your highlights library."
+            })
+        } catch (error) {
+            console.error(error)
+            toast.error("Failed to save highlight")
+        }
     }
 
-    const handleSaveQuote = () => {
-        toast.success("Quote saved", {
-            description: "Added to your collection."
-        })
+    const handleSaveQuote = async () => {
+        try {
+            const { saveWisdom } = await import("@/lib/persistence")
+            await saveWisdom({
+                content: quote.text,
+                source: quote.author,
+                created_at: new Date().toISOString()
+            })
+            toast.success("Quote saved", {
+                description: "Added to your collection."
+            })
+        } catch (error) {
+            toast.error("Failed to save quote")
+        }
     }
 
     return (

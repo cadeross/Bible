@@ -41,6 +41,8 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 }
 
+import { Analytics } from "@vercel/analytics/react"
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -69,6 +71,7 @@ export default function RootLayout({
               <Footer />
               <MobileNav />
               <Toaster />
+              <Analytics />
             </FocusProvider>
           </ReadingPreferencesProvider>
         </ThemeProvider>
