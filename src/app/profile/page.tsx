@@ -85,71 +85,65 @@ export default function ProfilePage() {
 
     // Authenticated View: Show Profile
     return (
-        <div className="container max-w-4xl mx-auto py-12 px-4 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="container max-w-4xl mx-auto py-24 px-4 space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700 font-mono">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-mono font-bold tracking-tight text-primary">profile</h1>
-                    <p className="text-muted-foreground font-mono text-sm">{user.email}</p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-border/50 pb-8">
+                <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <User className="h-8 w-8" />
+                        </div>
+                        <div className="space-y-1">
+                            <h1 className="text-3xl font-bold tracking-tight text-primary">{user.user_metadata?.username || "user"}</h1>
+                            <p className="text-muted-foreground text-sm flex items-center gap-2">
+                                {user.email} <span className="text-border">|</span> joined {new Date(user.created_at).toLocaleDateString()}
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                <Button variant="outline" onClick={handleSignOut} className="gap-2">
-                    <LogOut className="h-4 w-4" /> Sign Out
+                <Button variant="ghost" onClick={handleSignOut} className="text-muted-foreground hover:text-destructive gap-2 hover:bg-destructive/10">
+                    <LogOut className="h-4 w-4" /> sign out
                 </Button>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Words Read</CardTitle>
-                        <BookOpen className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold font-mono">0</div>
-                        <p className="text-xs text-muted-foreground">+0% from last month</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Highlights</CardTitle>
-                        <PenTool className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold font-mono">0</div>
-                        <p className="text-xs text-muted-foreground">Saved verses</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Days Active</CardTitle>
-                        <User className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold font-mono">1</div>
-                        <p className="text-xs text-muted-foreground">Current streak</p>
-                    </CardContent>
-                </Card>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest">words read</p>
+                    <div className="text-4xl font-bold text-primary">0</div>
+                </div>
+                <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest">chapters</p>
+                    <div className="text-4xl font-bold text-primary">0</div>
+                </div>
+                <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest">highlights</p>
+                    <div className="text-4xl font-bold text-primary">0</div>
+                </div>
+                <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest">streak</p>
+                    <div className="text-4xl font-bold text-primary">1</div>
+                </div>
             </div>
 
             {/* Account Settings / Info */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Account Settings</CardTitle>
-                    <CardDescription>Manage your account preferences.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="space-y-0.5">
-                            <h3 className="text-sm font-medium">Email Notifications</h3>
-                            <p className="text-xs text-muted-foreground">Receive daily verse emails.</p>
+            <div className="space-y-8 pt-8">
+                <h2 className="text-xl font-bold text-primary">settings</h2>
+
+                <div className="grid gap-4 max-w-xl">
+                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                        <div className="space-y-1">
+                            <h3 className="text-sm font-medium text-foreground">Verse of the Day Email</h3>
+                            <p className="text-xs text-muted-foreground">Receive a daily verse & wisdom.</p>
                         </div>
                         <Switch
                             checked={user?.user_metadata?.daily_verse_emails ?? false}
                             onCheckedChange={handleVerseEmailToggle}
                         />
                     </div>
-                </CardContent>
-            </Card>
+                    {/* Placeholder for future specific "Updates" toggle if user wants to separate them again */}
+                </div>
+            </div>
         </div>
     );
 }

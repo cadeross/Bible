@@ -34,6 +34,13 @@ export function AuthTabs({ onSuccess, showHomeLink = false }: { onSuccess?: () =
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Simple email check
+        if (!email.includes("@")) {
+            toast.error("Username login supported soon", { description: "Please use your email address to login for now." });
+            return;
+        }
+
         setLoading(true);
         const { error } = await supabase.auth.signInWithPassword({
             email,
@@ -76,140 +83,123 @@ export function AuthTabs({ onSuccess, showHomeLink = false }: { onSuccess?: () =
     };
 
     return (
-        <Tabs defaultValue="login" className="w-full max-w-[400px]">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Login</CardTitle>
-                        <CardDescription>
-                            Enter your email below to login to your account.
-                        </CardDescription>
-                    </CardHeader>
-                    <form onSubmit={handleLogin}>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
-                                <Input
-                                    id="login-email"
-                                    type="email"
-                                    placeholder="m@example.com"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
-                                <Input
-                                    id="login-password"
-                                    type="password"
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                            </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Button className="w-full" type="submit" disabled={loading}>
-                                {loading ? "Logging in..." : "Login"}
-                            </Button>
-                        </CardFooter>
+        <div className="w-full max-w-[320px] mx-auto font-mono">
+            <Tabs defaultValue="login" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-8 bg-transparent">
+                    <TabsTrigger
+                        value="login"
+                        className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-all"
+                    >
+                        login
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="signup"
+                        className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-all"
+                    >
+                        register
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="login" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="login-email" className="text-xs text-muted-foreground">email</Label>
+                            <Input
+                                id="login-email"
+                                type="email"
+                                placeholder="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="bg-muted/20 border-none focus-visible:ring-1 focus-visible:ring-primary/50"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="login-password" >password</Label>
+                            <Input
+                                id="login-password"
+                                type="password"
+                                placeholder="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="bg-muted/20 border-none focus-visible:ring-1 focus-visible:ring-primary/50"
+                            />
+                        </div>
+                        <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" type="submit" disabled={loading}>
+                            {loading ? "logging in..." : "login"}
+                        </Button>
                     </form>
-                </Card>
-            </TabsContent>
-            <TabsContent value="signup">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Sign Up</CardTitle>
-                        <CardDescription>
-                            Create an account to sync your highlights and notes.
-                        </CardDescription>
-                    </CardHeader>
-                    <form onSubmit={handleSignup}>
-                        <CardContent className="space-y-4">
-                            {/* First Name */}
-                            <div className="space-y-2">
-                                <Label htmlFor="first-name">First Name</Label>
-                                <Input
-                                    id="first-name"
-                                    type="text"
-                                    placeholder="John"
-                                    required
-                                    value={firstName}
-                                    onChange={(e) => setFirstName(e.target.value)}
-                                />
-                            </div>
+                </TabsContent>
 
-                            {/* Username */}
-                            <div className="space-y-2">
-                                <Label htmlFor="username">Username</Label>
-                                <Input
-                                    id="username"
-                                    type="text"
-                                    placeholder="johndoe"
-                                    required
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                />
-                            </div>
+                <TabsContent value="signup" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <form onSubmit={handleSignup} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="username" className="text-xs text-muted-foreground">username</Label>
+                            <Input
+                                id="username"
+                                type="text"
+                                placeholder="username"
+                                required
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className="bg-muted/20 border-none focus-visible:ring-1 focus-visible:ring-primary/50"
+                            />
+                        </div>
 
-                            {/* Email */}
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
-                                <Input
-                                    id="signup-email"
-                                    type="email"
-                                    placeholder="m@example.com"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                />
-                            </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email" className="text-xs text-muted-foreground">email</Label>
+                            <Input
+                                id="signup-email"
+                                type="email"
+                                placeholder="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="bg-muted/20 border-none focus-visible:ring-1 focus-visible:ring-primary/50"
+                            />
+                        </div>
 
-                            {/* Password */}
-                            <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
-                                <Input
-                                    id="signup-password"
-                                    type="password"
-                                    required
-                                    minLength={6}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                            </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password" className="text-xs text-muted-foreground">password</Label>
+                            <Input
+                                id="signup-password"
+                                type="password"
+                                placeholder="password"
+                                required
+                                minLength={6}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="bg-muted/20 border-none focus-visible:ring-1 focus-visible:ring-primary/50"
+                            />
+                        </div>
 
-                            {/* Consolidated Updates & Verse Checkbox */}
-                            <div className="flex items-center space-x-2 pt-2">
-                                <Checkbox
-                                    id="updates"
-                                    checked={receiveUpdates}
-                                    onCheckedChange={(checked) => {
-                                        const isChecked = checked as boolean;
-                                        setReceiveUpdates(isChecked);
-                                        setDailyVerseEmails(isChecked);
-                                    }}
-                                />
-                                <label
-                                    htmlFor="updates"
-                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-muted-foreground"
-                                >
-                                    Receive a Daily Verse & Wisdom along with updates
-                                </label>
-                            </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Button className="w-full" type="submit" disabled={loading}>
-                                {loading ? "Signing up..." : "Sign Up"}
-                            </Button>
-                        </CardFooter>
+                        {/* Consolidated Updates & Verse Checkbox */}
+                        <div className="flex items-start space-x-3 pt-2">
+                            <Checkbox
+                                id="updates"
+                                checked={receiveUpdates}
+                                onCheckedChange={(checked) => {
+                                    const isChecked = checked as boolean;
+                                    setReceiveUpdates(isChecked);
+                                    setDailyVerseEmails(isChecked);
+                                }}
+                                className="mt-1"
+                            />
+                            <label
+                                htmlFor="updates"
+                                className="text-xs leading-normal peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            >
+                                send me a daily verse, wisdom, and development updates
+                            </label>
+                        </div>
+
+                        <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" type="submit" disabled={loading}>
+                            {loading ? "creating account..." : "sign up"}
+                        </Button>
                     </form>
-                </Card>
-            </TabsContent>
-        </Tabs>
+                </TabsContent>
+            </Tabs>
+        </div>
     );
 }
