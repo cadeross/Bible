@@ -31,6 +31,20 @@ const merriweather = Merriweather({
 export const metadata: Metadata = {
   title: "Bible App",
   description: "A modern, beautiful Bible reading experience.",
+  icons: {
+    icon: [
+      {
+        media: '(prefers-color-scheme: light)',
+        url: '/favicon-light.png',
+        href: '/favicon-light.png',
+      },
+      {
+        media: '(prefers-color-scheme: dark)',
+        url: '/favicon-dark.png',
+        href: '/favicon-dark.png',
+      },
+    ],
+  },
 };
 
 export const viewport: Viewport = {

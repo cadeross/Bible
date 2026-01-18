@@ -56,6 +56,14 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra" }: 
             {/* Focus Toggle */}
             {/* Focus Toggle - Moved to Footer */}
 
+            {/* Fade Gradients (Visible < 1500px and NOT Focus Mode) */}
+            {!isFocusMode && (
+                <>
+                    <div className="fixed top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent z-40 pointer-events-none hidden max-[1500px]:block" />
+                    <div className="fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent z-40 pointer-events-none hidden max-[1500px]:block" />
+                </>
+            )}
+
             {/* Main Content Area */}
             <main className="flex-1 w-full max-w-4xl relative flex items-start justify-center">
 
