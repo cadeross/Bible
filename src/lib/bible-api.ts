@@ -19,11 +19,23 @@ export interface BibleChapter {
 // Just ensuring types and exports are correct.
 
 export const TRANSLATIONS = [
-    { id: 'dra', name: 'Douay-Rheims 1899 American Edition' },
     { id: 'web', name: 'World English Bible' },
     { id: 'kjv', name: 'King James Version' },
-    { id: 'asv', name: 'American Standard Version' },
+    { id: 'asv', name: 'American Standard Version (1901)' },
     { id: 'bbe', name: 'Bible in Basic English' },
+    { id: 'darby', name: 'Darby Bible' },
+    { id: 'dra', name: 'Douay-Rheims 1899 American Edition' },
+    { id: 'ylt', name: 'Young\'s Literal Translation' },
+    { id: 'oeb-cw', name: 'Open English Bible (Commonwealth)' },
+    { id: 'webbe', name: 'World English Bible (British)' },
+    { id: 'oeb-us', name: 'Open English Bible (US)' },
+    { id: 'clementine', name: 'Clementine Latin Vulgate' },
+    { id: 'almeida', name: 'João Ferreira de Almeida' },
+    { id: 'rccv', name: 'Romanian Corrected Cornilescu' },
+    { id: 'synodal', name: 'Russian Synodal Translation' },
+    { id: 'cherokee', name: 'Cherokee New Testament' },
+    { id: 'cuv', name: 'Chinese Union Version' },
+    { id: 'bkr', name: 'Bible kralická' },
 ];
 
 const BASE_URL = 'https://bible-api.com';

@@ -7,6 +7,7 @@ import {
     Popover,
     PopoverContent,
     PopoverTrigger,
+    PopoverAnchor,
 } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
@@ -17,6 +18,8 @@ interface QuickSelectorProps {
     label?: string
     placeholder?: string
     icon?: React.ReactNode
+    displayFormat?: 'name' | 'id'
+    popoverWidth?: string
 }
 
 export function QuickSelector({
@@ -26,6 +29,8 @@ export function QuickSelector({
     label,
     placeholder = "Search...",
     icon,
+    displayFormat = 'name',
+    popoverWidth = "w-[200px]",
 }: QuickSelectorProps) {
     const [open, setOpen] = React.useState(false)
     const [search, setSearch] = React.useState("")
@@ -39,30 +44,44 @@ export function QuickSelector({
         )
     }, [items])
 
-    // Filter items
-    const filteredItems = React.useMemo(() => {
-        if (!search) return normalizedItems
-        return normalizedItems.filter(item =>
-            item.name.toLowerCase().includes(search.toLowerCase())
-        )
-    }, [normalizedItems, search])
-
     const displayValue = React.useMemo(() => {
         const found = normalizedItems.find(i => i.id === value)
-        return found ? found.name : value
-    }, [normalizedItems, value])
+        if (!found) return value
+        return displayFormat === 'id' ? found.id.toUpperCase() : found.name
+    }, [normalizedItems, value, displayFormat])
 
-    // Focus input on open
+    // Sync search with display value when closed
     React.useEffect(() => {
-        if (open) {
-            setSearch("")
-            setHighlightedIndex(0)
-            setTimeout(() => inputRef.current?.focus(), 50)
+        if (!open) {
+            setSearch(displayValue)
         }
-    }, [open])
+    }, [open, displayValue])
 
-    // Basic keyboard nav
+    // Filter items based on search input
+    const filteredItems = React.useMemo(() => {
+        if (!search || search === displayValue) return normalizedItems
+        return normalizedItems.filter(item =>
+            item.name.toLowerCase().includes(search.toLowerCase()) ||
+            item.id.toLowerCase().includes(search.toLowerCase())
+        )
+    }, [normalizedItems, search, displayValue])
+
+    const handleSelect = (id: string, name: string) => {
+        onSelect(id)
+        setSearch(displayFormat === 'id' ? id.toUpperCase() : name)
+        setOpen(false)
+        inputRef.current?.blur()
+    }
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (!open) {
+            if (e.key === "ArrowDown" || e.key === "Enter") {
+                e.preventDefault()
+                setOpen(true)
+            }
+            return
+        }
+
         if (e.key === "ArrowDown") {
             e.preventDefault()
             setHighlightedIndex(i => Math.min(filteredItems.length - 1, i + 1))
@@ -73,85 +92,105 @@ export function QuickSelector({
             e.preventDefault()
             const item = filteredItems[highlightedIndex]
             if (item) {
-                onSelect(item.id)
-                setOpen(false)
+                handleSelect(item.id, item.name)
             }
+        } else if (e.key === "Escape") {
+            setOpen(false)
+            inputRef.current?.blur()
         }
     }
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <button
-                    className={cn(
-                        "flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary transition-colors outline-none select-none group"
-                    )}
-                >
+        <div className="relative group">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors relative">
+                <div className="shrink-0 text-muted-foreground/70 group-hover:text-primary transition-colors">
                     {icon}
-                    <span className="group-hover:text-foreground transition-colors">{displayValue}</span>
-                    <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100 transition-opacity" />
-                </button>
-            </PopoverTrigger>
-            <PopoverContent
-                className="w-[200px] p-0 bg-background/95 backdrop-blur-xl border-border/50 shadow-xl overflow-hidden"
-                align="start"
-                sideOffset={8}
-            >
-                {/* Search Input */}
-                <div className="flex items-center px-3 py-2 border-b border-border/10 bg-muted/20">
-                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-                    <input
-                        ref={inputRef}
-                        value={search}
-                        onChange={(e) => {
-                            setSearch(e.target.value)
-                            setHighlightedIndex(0) // Reset highlight on search change
-                        }}
-                        onKeyDown={handleKeyDown}
-                        placeholder={placeholder}
-                        className="flex h-6 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground/50 disabled:cursor-not-allowed disabled:opacity-50"
-                    />
                 </div>
 
-                {/* List */}
-                <ScrollArea className="h-[200px] p-1">
-                    {filteredItems.length === 0 ? (
-                        <div className="py-6 text-center text-xs text-muted-foreground">
-                            No results found.
+                <Popover open={open} onOpenChange={setOpen}>
+                    <PopoverAnchor asChild>
+                        <div className="relative inline-grid grid-cols-[1fr]">
+                            {/* Ghost span for auto-width */}
+                            <span className="invisible col-start-1 row-start-1 whitespace-pre px-0 py-0 font-medium">
+                                {search || placeholder}
+                            </span>
+
+                            <input
+                                ref={inputRef}
+                                value={search}
+                                onChange={(e) => {
+                                    setSearch(e.target.value)
+                                    setOpen(true)
+                                    setHighlightedIndex(0)
+                                }}
+                                onFocus={(e) => {
+                                    setOpen(true)
+                                    e.target.select()
+                                }}
+                                onKeyDown={handleKeyDown}
+                                placeholder={placeholder}
+                                className={cn(
+                                    "col-start-1 row-start-1 w-full min-w-[60px] bg-transparent outline-none cursor-text placeholder:text-muted-foreground/50 transition-colors p-0 border-none font-medium text-left",
+                                    open ? "text-foreground" : "text-muted-foreground group-hover:text-primary",
+                                    displayFormat === 'id' && "uppercase"
+                                )}
+                            />
                         </div>
-                    ) : (
-                        <div className="space-y-0.5">
-                            {filteredItems.map((item, index) => (
-                                <button
-                                    key={item.id}
-                                    onClick={() => {
-                                        onSelect(item.id)
-                                        setOpen(false)
-                                    }}
-                                    onMouseEnter={() => setHighlightedIndex(index)}
-                                    className={cn(
-                                        "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-                                        index === highlightedIndex
-                                            ? "bg-primary text-primary-foreground"
-                                            : "text-foreground hover:bg-muted/50",
-                                        item.id === value && index !== highlightedIndex && "text-primary font-semibold"
-                                    )}
-                                >
-                                    {item.name}
-                                    {item.id === value && (
-                                        <Check
+                    </PopoverAnchor>
+                    <PopoverContent
+                        className={cn(
+                            "p-0 bg-background/95 backdrop-blur-xl border-border/50 shadow-xl overflow-hidden mt-1",
+                            popoverWidth
+                        )}
+                        align="start"
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                    >
+                        <ScrollArea className="h-[200px] p-1">
+                            {filteredItems.length === 0 ? (
+                                <div className="py-6 text-center text-xs text-muted-foreground">
+                                    No results found.
+                                </div>
+                            ) : (
+                                <div className="space-y-0.5">
+                                    {filteredItems.map((item, index) => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => handleSelect(item.id, item.name)}
+                                            onMouseEnter={() => setHighlightedIndex(index)}
                                             className={cn(
-                                                "ml-auto h-3 w-3",
-                                                index === highlightedIndex ? "text-primary-foreground" : "text-primary"
+                                                "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none transition-colors",
+                                                index === highlightedIndex
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "text-foreground hover:bg-muted/50",
+                                                item.id === value && index !== highlightedIndex && "text-primary font-semibold"
                                             )}
-                                        />
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </ScrollArea>
-            </PopoverContent>
-        </Popover>
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                {displayFormat === 'id' && (
+                                                    <span className="font-mono text-[10px] opacity-70 w-8 uppercase shrink-0">
+                                                        {item.id}
+                                                    </span>
+                                                )}
+                                                <span className="truncate">{item.name}</span>
+                                            </span>
+                                            {item.id === value && (
+                                                <Check
+                                                    className={cn(
+                                                        "ml-auto h-3 w-3 shrink-0",
+                                                        index === highlightedIndex ? "text-primary-foreground" : "text-primary"
+                                                    )}
+                                                />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </ScrollArea>
+                    </PopoverContent>
+                </Popover>
+
+                <ChevronDown className="h-3 w-3 opacity-30 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            </div>
+        </div>
     )
 }

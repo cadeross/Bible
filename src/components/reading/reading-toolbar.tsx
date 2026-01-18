@@ -64,6 +64,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentTranslation = "
                     onSelect={handleBookChange}
                     icon={<Book className="h-3 w-3" />}
                     placeholder="Search books..."
+                    popoverWidth="w-[200px]"
                 />
 
                 <div className="h-4 w-[1px] bg-border/50" />
@@ -74,6 +75,8 @@ export function ReadingToolbar({ currentBook = "Genesis", currentTranslation = "
                     onSelect={handleTranslationChange}
                     icon={<Languages className="h-3 w-3" />}
                     placeholder="Search version..."
+                    displayFormat="id"
+                    popoverWidth="w-[320px]"
                 />
             </div>
 
