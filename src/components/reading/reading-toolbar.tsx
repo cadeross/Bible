@@ -45,7 +45,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentTranslation = "
         <button
             onClick={() => setFontFamily(font)}
             className={cn(
-                "px-3 py-1 text-xs transition-colors hover:text-foreground/80",
+                "px-3 py-1 text-xs transition-colors hover:text-foreground/80 cursor-pointer",
                 fontFamily === font ? "text-primary font-bold" : "text-muted-foreground"
             )}
         >
@@ -96,7 +96,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentTranslation = "
                     <button
                         onClick={() => setShowVerseNumbers(!showVerseNumbers)}
                         className={cn(
-                            "flex items-center gap-1 transition-colors hover:text-foreground",
+                            "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer",
                             showVerseNumbers ? "text-primary" : "text-muted-foreground/50"
                         )}
                     >
@@ -107,7 +107,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentTranslation = "
                     <button
                         onClick={() => setRedLetters(!redLetters)}
                         className={cn(
-                            "flex items-center gap-1 transition-colors hover:text-foreground",
+                            "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer",
                             redLetters ? "text-red-500" : "text-muted-foreground/50"
                         )}
                     >
@@ -120,14 +120,14 @@ export function ReadingToolbar({ currentBook = "Genesis", currentTranslation = "
                 <div className="flex items-center gap-2 pl-4 border-l border-border/50">
                     <button
                         onClick={() => setFontSize(Math.max(12, fontSize - 2))}
-                        className="text-muted-foreground hover:text-foreground"
+                        className="text-muted-foreground hover:text-foreground cursor-pointer"
                     >
                         -
                     </button>
                     <span className="text-xs w-8 text-center text-muted-foreground">{fontSize}px</span>
                     <button
                         onClick={() => setFontSize(Math.min(32, fontSize + 2))}
-                        className="text-muted-foreground hover:text-foreground"
+                        className="text-muted-foreground hover:text-foreground cursor-pointer"
                     >
                         +
                     </button>
