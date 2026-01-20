@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { getAllHighlights, getAllWisdom, Highlight, SavedWisdom } from "@/lib/persistence";
 import { PenTool, ArrowRight, BookOpen, Heart, Quote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BIBLE_BOOKS } from "@/lib/bible-data";
+
+interface GroupedHighlight extends Highlight {
+    verseEnd: number;
+}
 
 export default function LibraryPage() {
-    const [highlights, setHighlights] = useState<Highlight[]>([]);
+    const [rawHighlights, setRawHighlights] = useState<Highlight[]>([]);
     const [wisdom, setWisdom] = useState<SavedWisdom[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -18,13 +23,67 @@ export default function LibraryPage() {
                 getAllHighlights(),
                 getAllWisdom()
             ]);
-            setHighlights(highlightsData);
+            setRawHighlights(highlightsData);
             setWisdom(wisdomData);
             setLoading(false);
         };
 
         fetchData();
     }, []);
+
+    const groupedHighlights = useMemo(() => {
+        if (rawHighlights.length === 0) return [];
+
+        // 1. Sort Canonically for grouping
+        const sorted = [...rawHighlights].sort((a, b) => {
+            const bookA = BIBLE_BOOKS.findIndex(book => book.name === a.book);
+            const bookB = BIBLE_BOOKS.findIndex(book => book.name === b.book);
+
+            if (bookA !== bookB) return bookA - bookB;
+            if (a.chapter !== b.chapter) return a.chapter - b.chapter;
+            return a.verse - b.verse;
+        });
+
+        // 2. Group adjacent verses
+        const grouped: GroupedHighlight[] = [];
+        let currentGroup: GroupedHighlight | null = null;
+
+        sorted.forEach((h) => {
+            if (!currentGroup) {
+                currentGroup = { ...h, verseEnd: h.verse };
+                return;
+            }
+
+            // Check adhesion: Same Book, Same Chapter, Same Color, Next Verse
+            const isNextVerse = h.verse === currentGroup.verseEnd + 1;
+            const isSameBook = h.book === currentGroup.book;
+            const isSameChapter = h.chapter === currentGroup.chapter;
+            const isSameColor = h.color === currentGroup.color;
+
+            if (isSameBook && isSameChapter && isNextVerse && isSameColor) {
+                // Merge
+                currentGroup.verseEnd = h.verse;
+                currentGroup.content = `${currentGroup.content} ${h.content}`;
+                // Keep the 'latest' created_at if we want the group to jump to top? 
+                // Currently sorting by canonical, but we'll re-sort by time after.
+                if (new Date(h.created_at) > new Date(currentGroup.created_at)) {
+                    currentGroup.created_at = h.created_at;
+                }
+            } else {
+                // Push current and start new
+                grouped.push(currentGroup);
+                currentGroup = { ...h, verseEnd: h.verse };
+            }
+        });
+
+        if (currentGroup) {
+            grouped.push(currentGroup);
+        }
+
+        // 3. Re-sort by Recency (Newest first)
+        return grouped.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    }, [rawHighlights]);
 
     if (loading) {
         return (
@@ -34,7 +93,7 @@ export default function LibraryPage() {
         );
     }
 
-    if (highlights.length === 0 && wisdom.length === 0) {
+    if (rawHighlights.length === 0 && wisdom.length === 0) {
         return (
             <div className="flex min-h-screen flex-col items-center justify-center p-4 font-mono">
                 <div className="text-center space-y-4">
@@ -76,7 +135,7 @@ export default function LibraryPage() {
                         className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-all justify-start px-0 pb-2"
                     >
                         <span className="flex items-center gap-2">
-                            <PenTool className="h-4 w-4" /> highlights ({highlights.length})
+                            <PenTool className="h-4 w-4" /> highlights ({groupedHighlights.length})
                         </span>
                     </TabsTrigger>
                     <TabsTrigger
@@ -90,27 +149,40 @@ export default function LibraryPage() {
                 </TabsList>
 
                 <TabsContent value="highlights" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    {highlights.length === 0 ? (
+                    {groupedHighlights.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground italic">no highlights yet.</div>
                     ) : (
                         <div className="grid grid-cols-1 gap-6">
-                            {highlights.map((highlight, idx) => (
+                            {groupedHighlights.map((highlight, idx) => (
                                 <Link
                                     key={highlight.id || idx}
                                     href={`/read/${highlight.book}/${highlight.chapter}?translation=dra`}
-                                    className="group relative block p-6 rounded-lg bg-muted/20 hover:bg-muted/40 transition-all border border-transparent hover:border-primary/20"
+                                    className={cn(
+                                        "group relative block p-6 rounded-lg bg-muted/20 hover:bg-muted/40 transition-all border border-transparent hover:border-primary/20",
+                                        // Optional: Add colored border left based on highlight color?
+                                        // highlight.color === 'yellow' && "border-l-yellow-500 border-l-4"
+                                    )}
                                 >
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors">
-                                                {highlight.book} {highlight.chapter}:{highlight.verse}
+                                            <span className="text-xs font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2">
+                                                {/* Color Dot Indicator */}
+                                                <span className={cn(
+                                                    "w-2 h-2 rounded-full",
+                                                    highlight.color === "yellow" && "bg-yellow-500",
+                                                    highlight.color === "green" && "bg-green-500",
+                                                    highlight.color === "blue" && "bg-blue-500",
+                                                    highlight.color === "pink" && "bg-pink-500",
+                                                    highlight.color === "purple" && "bg-purple-500",
+                                                )} />
+                                                {highlight.book} {highlight.chapter}:{highlight.verse}{highlight.verseEnd > highlight.verse ? `-${highlight.verseEnd}` : ''}
                                             </span>
                                             <span className="text-[10px] text-muted-foreground/50">
                                                 {new Date(highlight.created_at).toLocaleDateString()}
                                             </span>
                                         </div>
 
-                                        <p className="text-sm md:text-base leading-relaxed text-foreground/80 group-hover:text-foreground transition-colors font-serif italic">
+                                        <p className="text-sm md:text-base leading-relaxed text-foreground/80 group-hover:text-foreground transition-colors font-serif italic line-clamp-3">
                                             "{highlight.content || "view verse content"}"
                                         </p>
 

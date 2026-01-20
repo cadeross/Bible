@@ -10,6 +10,7 @@ export interface ReadingPreferences {
     lineHeight: number
     showVerseNumbers: boolean
     redLetters: boolean
+    defaultHighlightColor: string
 }
 
 interface ReadingPreferencesContextType extends ReadingPreferences {
@@ -18,6 +19,7 @@ interface ReadingPreferencesContextType extends ReadingPreferences {
     setLineHeight: (height: number) => void
     setShowVerseNumbers: (show: boolean) => void
     setRedLetters: (show: boolean) => void
+    setDefaultHighlightColor: (color: string) => void
     resetPreferences: () => void
 }
 
@@ -27,6 +29,7 @@ const defaultPreferences: ReadingPreferences = {
     lineHeight: 1.6,
     showVerseNumbers: true,
     redLetters: true,
+    defaultHighlightColor: "yellow",
 }
 
 const ReadingPreferencesContext = createContext<ReadingPreferencesContextType | undefined>(undefined)
@@ -63,6 +66,7 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
     const setLineHeight = (lineHeight: number) => setPreferences((prev) => ({ ...prev, lineHeight }))
     const setShowVerseNumbers = (showVerseNumbers: boolean) => setPreferences((prev) => ({ ...prev, showVerseNumbers }))
     const setRedLetters = (redLetters: boolean) => setPreferences((prev) => ({ ...prev, redLetters }))
+    const setDefaultHighlightColor = (defaultHighlightColor: string) => setPreferences((prev) => ({ ...prev, defaultHighlightColor }))
     const resetPreferences = () => setPreferences(defaultPreferences)
 
     const value = {
@@ -72,6 +76,7 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
         setLineHeight,
         setShowVerseNumbers,
         setRedLetters,
+        setDefaultHighlightColor,
         resetPreferences,
     }
 
