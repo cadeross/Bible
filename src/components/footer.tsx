@@ -31,11 +31,29 @@ export function Footer() {
     }, [])
 
     const cycleTheme = () => {
-        // Simple cycle logic: system -> light -> dark -> sepia -> oled -> system
-        const order = ["system", "light", "dark", "sepia", "oled"]
-        const currentIndex = order.indexOf(theme || "system")
+        // Cycle through 4 palettes - OS handles light/dark automatically
+        const order = ["standard", "solarized", "sepia", "cyberpunk"]
+        const currentIndex = order.indexOf(theme || "standard")
         const nextIndex = (currentIndex + 1) % order.length
         setTheme(order[nextIndex])
+    }
+
+    // Display name mapping (simple now - just palette names)
+    const themeDisplayNames: Record<string, string> = {
+        "standard": "standard",
+        "solarized": "solarized",
+        "sepia": "sepia",
+        "cyberpunk": "cyberpunk",
+        "system": "standard"
+    }
+
+    // Theme color classes for visual feedback
+    const getThemeColor = (t: string | undefined) => {
+        if (!t) return "text-foreground"
+        if (t === "solarized") return "text-yellow-600"
+        if (t === "sepia") return "text-amber-700"
+        if (t === "cyberpunk") return "text-fuchsia-500"
+        return "text-foreground"
     }
 
     // Icon map for visual flair
@@ -108,14 +126,11 @@ export function Footer() {
                     className="flex items-center gap-2 hover:text-primary transition-colors group"
                 >
                     <Palette className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-                    <span className="opacity-50 group-hover:opacity-100 transition-opacity pb-px">theme:</span>
                     <span className={cn(
                         "font-bold transition-all pb-px",
-                        theme === "light" && "text-foreground",
-                        theme === "dark" && "text-foreground",
-                        theme === "sepia" && "text-amber-700 dark:text-amber-400",
+                        getThemeColor(theme)
                     )}>
-                        {theme}
+                        {themeDisplayNames[theme || "light"] || theme}
                     </span>
                 </button>
 
