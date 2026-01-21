@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { getAllHighlights, getAllWisdom, Highlight, SavedWisdom } from "@/lib/persistence";
-import { PenTool, ArrowRight, BookOpen, Heart, Quote, StickyNote } from "lucide-react";
+import { PenTool, ArrowRight, BookOpen, Heart, Quote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BIBLE_BOOKS } from "@/lib/bible-data";
@@ -31,12 +31,7 @@ export default function LibraryPage() {
         fetchData();
     }, []);
 
-    // Extract notes
-    const notes = useMemo(() => {
-        return rawHighlights
-            .filter(h => h.note && h.note.trim().length > 0)
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    }, [rawHighlights]);
+
 
     const groupedHighlights = useMemo(() => {
         if (rawHighlights.length === 0) return [];
@@ -136,21 +131,13 @@ export default function LibraryPage() {
             </div>
 
             <Tabs defaultValue="highlights" className="w-full">
-                <TabsList className="grid w-full max-w-[600px] grid-cols-3 mb-8 bg-transparent p-0">
+                <TabsList className="grid w-full max-w-[400px] grid-cols-2 mb-8 bg-transparent p-0">
                     <TabsTrigger
                         value="highlights"
                         className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-all justify-start px-0 pb-2"
                     >
                         <span className="flex items-center gap-2">
                             <PenTool className="h-4 w-4" /> highlights ({groupedHighlights.length})
-                        </span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="notes"
-                        className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-all justify-start px-0 pb-2"
-                    >
-                        <span className="flex items-center gap-2">
-                            <StickyNote className="h-4 w-4" /> notes ({notes.length})
                         </span>
                     </TabsTrigger>
                     <TabsTrigger
@@ -211,75 +198,7 @@ export default function LibraryPage() {
                     )}
                 </TabsContent>
 
-                <TabsContent value="notes" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    {notes.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground italic">no notes yet.</div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {notes.map((note, idx) => {
-                                // Dynamic Color Logic
-                                // Safe lowercasing and default
-                                const colorKey = (note.color || "yellow").toLowerCase();
 
-                                const colorMap: Record<string, { bg: string, border: string, text: string, icon: string }> = {
-                                    yellow: { bg: "bg-yellow-500/5 hover:bg-yellow-500/10", border: "border-yellow-500/10 hover:border-yellow-500/30", text: "text-yellow-600 dark:text-yellow-500", icon: "text-yellow-500" },
-                                    green: { bg: "bg-green-500/5 hover:bg-green-500/10", border: "border-green-500/10 hover:border-green-500/30", text: "text-green-600 dark:text-green-500", icon: "text-green-500" },
-                                    blue: { bg: "bg-blue-500/5 hover:bg-blue-500/10", border: "border-blue-500/10 hover:border-blue-500/30", text: "text-blue-600 dark:text-blue-500", icon: "text-blue-500" },
-                                    pink: { bg: "bg-pink-500/5 hover:bg-pink-500/10", border: "border-pink-500/10 hover:border-pink-500/30", text: "text-pink-600 dark:text-pink-500", icon: "text-pink-500" },
-                                    purple: { bg: "bg-purple-500/5 hover:bg-purple-500/10", border: "border-purple-500/10 hover:border-purple-500/30", text: "text-purple-600 dark:text-purple-500", icon: "text-purple-500" },
-                                };
-
-                                const theme = colorMap[colorKey] || colorMap.yellow;
-
-                                return (
-                                    <Link
-                                        key={note.id || idx}
-                                        href={`/read/${note.book}/${note.chapter}?translation=dra`}
-                                        className={cn(
-                                            "group relative block p-6 rounded-lg transition-all border flex flex-col h-full",
-                                            theme.bg,
-                                            theme.border
-                                        )}
-                                    >
-                                        <div className="mb-4 flex items-start justify-between">
-                                            <span className={cn(
-                                                "text-xs font-bold uppercase tracking-widest flex items-center gap-2",
-                                                theme.text
-                                            )}>
-                                                <StickyNote className="h-3 w-3" />
-                                                note
-                                            </span>
-                                            <span className="text-[10px] text-muted-foreground/50">
-                                                {new Date(note.created_at).toLocaleDateString()}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex-1 space-y-4">
-                                            {/* The Note Content - Primary */}
-                                            <p className="text-sm md:text-base font-sans leading-relaxed text-foreground">
-                                                {note.note}
-                                            </p>
-
-                                            {/* The Verse Context - Secondary */}
-                                            <div className={cn("pt-4 border-t", theme.border)}>
-                                                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1">
-                                                    {note.book} {note.chapter}:{note.verse}
-                                                </div>
-                                                <p className="text-xs font-serif italic text-muted-foreground/70 line-clamp-2">
-                                                    "{note.content}"
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <ArrowRight className={cn("h-4 w-4", theme.icon)} />
-                                        </div>
-                                    </Link>
-                                )
-                            })}
-                        </div>
-                    )}
-                </TabsContent>
 
                 <TabsContent value="wisdom" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                     {wisdom.length === 0 ? (
