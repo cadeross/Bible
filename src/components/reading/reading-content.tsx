@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { isRedLetterVerse } from "@/lib/red-letter-data"
 import { Highlight } from "@/lib/persistence"
-import { Trash2 } from "lucide-react"
+import { Trash2, StickyNote, Check, X } from "lucide-react"
 
 interface ReadingContentProps {
     chapter: BibleChapter
@@ -31,6 +31,10 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
     const [menuPosition, setMenuPosition] = React.useState({ top: 0, left: 0 })
     const [selectedVerses, setSelectedVerses] = React.useState<number[]>([])
 
+    // Note State
+    const [isNoteMode, setIsNoteMode] = React.useState(false)
+    const [noteContent, setNoteContent] = React.useState("")
+
     // Ref for the container to limit selection scope
     const containerRef = React.useRef<HTMLDivElement>(null)
 
@@ -47,21 +51,16 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
 
     // 1. Click -> Toggle Default Highlight
     const handleVerseClick = async (verseNum: number, verseText: string) => {
-        // Prevent if selecting text - check selection length
         const sel = window.getSelection()
         if (sel && sel.toString().length > 0) return
-
-        // Prevent if menu is open (interaction might be closing menu)
         if (menuOpen) return
 
         const existing = highlights.find(h => h.verse === verseNum)
         if (existing) {
-            // Remove
             setHighlights(prev => prev.filter(h => h.verse !== verseNum))
             const { removeHighlight } = await import("@/lib/persistence")
             await removeHighlight(bookName, chapterNum, verseNum)
         } else {
-            // Add Default
             const newH: Highlight = {
                 book: bookName,
                 chapter: chapterNum,
@@ -76,29 +75,15 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
         }
     }
 
-    // 2. Long Press -> Open Menu for Single Verse
+    // 2. Long Press -> Open Menu
     const longPressTimeout = React.useRef<NodeJS.Timeout | null>(null)
 
     const handleTouchStart = (verseNum: number, e: React.TouchEvent | React.MouseEvent) => {
-        // Clear existing
         if (longPressTimeout.current) clearTimeout(longPressTimeout.current)
 
         longPressTimeout.current = setTimeout(() => {
-            // Long press triggered
-            const target = e.target as HTMLElement
-            const rect = target.getBoundingClientRect()
-
-            // Set position
-            setMenuPosition({
-                top: rect.top - 60 + window.scrollY,
-                left: rect.left + rect.width / 2
-            })
-            setSelectedVerses([verseNum])
-            setMenuOpen(true)
-
-            // Vibration feedback if supported
-            if (window.navigator?.vibrate) window.navigator.vibrate(50)
-        }, 500) // 500ms hold
+            openMenu(e.target as HTMLElement, verseNum, 0, 0, true) // Pass standard offset
+        }, 500)
     }
 
     const handleTouchEnd = () => {
@@ -108,17 +93,46 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
         }
     }
 
-    // 3. Text Selection -> Open Menu for Multiple Verses
+    // 3. Right Click (Context Menu) -> Open Menu
+    const handleContextMenu = (e: React.MouseEvent, verseNum: number) => {
+        e.preventDefault()
+        // If native selection exists, let it be (but context menu usually overrides or is blocked).
+        // Here we just open our menu at cursor.
+        openMenu(e.target as HTMLElement, verseNum, e.clientX, e.clientY, false)
+    }
+
+    const openMenu = (target: HTMLElement, verseNum: number, clientX: number, clientY: number, autoPosition: boolean) => {
+        // Find existing note if single selection
+        const existing = highlights.find(h => h.verse === verseNum)
+        setNoteContent(existing?.note || "")
+        setIsNoteMode(false)
+
+        let top = 0
+        let left = 0
+
+        if (autoPosition) {
+            const rect = target.getBoundingClientRect()
+            top = rect.top - 60 + window.scrollY
+            left = rect.left + rect.width / 2
+        } else {
+            // Use pointer position
+            top = clientY - 40 + window.scrollY
+            left = clientX
+        }
+
+        setMenuPosition({ top, left })
+        setSelectedVerses([verseNum])
+        setMenuOpen(true)
+        if (window.navigator?.vibrate) window.navigator.vibrate(50)
+    }
+
+    // 4. Text Selection -> Open Menu
     React.useEffect(() => {
         const handleSelection = () => {
             const selection = window.getSelection()
-            if (!selection || selection.isCollapsed) {
-                return // Don't auto-close here, handled by overlay
-            }
-
+            if (!selection || selection.isCollapsed) return
             if (!containerRef.current?.contains(selection.anchorNode)) return
 
-            // Wait a tick for selection to stabilize
             setTimeout(() => {
                 const sel = window.getSelection()
                 if (!sel || sel.isCollapsed) return
@@ -136,24 +150,24 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
 
                 if (selectedIds.length > 0) {
                     const rect = range.getBoundingClientRect()
-                    // Check bounds sanity
                     if (rect.width > 0 && rect.height > 0) {
                         setMenuPosition({
                             top: rect.top - 60 + window.scrollY,
                             left: rect.left + rect.width / 2
                         })
                         setSelectedVerses(selectedIds)
+                        // Reset note for multi-select (or handle blank)
+                        setNoteContent("")
+                        setIsNoteMode(false)
                         setMenuOpen(true)
                     }
                 }
             }, 10)
         }
 
-        // Use mouseup/touchend for finalizing selection instead of selectionchange (too noisy)
         const onMouseUp = () => handleSelection()
-
         document.addEventListener('mouseup', onMouseUp)
-        document.addEventListener('touchend', onMouseUp) // Some mobile browsers need this
+        document.addEventListener('touchend', onMouseUp)
 
         return () => {
             document.removeEventListener('mouseup', onMouseUp)
@@ -161,26 +175,29 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
         }
     }, [])
 
-    // Apply Color to Selected Verses
     const applyColor = async (color: string) => {
         const newHighlights = [...highlights]
         const persistence = await import("@/lib/persistence")
 
         for (const vId of selectedVerses) {
-            // Remove existing if any
             const existingIdx = newHighlights.findIndex(h => h.verse === vId)
+            let noteToKeep = existingIdx !== -1 ? newHighlights[existingIdx].note : undefined
+            let idToKeep = existingIdx !== -1 ? newHighlights[existingIdx].id : undefined // Preserve ID for safe update
+
+            // If we are applying color, remove old entry to replace in local state (logic for display)
+            // But we must reuse the ID if we want persistence to UPDATE instead of INSERT (duplicate)
             if (existingIdx !== -1) newHighlights.splice(existingIdx, 1)
 
-            // Find text
             const verseData = chapter.verses.find(v => v.verse === vId)
-
             if (verseData) {
                 const h: Highlight = {
+                    id: idToKeep, // PASS ID
                     book: bookName,
                     chapter: chapterNum,
                     verse: vId,
                     color,
                     content: verseData.text,
+                    note: noteToKeep, // Preserve note
                     created_at: new Date().toISOString()
                 }
                 newHighlights.push(h)
@@ -193,10 +210,54 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
         window.getSelection()?.removeAllRanges()
     }
 
+    const saveNote = async () => {
+        const newHighlights = [...highlights]
+        const persistence = await import("@/lib/persistence")
+
+        // Optimistic Update
+        for (const vId of selectedVerses) {
+            const existingIdx = newHighlights.findIndex(h => h.verse === vId)
+
+            if (existingIdx !== -1) {
+                // Update existing
+                newHighlights[existingIdx] = {
+                    ...newHighlights[existingIdx], // Preserves ID and Color
+                    note: noteContent
+                }
+            } else {
+                // Create new with default color
+                const verseData = chapter.verses.find(v => v.verse === vId)
+                if (verseData) {
+                    const h: Highlight = {
+                        book: bookName,
+                        chapter: chapterNum,
+                        verse: vId,
+                        color: defaultHighlightColor,
+                        content: verseData.text,
+                        note: noteContent,
+                        created_at: new Date().toISOString()
+                    }
+                    newHighlights.push(h)
+                }
+            }
+        }
+
+        setHighlights(newHighlights)
+        setMenuOpen(false)
+        setIsNoteMode(false)
+
+        // Persist
+        for (const vId of selectedVerses) {
+            const h = newHighlights.find(h => h.verse === vId)
+            if (h) {
+                await persistence.saveHighlight(h)
+            }
+        }
+    }
+
     const clearSelection = async () => {
         const newHighlights = highlights.filter(h => !selectedVerses.includes(h.verse))
         setHighlights(newHighlights)
-
         const persistence = await import("@/lib/persistence")
         for (const vId of selectedVerses) {
             await persistence.removeHighlight(bookName, chapterNum, vId)
@@ -221,39 +282,82 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                 "w-full max-w-[720px] mx-auto px-6 py-8 transition-all duration-300 ease-in-out relative",
                 getFontClass()
             )}
-            style={{
-                fontSize: `${fontSize}px`,
-                lineHeight: lineHeight,
-            }}
+            style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight }}
         >
             {/* Elegant Floating Highlight Menu */}
             {menuOpen && (
                 <div
-                    className="fixed z-50 flex items-center gap-2 p-2 bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-full animate-in fade-in zoom-in-95 duration-200"
+                    className={cn(
+                        "fixed z-50 flex items-center gap-2 p-2 bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-full animate-in fade-in zoom-in-95 duration-200",
+                        isNoteMode && "rounded-2xl p-4 flex-col items-stretch w-64"
+                    )}
                     style={{
                         top: menuPosition.top,
                         left: menuPosition.left,
-                        transform: 'translate(-50%, -10px)' // Center horizontal, slightly up
+                        transform: 'translate(-50%, -10px)'
                     }}
                 >
-                    {HIGHLIGHT_COLORS.map(c => (
-                        <button
-                            key={c.id}
-                            onClick={() => applyColor(c.id)}
-                            className={cn(
-                                "w-8 h-8 rounded-full border transition-transform hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring",
-                                c.class,
-                                c.border
-                            )}
-                        />
-                    ))}
-                    <div className="w-[1px] h-6 bg-border mx-1" />
-                    <button
-                        onClick={clearSelection}
-                        className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </button>
+                    {!isNoteMode ? (
+                        <>
+                            {HIGHLIGHT_COLORS.map(c => (
+                                <button
+                                    key={c.id}
+                                    onClick={() => applyColor(c.id)}
+                                    className={cn(
+                                        "w-8 h-8 rounded-full border transition-transform hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring",
+                                        c.class, c.border
+                                    )}
+                                />
+                            ))}
+                            <div className="w-[1px] h-6 bg-border mx-1" />
+
+                            {/* Note Button */}
+                            <button
+                                onClick={() => setIsNoteMode(true)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                            >
+                                <StickyNote className="h-4 w-4" />
+                            </button>
+
+                            <button
+                                onClick={clearSelection}
+                                className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </button>
+                        </>
+                    ) : (
+                        // Note Input Mode
+                        <div className="flex flex-col gap-2 w-full">
+                            <textarea
+                                value={noteContent}
+                                onChange={(e) => setNoteContent(e.target.value)}
+                                placeholder="Add a note..."
+                                className="w-full bg-transparent border-none focus:ring-0 resize-none text-sm placeholder:text-muted-foreground/50 h-20 p-1 font-sans focus:outline-none"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        saveNote();
+                                    }
+                                }}
+                            />
+                            <div className="flex justify-end gap-2">
+                                <button
+                                    onClick={() => { setIsNoteMode(false); setMenuOpen(false); }}
+                                    className="p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                                <button
+                                    onClick={saveNote}
+                                    className="p-1.5 rounded-full hover:bg-primary/20 text-primary transition-colors"
+                                >
+                                    <Check className="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -263,6 +367,7 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                     className="fixed inset-0 z-40 bg-transparent"
                     onClick={() => {
                         setMenuOpen(false)
+                        setIsNoteMode(false)
                         window.getSelection()?.removeAllRanges()
                     }}
                 />
@@ -297,6 +402,8 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                                     )}
                                     // Click Handler (Default Highlight)
                                     onClick={() => handleVerseClick(verse.verse, verse.text)}
+                                    // Right Click (Context Menu)
+                                    onContextMenu={(e) => handleContextMenu(e, verse.verse)}
                                     // Long Press Handlers (Menu)
                                     onMouseDown={(e) => handleTouchStart(verse.verse, e)}
                                     onMouseUp={handleTouchEnd}
@@ -315,6 +422,12 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                                     )}>
                                         {verse.text}
                                     </span>
+                                    {/* Small Note Indicator */}
+                                    {highlight?.note && (
+                                        <sup className="ml-0.5 text-[0.6em] text-yellow-500/80 select-none">
+                                            <StickyNote className="h-2 w-2 inline" />
+                                        </sup>
+                                    )}
                                 </motion.span>
                                 {" "}
                             </React.Fragment>

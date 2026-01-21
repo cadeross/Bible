@@ -139,7 +139,7 @@ export function QuickSelector({
                     </PopoverAnchor>
                     <PopoverContent
                         className={cn(
-                            "p-0 bg-background/95 backdrop-blur-xl border-border/50 shadow-xl overflow-hidden mt-1",
+                            "p-0 bg-background/95 backdrop-blur-xl border border-border/50 shadow-xl overflow-hidden mt-1",
                             popoverWidth
                         )}
                         align="start"

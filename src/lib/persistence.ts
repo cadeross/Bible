@@ -2,68 +2,125 @@
 
 import { createClient } from "./supabase/client";
 
-// This service will handle saving notes/highlights.
-// If Supabase is available (keys exist + user logged in), it syncs.
-// Else it could fallback to console warn or local storage.
-
+// Types
 export interface Highlight {
-    id?: string;
+    id?: number;
     book: string;
     chapter: number;
     verse: number;
     color: string;
-    content?: string; // Verse text
+    content: string;
+    note?: string; // Add note field
     created_at: string;
+    user_id?: string;
 }
+
+export interface SavedWisdom {
+    id?: number;
+    content: string;
+    source: string; // e.g. "Proverbs 3:5"
+    created_at: string;
+    user_id?: string;
+}
+
+// --- Highlights ---
 
 export async function saveHighlight(highlight: Highlight) {
     const supabase = createClient();
-
-    // Check if session exists
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session) {
-        // Upsert to avoid duplicates if possible, though ID might be new. 
-        // We'll rely on simple insert for now, assuming UI prevents double click spam or handling it gracefully.
-        const { error } = await supabase.from('highlights').insert([
-            {
-                user_id: session.user.id,
-                book: highlight.book,
-                chapter: highlight.chapter,
-                verse: highlight.verse,
-                content: highlight.content,
-                color: highlight.color
+        // Safe Save: Check existence first to avoid relying on DB Unique Constraints
+        // Use .limit(1) to handle potential duplicates (dirty DB) without crashing
+        // Explicitly check columns instead of .match to avoid ambiguity
+        // ORDER BY DESC: Ensure we find the MOST RECENT entry if duplicates exist
+        const { data: existingRows } = await supabase
+            .from('highlights')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .eq('book', highlight.book)
+            .eq('chapter', highlight.chapter)
+            .eq('verse', highlight.verse)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        const existing = existingRows && existingRows.length > 0 ? existingRows[0] : null;
+        console.log("Persistence: Finding existing row for verse", highlight.verse, "Found ID:", existing?.id);
+
+        if (existing) {
+            // Update existing (the newest one)
+            console.log("Persistence: Updating existing ID", existing.id, "with color:", highlight.color, "note:", highlight.note);
+            const { error } = await supabase
+                .from('highlights')
+                .update({
+                    color: highlight.color,
+                    note: highlight.note,
+                    content: highlight.content // Update content in case it changed
+                })
+                .eq('id', existing.id);
+
+            if (error) {
+                console.error("Error updating highlight", JSON.stringify(error, null, 2));
+                throw error;
             }
-        ]);
-        if (error) {
-            console.error("Error saving highlight", error);
-            throw error;
+        } else {
+            console.log("Persistence: Inserting new record for", highlight.verse);
+            // Insert new
+            const { error } = await supabase
+                .from('highlights')
+                .insert([{
+                    user_id: session.user.id,
+                    book: highlight.book,
+                    chapter: highlight.chapter,
+                    verse: highlight.verse,
+                    content: highlight.content,
+                    color: highlight.color,
+                    note: highlight.note
+                }]);
+
+            if (error) {
+                console.error("Error inserting highlight", JSON.stringify(error, null, 2));
+                throw error;
+            }
         }
     } else {
-        // Helper to get local data safely
-        if (typeof window !== 'undefined') {
-            const local = JSON.parse(localStorage.getItem('local_highlights') || '[]');
-            local.push(highlight);
-            localStorage.setItem('local_highlights', JSON.stringify(local));
-        }
+        // Local Storage Fallback
+        const local = localStorage.getItem("highlights");
+        let items: Highlight[] = local ? JSON.parse(local) : [];
+
+        // Remove existing for this verse if any (to update)
+        items = items.filter(h => !(h.book === highlight.book && h.chapter === highlight.chapter && h.verse === highlight.verse));
+
+        items.push(highlight);
+        localStorage.setItem("highlights", JSON.stringify(items));
     }
 }
-
 
 export async function removeHighlight(book: string, chapter: number, verse: number) {
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session) {
-        const { error } = await supabase.from('highlights').delete().match({ book, chapter, verse, user_id: session.user.id });
+        // We delete by matching fields. If multiple exist, this deletes all matches, which is good.
+        const { error } = await supabase
+            .from('highlights')
+            .delete()
+            .match({
+                user_id: session.user.id,
+                book,
+                chapter,
+                verse
+            });
+
         if (error) {
             console.error("Error removing highlight", error);
         }
     } else {
-        if (typeof window !== 'undefined') {
-            const local = JSON.parse(localStorage.getItem('local_highlights') || '[]');
-            const filtered = local.filter((h: Highlight) => !(h.book === book && h.chapter === chapter && h.verse === verse));
-            localStorage.setItem('local_highlights', JSON.stringify(filtered));
+        const local = localStorage.getItem("highlights");
+        if (local) {
+            let items: Highlight[] = JSON.parse(local);
+            items = items.filter(h => !(h.book === book && h.chapter === chapter && h.verse === verse));
+            localStorage.setItem("highlights", JSON.stringify(items));
         }
     }
 }
@@ -76,8 +133,13 @@ export async function getHighlights(book: string, chapter: number): Promise<High
         const { data, error } = await supabase
             .from('highlights')
             .select('*')
-            .eq('book', book)
-            .eq('chapter', chapter);
+            .match({
+                user_id: session.user.id,
+                book,
+                chapter
+            })
+            // IMPORTANT: Sort by newest first, so iterating (e.g. .find()) hits the latest update
+            .order('created_at', { ascending: false });
 
         if (error) {
             console.error("Error fetching highlights", error);
@@ -85,12 +147,13 @@ export async function getHighlights(book: string, chapter: number): Promise<High
         }
         return data || [];
     } else {
-        if (typeof window !== 'undefined') {
-            const local = JSON.parse(localStorage.getItem('local_highlights') || '[]');
-            return local.filter((h: Highlight) => h.book === book && h.chapter === chapter) as Highlight[];
+        const local = localStorage.getItem("highlights");
+        if (local) {
+            const items: Highlight[] = JSON.parse(local);
+            return items.filter(h => h.book === book && h.chapter === chapter);
         }
+        return [];
     }
-    return [];
 }
 
 export async function getAllHighlights(): Promise<Highlight[]> {
@@ -101,6 +164,7 @@ export async function getAllHighlights(): Promise<Highlight[]> {
         const { data, error } = await supabase
             .from('highlights')
             .select('*')
+            .eq('user_id', session.user.id) // security policy usually handles this but good to be explicit
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -109,41 +173,49 @@ export async function getAllHighlights(): Promise<Highlight[]> {
         }
         return data || [];
     } else {
-        if (typeof window !== 'undefined') {
-            return JSON.parse(localStorage.getItem('local_highlights') || '[]');
-        }
+        const local = localStorage.getItem("highlights");
+        return local ? JSON.parse(local) : [];
     }
-    return [];
 }
 
-export interface SavedWisdom {
-    id?: string;
-    content: string;
-    source?: string;
-    created_at: string;
-}
+// --- Wisdom (Saved Quotes) ---
 
 export async function saveWisdom(wisdom: SavedWisdom) {
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session) {
-        const { error } = await supabase.from('saved_wisdom').insert([
-            {
+        // Check for duplicate content to avoid spamming same quote
+        const { data: existingRows } = await supabase
+            .from('saved_wisdom')
+            .select('id')
+            .match({
                 user_id: session.user.id,
-                content: wisdom.content,
-                source: wisdom.source
-            }
-        ]);
-        if (error) {
-            console.error("Error saving wisdom", error);
-            throw error;
+                content: wisdom.content
+            })
+            .limit(1);
+
+        const existing = existingRows && existingRows.length > 0 ? existingRows[0] : null;
+
+        if (!existing) {
+            const { error } = await supabase
+                .from('saved_wisdom')
+                .insert([{
+                    user_id: session.user.id,
+                    content: wisdom.content,
+                    source: wisdom.source,
+                    created_at: wisdom.created_at
+                }]);
+
+            if (error) console.error("Error saving wisdom", error);
         }
     } else {
-        if (typeof window !== 'undefined') {
-            const local = JSON.parse(localStorage.getItem('local_wisdom') || '[]');
-            local.push(wisdom);
-            localStorage.setItem('local_wisdom', JSON.stringify(local));
+        // Local
+        const local = localStorage.getItem("wisdom");
+        let items: SavedWisdom[] = local ? JSON.parse(local) : [];
+        if (!items.find(i => i.content === wisdom.content)) {
+            items.push(wisdom);
+            localStorage.setItem("wisdom", JSON.stringify(items));
         }
     }
 }
@@ -156,6 +228,7 @@ export async function getAllWisdom(): Promise<SavedWisdom[]> {
         const { data, error } = await supabase
             .from('saved_wisdom')
             .select('*')
+            .eq('user_id', session.user.id)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -164,9 +237,7 @@ export async function getAllWisdom(): Promise<SavedWisdom[]> {
         }
         return data || [];
     } else {
-        if (typeof window !== 'undefined') {
-            return JSON.parse(localStorage.getItem('local_wisdom') || '[]');
-        }
+        const local = localStorage.getItem("wisdom");
+        return local ? JSON.parse(local) : [];
     }
-    return [];
 }

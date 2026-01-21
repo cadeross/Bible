@@ -61,7 +61,7 @@ export function Footer() {
                     <span className="pb-px">github</span>
                 </a>
                 <a
-                    href="https://x.com/cadeccr"
+                    href="https://x.com/cadeross"
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center gap-2 hover:text-primary transition-colors group"
