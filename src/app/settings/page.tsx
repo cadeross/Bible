@@ -15,6 +15,11 @@ const HIGHLIGHT_COLORS = [
     { id: "purple", class: "bg-purple-500/30", border: "border-purple-500/50" },
 ]
 
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { Switch } from "@/components/ui/switch"
+import { toast } from "sonner"
+
 export default function SettingsPage() {
     const { theme, setTheme } = useTheme()
     const {
@@ -29,6 +34,39 @@ export default function SettingsPage() {
         defaultHighlightColor,
         setDefaultHighlightColor
     } = useReadingPreferences()
+
+    // User State for Preferences
+    const [user, setUser] = useState<any>(null);
+    const supabase = createClient();
+
+    useEffect(() => {
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+        };
+        getUser();
+    }, [supabase]);
+
+    const handleVerseEmailToggle = async (checked: boolean) => {
+        if (!user) {
+            toast.error("Please sign in to change this setting");
+            return;
+        }
+        // Optimistic
+        const updatedUser = { ...user, user_metadata: { ...user.user_metadata, daily_verse_emails: checked } };
+        setUser(updatedUser);
+
+        const { error } = await supabase.auth.updateUser({
+            data: { daily_verse_emails: checked }
+        });
+
+        if (error) {
+            toast.error("Failed to update preference");
+            setUser(user); // revert
+        } else {
+            toast.success(checked ? "Subscribed to daily verses" : "Unsubscribed");
+        }
+    };
 
     // Helper for section groups
     const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
@@ -97,6 +135,26 @@ export default function SettingsPage() {
             </div>
 
             <div className="grid gap-12">
+
+                {/* ACCOUNT */}
+                <Section title="Account">
+                    <SettingRow label="Profile" description="manage your account statistics">
+                        <Link href="/profile">
+                            <button className="flex items-center gap-2 text-xs font-mono text-primary hover:underline underline-offset-4 decoration-primary/50 transition-all">
+                                <User className="h-3 w-3" />
+                                view stats
+                            </button>
+                        </Link>
+                    </SettingRow>
+
+                    <SettingRow label="Daily Verse Email" description="receive a verse every morning">
+                        <Switch
+                            checked={user?.user_metadata?.daily_verse_emails ?? false}
+                            onCheckedChange={handleVerseEmailToggle}
+                            disabled={!user}
+                        />
+                    </SettingRow>
+                </Section>
 
                 {/* APPEARANCE */}
                 <Section title="Appearance">
@@ -202,18 +260,6 @@ export default function SettingsPage() {
                                 />
                             ))}
                         </div>
-                    </SettingRow>
-                </Section>
-
-                {/* ACCOUNT */}
-                <Section title="Account">
-                    <SettingRow label="Profile Settings" description="manage your account and data">
-                        <Link href="/profile">
-                            <button className="flex items-center gap-2 text-xs font-mono text-primary hover:underline underline-offset-4 decoration-primary/50 transition-all">
-                                <User className="h-3 w-3" />
-                                go to profile
-                            </button>
-                        </Link>
                     </SettingRow>
                 </Section>
 

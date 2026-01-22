@@ -52,7 +52,15 @@ export async function getAllTranslations() {
             abbreviation: t.id
         }));
 
-        return [...legacyTranslations, ...apiTranslations];
+        // Deduplicate: Filter out API translations that match legacy IDs
+        const legacyIds = new Set(legacyTranslations.map(t => t.id.toLowerCase()));
+        const uniqueApiTranslations = apiTranslations.filter(t =>
+            (!t.abbreviation || !legacyIds.has(t.abbreviation.toLowerCase())) &&
+            t.abbreviation?.toUpperCase() !== 'MSG' &&
+            !t.name.includes("The Message")
+        );
+
+        return [...legacyTranslations, ...uniqueApiTranslations];
     } catch (e) {
         console.error("Failed to load API translations", e);
         return TRANSLATIONS;
@@ -64,95 +72,75 @@ const BASE_URL = 'https://bible-api.com';
 import { getChapterText as getApiBibleChapter, getAvailableBibles } from './api-bible';
 
 export async function getChapter(book: string, chapter: number, translation: string = 'web'): Promise<BibleChapter> {
-    // Check if it's a legacy translation or an API.bible translation
-    // API.bible IDs are usually longer UUIDs (e.g. "de4e12af7f28f599-01")
-    // Legacy IDs are short (e.g. "kjv", "web")
     const isLegacy = TRANSLATIONS.some(t => t.id === translation);
 
     if (isLegacy) {
-        // Clean book name
         const cleanBook = book.toLowerCase().replace(/\s/g, '');
         const res = await fetch(`${BASE_URL}/${cleanBook}+${chapter}?translation=${translation}`);
         if (!res.ok) throw new Error('Failed to fetch chapter');
-        return res.json();
+        const data = await res.json();
+        return {
+            ...data,
+            translation_note: data.translation_note || "Public Domain"
+        };
     } else {
-        // Use API.bible
-        // We need the Bible ID. The 'translation' arg here IS the bibleId.
-        // And we need the Book ID (e.g. "GEN")
         const bookId = getBookId(book);
         const chapterId = `${bookId}.${chapter}`;
 
         const data = await getApiBibleChapter(translation, chapterId);
         if (!data) throw new Error('Failed to fetch chapter from API.bible');
 
-        // Parse HTML content to verses
-        // Content usually looks like: <span data-v="GEN.1.1" class="v">1</span> In the beginning...
-        // We need to extract text for each verse.
-        // This is a simplified regex parser. Robust parsing requires a DOM parser (cheerio or browser DOM).
-        // Since we are likely on client, we can use DOMParser if window exists, or regex fallback.
-
         const verses: BibleVerse[] = [];
         let cleanText = "";
 
-        if (typeof window !== 'undefined') {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(data.content, 'text/html');
+        // Universal Regex Parser (Works on Server & Client)
+        // Matches verse spans like <span data-number="1" ...>1</span>
+        // We capture the whole tag to find its position.
+        const verseTagRegex = /<span[^>]*data-number="(\d+)"[^>]*>.*?<\/span>/gi;
 
-            // Extract verses
-            // Strategy: Find all verse spans/elements, get text between them.
-            // API.bible structure varies. Common: <span data-v="GEN.1.1">...</span>
-            // Or just spans with class 'v'. 
-            // Better: Request 'text' content type? No, sticking to HTML as planned.
+        let match;
+        let lastIndex = 0;
+        let lastVerse: BibleVerse | null = null;
 
-            // Actually, for immediate robustness without complex parsing, let's treat the whole chapter as one verse 
-            // OR try to split by verse numbers.
-            // Let's try to extract basic text.
-            cleanText = doc.body.textContent || "";
+        // Helper to strip HTML tags from text
+        const stripHtml = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
-            // Mocking verses logic for now:
-            // Converting the whole text into a single "verse" 1 if parsing fails, 
-            // or splitting by regex if possible.
-            // A simple regex approach for API.bible text (if we used text format): [1] ... [2] ...
+        while ((match = verseTagRegex.exec(data.content)) !== null) {
+            // Found a verse start
+            const [fullTag, numStr] = match;
+            const currentIndex = match.index;
 
-            // Let's rely on a simple breakdown.
-            // We'll create a single "verse" block for the chapter text to preserve readability if parsing is hard.
-            // BUT highlighting works on verse level.
-            // Let's try to find verse markers.
-
-            const verseSpans = doc.querySelectorAll('span[data-v]');
-            if (verseSpans.length > 0) {
-                verseSpans.forEach((span) => {
-                    const vRef = span.getAttribute('data-v'); // GEN.1.1
-                    if (vRef) {
-                        const parts = vRef.split('.');
-                        const vNum = parseInt(parts[2]);
-                        // The text IS inside the span usually? Or after?
-                        // API.bible: <span ...>1</span> TEXT...
-                        // The text is a sibling node usually.
-
-                        let text = "";
-                        let next = span.nextSibling;
-                        while (next && next.nodeName !== 'SPAN') { // very naive
-                            text += next.textContent;
-                            next = next.nextSibling;
-                        }
-
-                        verses.push({
-                            book_id: bookId,
-                            book_name: book,
-                            chapter: chapter,
-                            verse: vNum,
-                            text: text.trim()
-                        });
-                    }
-                });
+            // If we have a previous verse, its text ends here
+            if (lastVerse) {
+                const rawText = data.content.substring(lastIndex, currentIndex);
+                lastVerse.text = stripHtml(rawText);
+                verses.push(lastVerse);
             }
+
+            // Start new verse
+            lastVerse = {
+                book_id: bookId,
+                book_name: book,
+                chapter: chapter,
+                verse: parseInt(numStr), // Use the number inside the tag
+                text: "" // Will be filled in next iteration or end of loop
+            };
+
+            // Update lastIndex to be AFTER this tag
+            lastIndex = currentIndex + fullTag.length;
         }
 
-        // Fallback if no verses found (e.g. server side or parsing failed)
+        // Handle the last verse (text from last tag to end of content)
+        if (lastVerse) {
+            const rawText = data.content.substring(lastIndex);
+            lastVerse.text = stripHtml(rawText);
+            verses.push(lastVerse);
+        }
+
+        // Fallback: If regex failed (no standard verse tags found), try to just strip HTML and return one verse
         if (verses.length === 0) {
-            // Remove HTML tags
-            const text = data.content.replace(/<[^>]*>/g, '');
+            const text = stripHtml(data.content);
+            cleanText = text; // For the chapter text field
             verses.push({
                 book_id: bookId,
                 book_name: book,
@@ -160,6 +148,21 @@ export async function getChapter(book: string, chapter: number, translation: str
                 verse: 1,
                 text: text
             });
+        } else {
+            cleanText = verses.map(v => v.text).join(' ');
+        }
+
+        let translationName = "API Version";
+        try {
+            // Find the translation name from the available bibles list
+            // Optimization: In a real app we might cache this list or pass it in.
+            // But since getAvailableBibles is largely static or cached by Next.js if configured, it might be okay.
+            // Better: use the 'bibles' endpoint for single ID if available, but getAvailableBibles is what we have helper for.
+            const allBibles = await getAvailableBibles();
+            const bible = allBibles.find(b => b.id === translation);
+            if (bible) translationName = bible.name;
+        } catch (e) {
+            console.warn("Could not fetch translation details for name", e);
         }
 
         return {
@@ -167,7 +170,7 @@ export async function getChapter(book: string, chapter: number, translation: str
             verses: verses,
             text: cleanText,
             translation_id: translation,
-            translation_name: "API Version", // We could fetch this info or pass it
+            translation_name: translationName,
             translation_note: data.copyright
         };
     }

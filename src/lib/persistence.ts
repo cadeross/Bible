@@ -241,3 +241,63 @@ export async function getAllWisdom(): Promise<SavedWisdom[]> {
         return local ? JSON.parse(local) : [];
     }
 }
+// --- Reading History ---
+
+export interface ReadingHistory {
+    id?: number;
+    book: string;
+    chapter: number;
+    words_read: number;
+    duration_seconds?: number; // New field for time tracking
+    completed_at: string;
+    user_id?: string;
+}
+
+export async function saveHistory(history: ReadingHistory) {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session) {
+        // Just insert. We treat every chapter visit/read as an event.
+        const { error } = await supabase
+            .from('reading_history')
+            .insert([{
+                user_id: session.user.id,
+                book: history.book,
+                chapter: history.chapter,
+                words_read: history.words_read,
+                duration_seconds: history.duration_seconds || 0, // Ensure value
+                completed_at: history.completed_at
+            }]);
+
+        if (error) console.error("Error saving history", error);
+    } else {
+        const local = localStorage.getItem("reading_history");
+        const items: ReadingHistory[] = local ? JSON.parse(local) : [];
+        items.push(history);
+        localStorage.setItem("reading_history", JSON.stringify(items));
+    }
+}
+
+export async function getHistory(): Promise<ReadingHistory[]> {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session) {
+        const { data, error } = await supabase
+            .from('reading_history')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('completed_at', { ascending: false });
+
+        if (error) {
+            // Silently fail if table doesn't exist yet (common in dev before migration)
+            // console.warn("History fetch failed, likely no table yet.", error.message);
+            return [];
+        }
+        return data || [];
+    } else {
+        const local = localStorage.getItem("reading_history");
+        return local ? JSON.parse(local) : [];
+    }
+}

@@ -34,6 +34,34 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
     // Ref for the container to limit selection scope
     const containerRef = React.useRef<HTMLDivElement>(null)
 
+    // Log Reading History
+    // Log Reading History (Time Tracking)
+    const startTimeRef = React.useRef(Date.now());
+
+    React.useEffect(() => {
+        startTimeRef.current = Date.now();
+
+        return () => {
+            // Cleanup: Log Duration
+            const duration = (Date.now() - startTimeRef.current) / 1000;
+            if (duration < 5) return; // Ignore very short visits
+
+            const wordCount = chapter.verses.reduce((acc, v) => acc + v.text.split(/\s+/).length, 0);
+
+            const historyEntry = {
+                book: bookName,
+                chapter: chapterNum,
+                words_read: wordCount,
+                duration_seconds: Math.round(duration),
+                completed_at: new Date().toISOString()
+            };
+
+            import("@/lib/persistence").then(({ saveHistory }) => {
+                saveHistory(historyEntry);
+            });
+        };
+    }, [bookName, chapterNum, chapter]);
+
     // Load highlights on mount
     React.useEffect(() => {
         import("@/lib/persistence").then(({ getHighlights }) => {
@@ -328,6 +356,15 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                         )
                     })}
                 </div>
+
+                {/* Citation / Copyright */}
+                {chapter.translation_note && (
+                    <div className="mt-12 text-center opacity-40 hover:opacity-80 transition-opacity">
+                        <p className="text-[10px] font-mono leading-relaxed max-w-lg mx-auto">
+                            {chapter.translation_note}
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     )

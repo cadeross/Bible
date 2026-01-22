@@ -25,7 +25,7 @@ const BASE_URL = 'https://rest.api.bible/v1';
 
 // Server-side only helper to get the key safely
 function getApiKey() {
-    return process.env.NEXT_PUBLIC_API_BIBLE_KEY || '';
+    return process.env.API_BIBLE_KEY || '';
 }
 
 export async function getAvailableBibles(): Promise<BibleVersion[]> {

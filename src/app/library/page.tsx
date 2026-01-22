@@ -5,7 +5,7 @@ import Link from "next/link";
 import { getAllHighlights, getAllWisdom, Highlight, SavedWisdom } from "@/lib/persistence";
 import { PenTool, ArrowRight, BookOpen, Heart, Quote } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { motion, AnimatePresence } from "framer-motion";
 import { BIBLE_BOOKS } from "@/lib/bible-data";
 
 interface GroupedHighlight extends Highlight {
@@ -87,17 +87,21 @@ export default function LibraryPage() {
 
     }, [rawHighlights]);
 
+    const [activeTab, setActiveTab] = useState<'highlights' | 'wisdom'>('highlights');
+
     if (loading) {
         return (
-            <div className="flex min-h-screen items-center justify-center font-mono">
-                <div className="animate-pulse text-muted-foreground">loading library...</div>
+            <div className="flex min-h-screen items-center justify-center">
+                <div className="w-16 h-1 bg-muted overflow-hidden">
+                    <div className="w-full h-full bg-primary animate-progress origin-left-right" />
+                </div>
             </div>
         );
     }
 
     if (rawHighlights.length === 0 && wisdom.length === 0) {
         return (
-            <div className="flex min-h-screen flex-col items-center justify-center p-4 font-mono">
+            <div className="flex min-h-[80vh] flex-col items-center justify-center p-4 font-mono">
                 <div className="text-center space-y-4">
                     <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center mx-auto text-muted-foreground">
                         <PenTool className="h-8 w-8" />
@@ -106,7 +110,7 @@ export default function LibraryPage() {
                     <p className="text-sm text-muted-foreground max-w-xs mx-auto">
                         start reading to highlight verses or save daily wisdom.
                     </p>
-                    <Link href="/read" className="inline-flex items-center gap-2 text-primary hover:underline underline-offset-4 mt-4">
+                    <Link href="/read" className="inline-flex items-center gap-2 text-primary hover:underline underline-offset-4 mt-4 text-xs tracking-wide">
                         start reading <ArrowRight className="h-4 w-4" />
                     </Link>
                 </div>
@@ -115,127 +119,148 @@ export default function LibraryPage() {
     }
 
     return (
-        <div className="container max-w-4xl mx-auto py-24 px-4 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 font-mono">
+        <div className="w-full max-w-[720px] mx-auto px-6 py-12 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
             {/* Header */}
-            <div className="flex items-center gap-4 border-b border-border/50 pb-8">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <BookOpen className="h-6 w-6" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-border/50 pb-8">
+                <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                        <BookOpen className="h-6 w-6" />
+                    </div>
+                    <div className="space-y-1">
+                        <h1 className="text-2xl font-bold tracking-tight font-mono text-primary">library</h1>
+                        <p className="text-muted-foreground text-xs font-mono">
+                            your collection of verses and wisdom
+                        </p>
+                    </div>
                 </div>
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-bold tracking-tight text-primary">library</h1>
-                    <p className="text-muted-foreground text-sm">
-                        your collection of verses and wisdom
-                    </p>
+
+                {/* Custom Fluid Toggle */}
+                <div className="flex p-1 border border-border/60 rounded-lg self-start sm:self-center">
+                    {[
+                        { id: 'highlights', count: groupedHighlights.length, icon: PenTool },
+                        { id: 'wisdom', count: wisdom.length, icon: Heart }
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            title={`${tab.id} (${tab.count})`}
+                            className={cn(
+                                "relative px-3 py-1.5 rounded-sm transition-colors flex items-center justify-center z-10",
+                                activeTab === tab.id ? "text-primary" : "text-muted-foreground hover:text-foreground/80"
+                            )}
+                        >
+                            {activeTab === tab.id && (
+                                <motion.div
+                                    layoutId="activeTab"
+                                    className="absolute inset-0 bg-primary/10 rounded-sm -z-10"
+                                    transition={{ type: "spring", bounce: 0.1, duration: 0.5 }}
+                                />
+                            )}
+                            <tab.icon className="h-4 w-4" />
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            <Tabs defaultValue="highlights" className="w-full">
-                <TabsList className="grid w-full max-w-[400px] grid-cols-2 mb-8 bg-transparent p-0">
-                    <TabsTrigger
-                        value="highlights"
-                        className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-all justify-start px-0 pb-2"
-                    >
-                        <span className="flex items-center gap-2">
-                            <PenTool className="h-4 w-4" /> highlights ({groupedHighlights.length})
-                        </span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="wisdom"
-                        className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-all justify-start px-0 pb-2"
-                    >
-                        <span className="flex items-center gap-2">
-                            <Heart className="h-4 w-4" /> wisdom ({wisdom.length})
-                        </span>
-                    </TabsTrigger>
-                </TabsList>
+            <div className="space-y-8">
+                {/* Content */}
+                <div className="min-h-[200px]">
 
-                <TabsContent value="highlights" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    {groupedHighlights.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground italic">no highlights yet.</div>
-                    ) : (
-                        <div className="grid grid-cols-1 gap-6">
-                            {groupedHighlights.map((highlight, idx) => (
-                                <Link
-                                    key={highlight.id || idx}
-                                    href={`/read/${highlight.book}/${highlight.chapter}?translation=dra`}
-                                    className={cn(
-                                        "group relative block p-6 rounded-lg bg-muted/20 hover:bg-muted/40 transition-all border border-transparent hover:border-primary/20",
-                                        // Optional: Add colored border left based on highlight color?
-                                        // highlight.color === 'yellow' && "border-l-yellow-500 border-l-4"
-                                    )}
-                                >
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2">
-                                                {/* Color Dot Indicator */}
-                                                <span className={cn(
-                                                    "w-2 h-2 rounded-full",
-                                                    highlight.color === "yellow" && "bg-yellow-500",
-                                                    highlight.color === "green" && "bg-green-500",
-                                                    highlight.color === "blue" && "bg-blue-500",
-                                                    highlight.color === "pink" && "bg-pink-500",
-                                                    highlight.color === "purple" && "bg-purple-500",
-                                                )} />
-                                                {highlight.book} {highlight.chapter}:{highlight.verse}{highlight.verseEnd > highlight.verse ? `-${highlight.verseEnd}` : ''}
-                                            </span>
-                                            <span className="text-[10px] text-muted-foreground/50">
-                                                {new Date(highlight.created_at).toLocaleDateString()}
-                                            </span>
-                                        </div>
-
-                                        <p className="text-sm md:text-base leading-relaxed text-foreground/80 group-hover:text-foreground transition-colors font-serif italic line-clamp-3">
-                                            "{highlight.content || "view verse content"}"
-                                        </p>
-
-                                        <div className="absolute right-6 bottom-6 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
-                                            <ArrowRight className="h-4 w-4 text-primary" />
-                                        </div>
+                    <AnimatePresence mode="wait">
+                        {activeTab === 'highlights' ? (
+                            <motion.div
+                                key="highlights"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="space-y-6"
+                            >
+                                {groupedHighlights.length === 0 ? (
+                                    <div className="text-center py-12 text-muted-foreground italic font-mono text-sm">no highlights yet.</div>
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {groupedHighlights.map((highlight, idx) => (
+                                            <Link
+                                                key={highlight.id || idx}
+                                                href={`/read/${highlight.book}/${highlight.chapter}?translation=dra`}
+                                                className={cn(
+                                                    "group relative block p-4 rounded-md bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20",
+                                                )}
+                                            >
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2 font-mono">
+                                                            <span className={cn(
+                                                                "w-1.5 h-1.5 rounded-full",
+                                                                highlight.color === "yellow" && "bg-yellow-500",
+                                                                highlight.color === "green" && "bg-green-500",
+                                                                highlight.color === "blue" && "bg-blue-500",
+                                                                highlight.color === "pink" && "bg-pink-500",
+                                                                highlight.color === "purple" && "bg-purple-500",
+                                                            )} />
+                                                            {highlight.book} {highlight.chapter}:{highlight.verse}{highlight.verseEnd > highlight.verse ? `-${highlight.verseEnd}` : ''}
+                                                        </span>
+                                                        <span className="text-[10px] text-muted-foreground/50 font-mono">
+                                                            {new Date(highlight.created_at).toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm leading-relaxed text-foreground/90 group-hover:text-foreground transition-colors font-serif italic line-clamp-3">
+                                                        "{highlight.content || "view verse content"}"
+                                                    </p>
+                                                </div>
+                                            </Link>
+                                        ))}
                                     </div>
-                                </Link>
-                            ))}
-                        </div>
-                    )}
-                </TabsContent>
-
-
-
-                <TabsContent value="wisdom" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    {wisdom.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground italic">no saved wisdom yet.</div>
-                    ) : (
-                        <div className="grid grid-cols-1 gap-6">
-                            {wisdom.map((item, idx) => (
-                                <div
-                                    key={item.id || idx}
-                                    className="group relative block p-6 rounded-lg bg-muted/20 hover:bg-muted/40 transition-all border border-transparent hover:border-primary/20"
-                                >
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2">
-                                                <Quote className="h-3 w-3" /> daily wisdom
-                                            </span>
-                                            <span className="text-[10px] text-muted-foreground/50">
-                                                {new Date(item.created_at).toLocaleDateString()}
-                                            </span>
-                                        </div>
-
-                                        <p className="text-sm md:text-base leading-relaxed text-foreground/80 group-hover:text-foreground transition-colors font-serif italic">
-                                            "{item.content}"
-                                        </p>
-
-                                        <div className="text-right">
-                                            <span className="text-xs font-mono text-primary/60">
-                                                — {item.source || "Unknown"}
-                                            </span>
-                                        </div>
+                                )}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="wisdom"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="space-y-6"
+                            >
+                                {wisdom.length === 0 ? (
+                                    <div className="text-center py-12 text-muted-foreground italic font-mono text-sm">no saved wisdom yet.</div>
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {wisdom.map((item, idx) => (
+                                            <div
+                                                key={item.id || idx}
+                                                className="group relative block p-4 rounded-md bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20"
+                                            >
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2 font-mono">
+                                                            <Quote className="h-3 w-3" /> daily wisdom
+                                                        </span>
+                                                        <span className="text-[10px] text-muted-foreground/50 font-mono">
+                                                            {new Date(item.created_at).toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm leading-relaxed text-foreground/90 group-hover:text-foreground transition-colors font-serif italic">
+                                                        "{item.content}"
+                                                    </p>
+                                                    <div className="text-right">
+                                                        <span className="text-[10px] font-mono text-primary/60">
+                                                            — {item.source || "Unknown"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </TabsContent>
-            </Tabs>
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                </div>
+            </div>
         </div>
     );
 }
