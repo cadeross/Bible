@@ -85,7 +85,34 @@ export default function RootLayout({
 
               <Footer />
               <MobileNav />
-              <Toaster />
+              <Toaster
+                position="bottom-right"
+                style={{ zIndex: 9999 }}
+                toastOptions={{
+                  className: "font-mono text-xs !bg-background text-foreground border-border/60 border shadow-none rounded-lg px-6 py-4 gap-4 opacity-100",
+                  descriptionClassName: "text-muted-foreground",
+                  actionButtonStyle: {
+                    backgroundColor: "hsl(var(--primary))",
+                    color: "hsl(var(--primary-foreground))",
+                    fontFamily: "var(--font-geist-mono)",
+                    fontSize: "0.75rem",
+                    borderRadius: "0.25rem",
+                  },
+                  cancelButtonStyle: {
+                    backgroundColor: "hsl(var(--muted))",
+                    color: "hsl(var(--muted-foreground))",
+                    fontFamily: "var(--font-geist-mono)",
+                    fontSize: "0.75rem",
+                    borderRadius: "0.25rem",
+                  },
+                  style: {
+                    backgroundColor: 'var(--background)',
+                    border: '1px solid hsl(var(--border), 0.6)',
+                    color: 'hsl(var(--foreground))',
+                    borderRadius: '0.5rem',
+                  },
+                }}
+              />
               <Analytics />
               <SpeedInsights />
             </FocusProvider>

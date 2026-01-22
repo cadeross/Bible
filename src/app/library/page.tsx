@@ -33,10 +33,32 @@ export default function LibraryPage() {
 
 
 
+    const [isGuest, setIsGuest] = useState(false);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const { createClient } = await import("@/lib/supabase/client");
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            setIsGuest(!session);
+
+            const [highlightsData, wisdomData] = await Promise.all([
+                getAllHighlights(),
+                getAllWisdom()
+            ]);
+            setRawHighlights(highlightsData);
+            setWisdom(wisdomData);
+            setLoading(false);
+        };
+
+        fetchData();
+    }, []);
+
+
+
     const groupedHighlights = useMemo(() => {
         if (rawHighlights.length === 0) return [];
-
-        // 1. Sort Canonically for grouping
+        // ... (sorting remains same)
         const sorted = [...rawHighlights].sort((a, b) => {
             const bookA = BIBLE_BOOKS.findIndex(book => book.name === a.book);
             const bookB = BIBLE_BOOKS.findIndex(book => book.name === b.book);
@@ -46,33 +68,27 @@ export default function LibraryPage() {
             return a.verse - b.verse;
         });
 
-        // 2. Group adjacent verses
         const grouped: GroupedHighlight[] = [];
         let currentGroup: GroupedHighlight | null = null;
 
         sorted.forEach((h) => {
+            // ... (grouping logic remains same)
             if (!currentGroup) {
                 currentGroup = { ...h, verseEnd: h.verse };
                 return;
             }
-
-            // Check adhesion: Same Book, Same Chapter, Same Color, Next Verse
             const isNextVerse = h.verse === currentGroup.verseEnd + 1;
             const isSameBook = h.book === currentGroup.book;
             const isSameChapter = h.chapter === currentGroup.chapter;
             const isSameColor = h.color === currentGroup.color;
 
             if (isSameBook && isSameChapter && isNextVerse && isSameColor) {
-                // Merge
                 currentGroup.verseEnd = h.verse;
                 currentGroup.content = `${currentGroup.content} ${h.content}`;
-                // Keep the 'latest' created_at if we want the group to jump to top? 
-                // Currently sorting by canonical, but we'll re-sort by time after.
                 if (new Date(h.created_at) > new Date(currentGroup.created_at)) {
                     currentGroup.created_at = h.created_at;
                 }
             } else {
-                // Push current and start new
                 grouped.push(currentGroup);
                 currentGroup = { ...h, verseEnd: h.verse };
             }
@@ -82,7 +98,6 @@ export default function LibraryPage() {
             grouped.push(currentGroup);
         }
 
-        // 3. Re-sort by Recency (Newest first)
         return grouped.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     }, [rawHighlights]);
@@ -108,11 +123,21 @@ export default function LibraryPage() {
                     </div>
                     <h1 className="text-xl font-bold text-primary">empty library</h1>
                     <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                        start reading to highlight verses or save daily wisdom.
+                        {isGuest
+                            ? "items saved here are on-device only. sign in to sync."
+                            : "start reading to highlight verses or save daily wisdom."
+                        }
                     </p>
-                    <Link href="/read" className="inline-flex items-center gap-2 text-primary hover:underline underline-offset-4 mt-4 text-xs tracking-wide">
-                        start reading <ArrowRight className="h-4 w-4" />
-                    </Link>
+                    <div className="flex flex-col gap-2 items-center">
+                        <Link href="/read" className="inline-flex items-center gap-2 text-primary hover:underline underline-offset-4 mt-4 text-xs tracking-wide">
+                            start reading <ArrowRight className="h-4 w-4" />
+                        </Link>
+                        {isGuest && (
+                            <Link href="/profile" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                                sign in to sync
+                            </Link>
+                        )}
+                    </div>
                 </div>
             </div>
         );
@@ -164,6 +189,21 @@ export default function LibraryPage() {
             </div>
 
             <div className="space-y-8">
+                {/* Guest Banner */}
+                {isGuest && (
+                    <div className="bg-secondary/10 border border-border/50 rounded-lg p-3 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-center gap-3">
+                            <div className="h-2 w-2 rounded-full bg-yellow-500/50 animate-pulse" />
+                            <p className="text-xs font-mono text-muted-foreground">
+                                <span className="font-bold text-foreground">local mode:</span> items saved to device only.
+                            </p>
+                        </div>
+                        <Link href="/profile" className="text-[10px] font-mono font-bold uppercase tracking-wider text-primary hover:text-foreground transition-colors hover:underline underline-offset-4">
+                            sync now
+                        </Link>
+                    </div>
+                )}
+
                 {/* Content */}
                 <div className="min-h-[200px]">
 

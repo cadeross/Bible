@@ -96,9 +96,20 @@ export default function Home() {
         color: "yellow",
         created_at: new Date().toISOString()
       })
-      toast.success("verse highlighted", {
-        description: "added to your library"
-      })
+
+      if (username) {
+        toast.success("verse highlighted", {
+          description: "added to your library"
+        })
+      } else {
+        toast.success("saved to device", {
+          description: "sign in to sync your library",
+          action: {
+            label: "sign in",
+            onClick: () => window.location.href = "/profile"
+          }
+        })
+      }
     } catch (error) {
       console.error(error)
       toast.error("failed to save")
@@ -113,9 +124,20 @@ export default function Home() {
         source: WISDOM.author,
         created_at: new Date().toISOString()
       })
-      toast.success("wisdom saved", {
-        description: "added to your collection"
-      })
+
+      if (username) {
+        toast.success("wisdom saved", {
+          description: "added to your collection"
+        })
+      } else {
+        toast.success("saved to device", {
+          description: "sign in to sync your collection",
+          action: {
+            label: "sign in",
+            onClick: () => window.location.href = "/profile"
+          }
+        })
+      }
     } catch (error) {
       toast.error("failed to save")
     }
@@ -140,12 +162,18 @@ export default function Home() {
         {/* Welcome */}
         <motion.div variants={itemVariants} className="text-center space-y-2">
           <h1 className="text-3xl md:text-4xl font-mono font-bold text-primary tracking-tight">
-            {username ? greeting : "daily bread"}
+            {greeting}
           </h1>
-          {username && (
+          {username ? (
             <p className="font-mono text-lg text-muted-foreground">
               {username}
             </p>
+          ) : (
+            <div className="flex items-center justify-center gap-2 font-mono text-sm text-muted-foreground/60">
+              <Link href="/profile" className="hover:text-primary transition-colors">sign in</Link>
+              <span>/</span>
+              <Link href="/profile" className="hover:text-primary transition-colors">sign up</Link>
+            </div>
           )}
         </motion.div>
 

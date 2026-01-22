@@ -181,7 +181,9 @@ export default function ProfilePage() {
             <div className="flex min-h-[80vh] flex-col items-center justify-center p-4 animate-in fade-in zoom-in duration-500">
                 <div className="mb-8 text-center space-y-2">
                     <h1 className="text-3xl font-mono font-bold tracking-tight text-primary">account</h1>
-                    <p className="text-muted-foreground font-mono text-sm">Sign in to track your stats.</p>
+                    <p className="text-muted-foreground font-mono text-sm max-w-xs mx-auto">
+                        sign in to sync your stats and library across devices.
+                    </p>
                 </div>
                 <AuthTabs onSuccess={() => router.refresh()} />
             </div>
