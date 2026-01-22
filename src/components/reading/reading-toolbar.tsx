@@ -26,15 +26,19 @@ export function ReadingToolbar({ currentBook = "Genesis", currentTranslation = "
         setRedLetters,
     } = useReadingPreferences()
 
+    const [availableTranslations, setAvailableTranslations] = React.useState(TRANSLATIONS)
+
+    React.useEffect(() => {
+        import("@/lib/bible-api").then(({ getAllTranslations }) => {
+            getAllTranslations().then(setAvailableTranslations)
+        })
+    }, [])
+
     const handleBookChange = (book: string) => {
         router.push(`/read/${book}/1?translation=${currentTranslation}`)
     }
 
     const handleTranslationChange = (translationId: string) => {
-        // Preserve current book/chapter but swith translation
-        // Use window.location to get current path if needed, or just rely on parent passing props?
-        // Actually, we are in a client component. router.push to current path + query param is safest.
-        // But simpler: just replace the query param on the current URL.
         const url = new URL(window.location.href)
         url.searchParams.set("translation", translationId)
         router.push(url.pathname + url.search)
@@ -71,7 +75,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentTranslation = "
 
                 <QuickSelector
                     value={currentTranslation}
-                    items={TRANSLATIONS}
+                    items={availableTranslations}
                     onSelect={handleTranslationChange}
                     icon={<Languages className="h-3 w-3" />}
                     placeholder="Search version..."

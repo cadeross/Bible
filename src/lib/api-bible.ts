@@ -1,0 +1,96 @@
+"use server";
+
+export interface BibleVersion {
+    id: string;
+    name: string;
+    abbreviation: string;
+    description: string;
+    language: {
+        id: string;
+        name: string;
+    };
+}
+
+export interface ApiBibleChapter {
+    id: string;
+    bibleId: string;
+    number: string;
+    bookId: string;
+    reference: string;
+    content: string; // HTML content
+    copyright: string;
+}
+
+const BASE_URL = 'https://rest.api.bible/v1';
+
+// Server-side only helper to get the key safely
+function getApiKey() {
+    return process.env.NEXT_PUBLIC_API_BIBLE_KEY || '';
+}
+
+export async function getAvailableBibles(): Promise<BibleVersion[]> {
+    const key = getApiKey();
+    if (!key) throw new Error("API Key missing");
+
+    try {
+        // This endpoint (rest.api.bible) seems to reject query params like language=eng
+        // So we fetch all and filter manually.
+        const res = await fetch(`${BASE_URL}/bibles`, {
+            headers: { 'api-key': key }
+        });
+
+        if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(`Failed to fetch bibles: ${res.status} ${res.statusText} - ${errText.substring(0, 100)}`);
+        }
+
+        const data = await res.json();
+        // Manual filtering for English (eng) bibles to keep list relevant
+        // API returns .data array
+        return data.data
+            .filter((b: any) => b.language.id === 'eng')
+            .map((b: any) => ({
+                id: b.id,
+                name: b.name,
+                abbreviation: b.abbreviation,
+                description: b.description,
+                language: b.language
+            }));
+    } catch (e) {
+        console.error("Error fetching bibles:", e);
+        return [];
+    }
+}
+
+export async function getChapterText(bibleId: string, chapterId: string): Promise<ApiBibleChapter | null> {
+    const key = getApiKey();
+    if (!key) throw new Error("API Key missing");
+
+    try {
+        // chapterId format in API.bible is usually "BOOK.CHAPTER" e.g. "GEN.1"
+        const res = await fetch(`${BASE_URL}/bibles/${bibleId}/chapters/${chapterId}?content-type=html&include-notes=false&include-titles=true&include-chapter-numbers=false&include-verse-numbers=true`, {
+            headers: { 'api-key': key }
+        });
+
+        if (!res.ok) {
+            console.error(`Failed to fetch chapter ${chapterId} from bible ${bibleId}: ${res.statusText}`);
+            return null;
+        }
+
+        const data = await res.json();
+        const c = data.data;
+
+        return {
+            id: c.id,
+            bibleId: c.bibleId,
+            number: c.number,
+            bookId: c.bookId,
+            reference: c.reference,
+            content: c.content,
+            copyright: c.copyright
+        };
+    } catch (e) {
+        console.error("Error fetching chapter text:", e);
+        return null;
+    }
+}

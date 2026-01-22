@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface QuickSelectorProps {
     value: string
-    items: string[] | { id: string; name: string }[]
+    items: string[] | { id: string; name: string; abbreviation?: string }[]
     onSelect: (value: string) => void
     label?: string
     placeholder?: string
@@ -40,14 +40,18 @@ export function QuickSelector({
     // Normalize items to standard format
     const normalizedItems = React.useMemo(() => {
         return items.map(item =>
-            typeof item === "string" ? { id: item, name: item } : item
+            typeof item === "string" ? { id: item, name: item, abbreviation: item } : item
         )
     }, [items])
 
     const displayValue = React.useMemo(() => {
         const found = normalizedItems.find(i => i.id === value)
         if (!found) return value
-        return displayFormat === 'id' ? found.id.toUpperCase() : found.name
+
+        if (displayFormat === 'id') {
+            return (found.abbreviation || found.id).toUpperCase()
+        }
+        return found.name
     }, [normalizedItems, value, displayFormat])
 
     // Sync search with display value when closed
@@ -62,13 +66,17 @@ export function QuickSelector({
         if (!search || search === displayValue) return normalizedItems
         return normalizedItems.filter(item =>
             item.name.toLowerCase().includes(search.toLowerCase()) ||
-            item.id.toLowerCase().includes(search.toLowerCase())
+            item.id.toLowerCase().includes(search.toLowerCase()) ||
+            (item.abbreviation && item.abbreviation.toLowerCase().includes(search.toLowerCase()))
         )
     }, [normalizedItems, search, displayValue])
 
     const handleSelect = (id: string, name: string) => {
         onSelect(id)
-        setSearch(displayFormat === 'id' ? id.toUpperCase() : name)
+        // Reset search to correct display value logic
+        const found = normalizedItems.find(i => i.id === id)
+        const display = displayFormat === 'id' ? (found?.abbreviation || id).toUpperCase() : name
+        setSearch(display)
         setOpen(false)
         inputRef.current?.blur()
     }
@@ -132,7 +140,7 @@ export function QuickSelector({
                                 className={cn(
                                     "col-start-1 row-start-1 w-full min-w-[60px] bg-transparent outline-none cursor-text placeholder:text-muted-foreground/50 transition-colors p-0 border-none font-medium text-left",
                                     open ? "text-foreground" : "text-muted-foreground group-hover:text-primary",
-                                    displayFormat === 'id' && "uppercase"
+                                    (displayFormat === 'id') && "uppercase"
                                 )}
                             />
                         </div>
@@ -145,7 +153,7 @@ export function QuickSelector({
                         align="start"
                         onOpenAutoFocus={(e) => e.preventDefault()}
                     >
-                        <ScrollArea className="h-[200px] p-1">
+                        <ScrollArea className="h-[400px] p-1">
                             {filteredItems.length === 0 ? (
                                 <div className="py-6 text-center text-xs text-muted-foreground">
                                     No results found.
@@ -167,8 +175,8 @@ export function QuickSelector({
                                         >
                                             <span className="flex items-center gap-2">
                                                 {displayFormat === 'id' && (
-                                                    <span className="font-mono text-[10px] opacity-70 w-8 uppercase shrink-0">
-                                                        {item.id}
+                                                    <span className="font-mono text-[10px] opacity-70 w-16 uppercase shrink-0 text-left">
+                                                        {item.abbreviation || item.id}
                                                     </span>
                                                 )}
                                                 <span className="truncate">{item.name}</span>
