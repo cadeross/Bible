@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 
 export type FontType = "sans" | "serif" | "mono"
+export type PaletteType = "standard" | "terminal" | "solarized" | "sepia" | "midnight" | "lavender" | "rose" | "oled"
 
 export interface ReadingPreferences {
     fontSize: number
@@ -11,6 +12,8 @@ export interface ReadingPreferences {
     showVerseNumbers: boolean
     redLetters: boolean
     defaultHighlightColor: string
+    palette: PaletteType
+    bibleVersion: string
 }
 
 interface ReadingPreferencesContextType extends ReadingPreferences {
@@ -20,6 +23,8 @@ interface ReadingPreferencesContextType extends ReadingPreferences {
     setShowVerseNumbers: (show: boolean) => void
     setRedLetters: (show: boolean) => void
     setDefaultHighlightColor: (color: string) => void
+    setPalette: (palette: PaletteType) => void
+    setBibleVersion: (version: string) => void
     resetPreferences: () => void
 }
 
@@ -30,6 +35,8 @@ const defaultPreferences: ReadingPreferences = {
     showVerseNumbers: true,
     redLetters: true,
     defaultHighlightColor: "yellow",
+    palette: "standard",
+    bibleVersion: "web",
 }
 
 const ReadingPreferencesContext = createContext<ReadingPreferencesContextType | undefined>(undefined)
@@ -45,6 +52,18 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved)
+
+                    // Validate palette (migration for legacy/removed themes like 'forest')
+                    const validPalettes: PaletteType[] = ["standard", "terminal", "solarized", "sepia", "midnight", "lavender", "rose", "oled"];
+                    if (parsed.palette && !validPalettes.includes(parsed.palette)) {
+                        parsed.palette = "standard";
+                    }
+
+                    // Default bibleVersion if missing
+                    if (!parsed.bibleVersion) {
+                        parsed.bibleVersion = "web";
+                    }
+
                     setPreferences({ ...defaultPreferences, ...parsed })
                 } catch (e) {
                     console.error("Failed to parse reading preferences", e)
@@ -58,6 +77,9 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
     useEffect(() => {
         if (isLoaded) {
             localStorage.setItem("reading-preferences", JSON.stringify(preferences))
+
+            // Sync palette to document attribute for CSS targeting
+            document.documentElement.setAttribute('data-palette', preferences.palette)
         }
     }, [preferences, isLoaded])
 
@@ -67,6 +89,8 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
     const setShowVerseNumbers = (showVerseNumbers: boolean) => setPreferences((prev) => ({ ...prev, showVerseNumbers }))
     const setRedLetters = (redLetters: boolean) => setPreferences((prev) => ({ ...prev, redLetters }))
     const setDefaultHighlightColor = (defaultHighlightColor: string) => setPreferences((prev) => ({ ...prev, defaultHighlightColor }))
+    const setPalette = (palette: PaletteType) => setPreferences((prev) => ({ ...prev, palette }))
+    const setBibleVersion = (bibleVersion: string) => setPreferences((prev) => ({ ...prev, bibleVersion }))
     const resetPreferences = () => setPreferences(defaultPreferences)
 
     const value = {
@@ -77,6 +101,8 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
         setShowVerseNumbers,
         setRedLetters,
         setDefaultHighlightColor,
+        setPalette,
+        setBibleVersion,
         resetPreferences,
     }
 
