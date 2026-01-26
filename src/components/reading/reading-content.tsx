@@ -2,10 +2,10 @@ import React from "react"
 import { BibleChapter } from "@/lib/bible-api"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { cn } from "@/lib/utils"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { isRedLetterVerse } from "@/lib/red-letter-data"
 import { Highlight } from "@/lib/persistence"
-import { Trash2 } from "lucide-react"
+import { Trash2, StickyNote } from "lucide-react"
 
 interface ReadingContentProps {
     chapter: BibleChapter
@@ -132,11 +132,11 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
 
         if (autoPosition) {
             const rect = target.getBoundingClientRect()
-            top = rect.top - 60 + window.scrollY
+            top = rect.top
             left = rect.left + rect.width / 2
         } else {
             // Use pointer position
-            top = clientY - 40 + window.scrollY
+            top = clientY
             left = clientX
         }
 
@@ -172,7 +172,7 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                     const rect = range.getBoundingClientRect()
                     if (rect.width > 0 && rect.height > 0) {
                         setMenuPosition({
-                            top: rect.top - 60 + window.scrollY,
+                            top: rect.top,
                             left: rect.left + rect.width / 2
                         })
                         setSelectedVerses(selectedIds)
@@ -260,35 +260,63 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
             style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight }}
         >
             {/* Elegant Floating Highlight Menu */}
-            {menuOpen && (
-                <div
-                    className="fixed z-50 flex items-center gap-2 p-2 bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-full animate-in fade-in zoom-in-95 duration-200"
-                    style={{
-                        top: menuPosition.top,
-                        left: menuPosition.left,
-                        transform: 'translate(-50%, -10px)'
-                    }}
-                >
-                    {HIGHLIGHT_COLORS.map(c => (
-                        <button
-                            key={c.id}
-                            onClick={() => applyColor(c.id)}
-                            className={cn(
-                                "w-8 h-8 rounded-full border transition-transform hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring",
-                                c.class, c.border
-                            )}
-                        />
-                    ))}
-                    <div className="w-[1px] h-6 bg-border mx-1" />
-
-                    <button
-                        onClick={clearSelection}
-                        className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+            <AnimatePresence>
+                {menuOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        className="fixed z-50 flex items-center gap-2 p-1.5 bg-background border border-border shadow-lg rounded-xl"
+                        style={{
+                            top: menuPosition.top,
+                            left: menuPosition.left,
+                            transform: 'translate(10px, -120%)' // Up and to the right
+                        }}
                     >
-                        <Trash2 className="h-4 w-4" />
-                    </button>
-                </div>
-            )}
+                        {HIGHLIGHT_COLORS.map(c => (
+                            <motion.button
+                                key={c.id}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => applyColor(c.id)}
+                                className={cn(
+                                    "w-5 h-5 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/10 transition-colors focus:outline-none",
+                                    c.class
+                                )}
+                            />
+                        ))}
+
+                        <div className="w-[1px] h-4 bg-border/50 mx-1" />
+
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                                // Placeholder for Note functionality
+                                console.log("Add note for verses", selectedVerses)
+                                alert("Note feature coming soon!")
+                                setMenuOpen(false)
+                            }}
+                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                            title="Add Note"
+                        >
+                            <StickyNote className="h-4 w-4" />
+                        </motion.button>
+
+                        <div className="w-[1px] h-5 bg-border mx-1" />
+
+                        <motion.button
+                            whileHover={{ scale: 1.1, color: "var(--destructive)" }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={clearSelection}
+                            className="p-1.5 text-muted-foreground transition-colors"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </motion.button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Click Overlay to Dismiss Menu */}
             {menuOpen && (

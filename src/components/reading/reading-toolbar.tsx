@@ -6,8 +6,73 @@ import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { BOOK_LIST, TRANSLATIONS } from "@/lib/bible-api"
 import { BIBLE_BOOKS } from "@/lib/bible-data"
-import { Book, Languages, Type, Hash, Palette } from "lucide-react"
+import { Book, Languages, Type, Hash, Palette, ChevronLeft, ChevronRight } from "lucide-react"
 import { QuickSelector } from "./quick-selector"
+
+
+// Internal component for editable chapter
+const ChapterInput = ({ currentChapter, maxChapters, onChange }: { currentChapter: number, maxChapters: number, onChange: (val: number) => void }) => {
+    const [isEditing, setIsEditing] = React.useState(false)
+    const [value, setValue] = React.useState(currentChapter.toString())
+    const inputRef = React.useRef<HTMLInputElement>(null)
+
+    React.useEffect(() => {
+        setValue(currentChapter.toString())
+    }, [currentChapter])
+
+    React.useEffect(() => {
+        if (isEditing && inputRef.current) {
+            inputRef.current.focus()
+            inputRef.current.select()
+        }
+    }, [isEditing])
+
+    const handleSubmit = () => {
+        setIsEditing(false)
+        const num = parseInt(value, 10)
+        if (!isNaN(num) && num >= 1 && num <= maxChapters) {
+            if (num !== currentChapter) {
+                onChange(num)
+            }
+        } else {
+            setValue(currentChapter.toString()) // Reset on invalid
+        }
+    }
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            handleSubmit()
+            inputRef.current?.blur()
+        }
+        if (e.key === "Escape") {
+            setIsEditing(false)
+            setValue(currentChapter.toString())
+        }
+    }
+
+    if (isEditing) {
+        return (
+            <input
+                ref={inputRef}
+                type="text"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onBlur={handleSubmit}
+                onKeyDown={handleKeyDown}
+                className="w-[20px] text-xs font-medium text-center bg-transparent border-none outline-none text-foreground p-0 m-0"
+            />
+        )
+    }
+
+    return (
+        <span
+            onClick={() => setIsEditing(true)}
+            className="w-[20px] inline-block text-xs font-medium text-muted-foreground text-center cursor-pointer hover:text-foreground transition-colors"
+        >
+            {currentChapter}
+        </span>
+    )
+}
 
 interface ReadingToolbarProps {
     currentBook?: string
@@ -87,25 +152,27 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
 
                 <div className="h-4 w-[1px] bg-border/50" />
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-0">
                     <button
                         onClick={() => handleChapterChange((Math.max(1, currentChapter - 1)).toString())}
                         disabled={currentChapter <= 1}
-                        className="text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed px-1"
+                        className="p-1 px-2 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed group transition-colors"
                     >
-                        -
+                        <ChevronLeft className="h-3 w-3 opacity-50 group-hover:opacity-100 transition-opacity" />
                     </button>
 
-                    <span className="text-xs font-medium text-muted-foreground min-w-[2ch] text-center">
-                        {currentChapter}
-                    </span>
+                    <ChapterInput
+                        currentChapter={currentChapter}
+                        maxChapters={chapterCount}
+                        onChange={(val) => handleChapterChange(val.toString())}
+                    />
 
                     <button
                         onClick={() => handleChapterChange((Math.min(chapterCount, currentChapter + 1)).toString())}
                         disabled={currentChapter >= chapterCount}
-                        className="text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed px-1"
+                        className="p-1 px-2 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed group transition-colors"
                     >
-                        +
+                        <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100 transition-opacity" />
                     </button>
                 </div>
 
@@ -125,6 +192,8 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
 
             {/* Appearance Bar */}
             <div className="flex flex-wrap items-center justify-center gap-4 py-2 px-6 rounded-lg bg-secondary/30 backdrop-blur-sm mx-4">
+
+
 
                 {/* Font Family Group */}
                 <div className="flex items-center border-r border-border/50 pr-4 gap-1">

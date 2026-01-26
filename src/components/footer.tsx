@@ -2,10 +2,9 @@
 
 import * as React from "react"
 import { usePathname } from "next/navigation"
-import { useTheme } from "next-themes"
+
 import { cn } from "@/lib/utils"
 import {
-    Github,
     Heart,
     Mail,
     GitBranch,
@@ -24,7 +23,6 @@ import { useFocusMode } from "@/contexts/focus-mode"
 
 export function Footer() {
     const pathname = usePathname()
-    const { theme, setTheme } = useTheme()
     const [mounted, setMounted] = React.useState(false)
     const { isFocusMode, toggleFocusMode } = useFocusMode()
 
@@ -32,31 +30,6 @@ export function Footer() {
         setMounted(true)
     }, [])
 
-    const cycleTheme = () => {
-        // Cycle through 4 palettes - OS handles light/dark automatically
-        const order = ["standard", "solarized", "sepia", "cyberpunk"]
-        const currentIndex = order.indexOf(theme || "standard")
-        const nextIndex = (currentIndex + 1) % order.length
-        setTheme(order[nextIndex])
-    }
-
-    // Display name mapping (simple now - just palette names)
-    const themeDisplayNames: Record<string, string> = {
-        "standard": "standard",
-        "solarized": "solarized",
-        "sepia": "sepia",
-        "cyberpunk": "cyberpunk",
-        "system": "standard"
-    }
-
-    // Theme color classes for visual feedback
-    const getThemeColor = (t: string | undefined) => {
-        if (!t) return "text-foreground"
-        if (t === "solarized") return "text-yellow-600"
-        if (t === "sepia") return "text-amber-700"
-        if (t === "cyberpunk") return "text-fuchsia-500"
-        return "text-foreground"
-    }
 
     // Icon map for visual flair
     // ...
@@ -71,15 +44,7 @@ export function Footer() {
         )}>
             {/* Left side: Socials & Support */}
             <div className="flex gap-6 text-xs font-mono text-muted-foreground/50">
-                <a
-                    href="https://github.com/cadeross"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-2 hover:text-primary transition-colors group"
-                >
-                    <Github className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-                    <span className="pb-px">github</span>
-                </a>
+
                 <a
                     href="https://x.com/cadeross"
                     target="_blank"
@@ -123,18 +88,7 @@ export function Footer() {
                         <span className="opacity-50 group-hover:opacity-100 transition-opacity pb-px">focus</span>
                     </button>
                 )}
-                <button
-                    onClick={cycleTheme}
-                    className="flex items-center gap-2 hover:text-primary transition-colors group"
-                >
-                    <Palette className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-                    <span className={cn(
-                        "font-bold transition-all pb-px",
-                        getThemeColor(theme)
-                    )}>
-                        {themeDisplayNames[theme || "light"] || theme}
-                    </span>
-                </button>
+
 
                 <HowToDialog>
                     <button className="flex items-center gap-2 hover:text-primary transition-colors group cursor-pointer">
