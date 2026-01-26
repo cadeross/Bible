@@ -5,16 +5,19 @@ import { useReadingPreferences, FontType } from "@/contexts/reading-preferences"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { BOOK_LIST, TRANSLATIONS } from "@/lib/bible-api"
+import { BIBLE_BOOKS } from "@/lib/bible-data"
 import { Book, Languages, Type, Hash, Palette } from "lucide-react"
 import { QuickSelector } from "./quick-selector"
 
 interface ReadingToolbarProps {
     currentBook?: string
+    currentChapter?: number
     currentTranslation?: string
 }
 
-export function ReadingToolbar({ currentBook = "Genesis", currentTranslation = "dra" }: ReadingToolbarProps) {
+export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, currentTranslation = "dra" }: ReadingToolbarProps) {
     const router = useRouter()
+    // ... prefs ...
     const {
         fontFamily,
         setFontFamily,
@@ -28,6 +31,12 @@ export function ReadingToolbar({ currentBook = "Genesis", currentTranslation = "
 
     const [availableTranslations, setAvailableTranslations] = React.useState(TRANSLATIONS)
 
+    // Calculate max chapters
+    const chapterCount = React.useMemo(() => {
+        const bookData = BIBLE_BOOKS.find(b => b.name === currentBook);
+        return bookData ? bookData.chapters : 150; // default to 150 (Psalms) if not found, safe fallback
+    }, [currentBook]);
+
     React.useEffect(() => {
         import("@/lib/bible-api").then(({ getAllTranslations }) => {
             getAllTranslations().then(setAvailableTranslations)
@@ -36,6 +45,10 @@ export function ReadingToolbar({ currentBook = "Genesis", currentTranslation = "
 
     const handleBookChange = (book: string) => {
         router.push(`/read/${book}/1?translation=${currentTranslation}`)
+    }
+
+    const handleChapterChange = (chapter: string) => {
+        router.push(`/read/${currentBook}/${chapter}?translation=${currentTranslation}`)
     }
 
     const handleTranslationChange = (translationId: string) => {
@@ -61,15 +74,40 @@ export function ReadingToolbar({ currentBook = "Genesis", currentTranslation = "
         <div className="w-full max-w-3xl mx-auto mb-8 animate-in fade-in slide-in-from-top-4 duration-700 space-y-4">
 
             {/* Navigation Bar (Book & Version) */}
-            <div className="flex items-center justify-center gap-6">
+            <div className="flex items-center justify-center gap-4">
                 <QuickSelector
                     value={currentBook}
                     items={BOOK_LIST}
                     onSelect={handleBookChange}
                     icon={<Book className="h-3 w-3" />}
-                    placeholder="Search books..."
-                    popoverWidth="w-[200px]"
+                    placeholder="Book"
+                    popoverWidth="w-[160px]"
+                    className="max-w-[80px]"
                 />
+
+                <div className="h-4 w-[1px] bg-border/50" />
+
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => handleChapterChange((Math.max(1, currentChapter - 1)).toString())}
+                        disabled={currentChapter <= 1}
+                        className="text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed px-1"
+                    >
+                        -
+                    </button>
+
+                    <span className="text-xs font-medium text-muted-foreground min-w-[2ch] text-center">
+                        {currentChapter}
+                    </span>
+
+                    <button
+                        onClick={() => handleChapterChange((Math.min(chapterCount, currentChapter + 1)).toString())}
+                        disabled={currentChapter >= chapterCount}
+                        className="text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed px-1"
+                    >
+                        +
+                    </button>
+                </div>
 
                 <div className="h-4 w-[1px] bg-border/50" />
 
@@ -78,9 +116,10 @@ export function ReadingToolbar({ currentBook = "Genesis", currentTranslation = "
                     items={availableTranslations}
                     onSelect={handleTranslationChange}
                     icon={<Languages className="h-3 w-3" />}
-                    placeholder="Search version..."
+                    placeholder="Ver"
                     displayFormat="id"
-                    popoverWidth="w-[320px]"
+                    popoverWidth="w-[160px]"
+                    className="max-w-[80px]"
                 />
             </div>
 

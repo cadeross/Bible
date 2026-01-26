@@ -10,6 +10,7 @@ import { Footer } from "@/components/footer";
 import { Toaster } from "sonner";
 import { MainLayout } from "@/components/main-layout";
 import { FocusProvider } from "@/contexts/focus-mode";
+import { Agentation } from "agentation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -115,6 +116,7 @@ export default function RootLayout({
               />
               <Analytics />
               <SpeedInsights />
+              {process.env.NODE_ENV === "development" && <Agentation />}
             </FocusProvider>
           </ReadingPreferencesProvider>
         </ThemeProvider>

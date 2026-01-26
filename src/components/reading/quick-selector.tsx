@@ -18,8 +18,9 @@ interface QuickSelectorProps {
     label?: string
     placeholder?: string
     icon?: React.ReactNode
-    displayFormat?: 'name' | 'id'
+    displayFormat?: 'name' | 'id' | 'text'
     popoverWidth?: string
+    className?: string
 }
 
 export function QuickSelector({
@@ -31,6 +32,7 @@ export function QuickSelector({
     icon,
     displayFormat = 'name',
     popoverWidth = "w-[200px]",
+    className,
 }: QuickSelectorProps) {
     const [open, setOpen] = React.useState(false)
     const [search, setSearch] = React.useState("")
@@ -50,6 +52,9 @@ export function QuickSelector({
 
         if (displayFormat === 'id') {
             return (found.abbreviation || found.id).toUpperCase()
+        }
+        if (displayFormat === 'text') {
+            return found.id
         }
         return found.name
     }, [normalizedItems, value, displayFormat])
@@ -75,7 +80,9 @@ export function QuickSelector({
         onSelect(id)
         // Reset search to correct display value logic
         const found = normalizedItems.find(i => i.id === id)
-        const display = displayFormat === 'id' ? (found?.abbreviation || id).toUpperCase() : name
+        let display = name
+        if (displayFormat === 'id') display = (found?.abbreviation || id).toUpperCase()
+        if (displayFormat === 'text') display = id
         setSearch(display)
         setOpen(false)
         inputRef.current?.blur()
@@ -117,9 +124,9 @@ export function QuickSelector({
 
                 <Popover open={open} onOpenChange={setOpen}>
                     <PopoverAnchor asChild>
-                        <div className="relative inline-grid grid-cols-[1fr]">
+                        <div className={cn("relative inline-grid grid-cols-[1fr]", className)}>
                             {/* Ghost span for auto-width */}
-                            <span className="invisible col-start-1 row-start-1 whitespace-pre px-0 py-0 font-medium">
+                            <span className="invisible col-start-1 row-start-1 whitespace-pre px-0 py-0 font-medium overflow-hidden text-ellipsis">
                                 {search || placeholder}
                             </span>
 
@@ -138,7 +145,7 @@ export function QuickSelector({
                                 onKeyDown={handleKeyDown}
                                 placeholder={placeholder}
                                 className={cn(
-                                    "col-start-1 row-start-1 w-full min-w-[60px] bg-transparent outline-none cursor-text placeholder:text-muted-foreground/50 transition-colors p-0 border-none font-medium text-left",
+                                    "col-start-1 row-start-1 w-full min-w-[10px] bg-transparent outline-none cursor-text placeholder:text-muted-foreground/50 transition-colors p-0 border-none font-medium text-left truncate",
                                     open ? "text-foreground" : "text-muted-foreground group-hover:text-primary",
                                     (displayFormat === 'id') && "uppercase"
                                 )}

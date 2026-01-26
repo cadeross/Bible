@@ -15,9 +15,6 @@ export interface BibleChapter {
     translation_note: string;
 }
 
-// getChapter already accepts translation. 
-// Just ensuring types and exports are correct.
-
 export const TRANSLATIONS = [
     { id: 'web', name: 'World English Bible' },
     { id: 'kjv', name: 'King James Version' },
@@ -75,6 +72,11 @@ export async function getChapter(book: string, chapter: number, translation: str
     const isLegacy = TRANSLATIONS.some(t => t.id === translation);
 
     if (isLegacy) {
+        // Fallback for missing Catholic books in API AND handle full DRA locally due to API 403 blocks
+        if (translation === 'dra') {
+            return getLocalChapter(book, chapter);
+        }
+
         const cleanBook = book.toLowerCase().replace(/\s/g, '');
         const res = await fetch(`${BASE_URL}/${cleanBook}+${chapter}?translation=${translation}`);
         if (!res.ok) throw new Error('Failed to fetch chapter');
@@ -178,20 +180,16 @@ export async function getChapter(book: string, chapter: number, translation: str
 
 // Helper to map Book Name to USFM/API.bible ID (e.g. "Genesis" -> "GEN")
 function getBookId(bookName: string): string {
-    // This mapping needs to be comprehensive.
-    // For now, simple 3 letter upper case helper usually works for standard books?
-    // Genesis -> GEN, Exodus -> EXO? No, standard is GEN, EXO, LEV, NUM, DEU...
-    // Let's use a mapping object.
     const map: Record<string, string> = {
         "Genesis": "GEN", "Exodus": "EXO", "Leviticus": "LEV", "Numbers": "NUM", "Deuteronomy": "DEU",
         "Joshua": "JOS", "Judges": "JDG", "Ruth": "RUT", "1 Samuel": "1SA", "2 Samuel": "2SA",
         "1 Kings": "1KI", "2 Kings": "2KI", "1 Chronicles": "1CH", "2 Chronicles": "2CH",
-        "Ezra": "EZR", "Nehemiah": "NEH", "Esther": "EST", "Job": "JOB", "Psalms": "PSA",
-        "Proverbs": "PRO", "Ecclesiastes": "ECC", "Song of Solomon": "SNG", "Isaiah": "ISA",
-        "Jeremiah": "JER", "Lamentations": "LAM", "Ezekiel": "EZK", "Daniel": "DAN",
+        "Ezra": "EZR", "Nehemiah": "NEH", "Tobit": "TOB", "Judith": "JDT", "Esther": "EST", "Job": "JOB", "Psalms": "PSA",
+        "Proverbs": "PRO", "Ecclesiastes": "ECC", "Song of Solomon": "SNG", "Wisdom": "WIS", "Sirach": "SIR", "Isaiah": "ISA",
+        "Jeremiah": "JER", "Lamentations": "LAM", "Baruch": "BAR", "Ezekiel": "EZK", "Daniel": "DAN",
         "Hosea": "HOS", "Joel": "JOL", "Amos": "AMO", "Obadiah": "OBA", "Jonah": "JON",
         "Micah": "MIC", "Nahum": "NAM", "Habakkuk": "HAB", "Zephaniah": "ZEP", "Haggai": "HAG",
-        "Zechariah": "ZEC", "Malachi": "MAL",
+        "Zechariah": "ZEC", "Malachi": "MAL", "1 Maccabees": "1MA", "2 Maccabees": "2MA",
         "Matthew": "MAT", "Mark": "MRK", "Luke": "LUK", "John": "JHN", "Acts": "ACT",
         "Romans": "ROM", "1 Corinthians": "1CO", "2 Corinthians": "2CO", "Galatians": "GAL",
         "Ephesians": "EPH", "Philippians": "PHP", "Colossians": "COL",
@@ -203,7 +201,47 @@ function getBookId(bookName: string): string {
     return map[bookName] || bookName.substring(0, 3).toUpperCase();
 }
 
+async function getLocalChapter(book: string, chapter: number): Promise<BibleChapter> {
+    // Map standard names to our local filenames (which are based on standard names mostly)
+    // Filenames are basically standard names with spaces removed.
+    // Exceptions: Sirach -> Encoded as Ecclesiasticus in our files
+    let filenameBase = book.replace(/\s/g, '');
+    if (book === "Sirach") filenameBase = "Ecclesiasticus";
+
+    try {
+        // Dynamic import for client-side bundle text
+        // Ensure data files are in src/lib/data/DRA_<Book>.json
+        const data = await import(`@/lib/data/DRA_${filenameBase}.json`);
+
+        // DRA JSON keys are usually just the number "1", "2" etc.
+        const chapterData = data.default[chapter.toString()];
+
+        if (!chapterData) throw new Error("Chapter not found locally");
+
+        // Convert key-value verses to array
+        const verses: BibleVerse[] = Object.entries(chapterData).map(([verseNum, text]) => ({
+            book_id: book.substring(0, 3).toUpperCase(),
+            book_name: book,
+            chapter: chapter,
+            verse: parseInt(verseNum),
+            text: (text as string).replace(/\*/g, '').trim() // Clean asterisks often found in DRA text
+        })).sort((a, b) => a.verse - b.verse);
+
+        return {
+            reference: `${book} ${chapter}`,
+            verses,
+            text: verses.map(v => v.text).join(' '),
+            translation_id: 'dra',
+            translation_name: 'Douay-Rheims 1899 American Edition',
+            translation_note: 'Public Domain (Local)'
+        };
+    } catch (e) {
+        console.error(`Failed to load local chapter for ${book} ${chapter}`, e);
+        throw new Error("Chapter not found locally");
+    }
+}
+
 export const BOOK_LIST = [
-    "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Esther", "Job", "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon", "Isaiah", "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos", "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah", "Haggai", "Zechariah", "Malachi",
+    "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Tobit", "Judith", "Esther", "Job", "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon", "Wisdom", "Sirach", "Isaiah", "Jeremiah", "Lamentations", "Baruch", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos", "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah", "Haggai", "Zechariah", "Malachi", "1 Maccabees", "2 Maccabees",
     "Matthew", "Mark", "Luke", "John", "Acts", "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians", "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John", "3 John", "Jude", "Revelation"
 ];

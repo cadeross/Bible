@@ -14,9 +14,11 @@ import {
     Sun,
     Laptop,
     Eye,
-    EyeOff
+    EyeOff,
+    HelpCircle
 } from "lucide-react"
 import { ChangelogDialog } from "@/components/changelog-dialog"
+import { HowToDialog } from "@/components/how-to-dialog"
 
 import { useFocusMode } from "@/contexts/focus-mode"
 
@@ -133,6 +135,13 @@ export function Footer() {
                         {themeDisplayNames[theme || "light"] || theme}
                     </span>
                 </button>
+
+                <HowToDialog>
+                    <button className="flex items-center gap-2 hover:text-primary transition-colors group cursor-pointer">
+                        <HelpCircle className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+                        <span className="opacity-50 group-hover:opacity-100 transition-opacity pb-px">how to</span>
+                    </button>
+                </HowToDialog>
 
                 <ChangelogDialog>
                     <button className="flex items-center gap-2 hover:text-primary transition-colors group cursor-pointer">

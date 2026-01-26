@@ -50,7 +50,7 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra" }: 
 
             {/* Top Controls */}
             <div className={cn("transition-opacity duration-500", isFocusMode ? "opacity-0 hover:opacity-100" : "opacity-100")}>
-                <ReadingToolbar currentBook={book} currentTranslation={translation} />
+                <ReadingToolbar currentBook={book} currentChapter={chapterNum} currentTranslation={translation} />
             </div>
 
             {/* Focus Toggle */}
