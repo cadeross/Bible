@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { User, LogOut, Cloud, Activity, Palette } from "lucide-react";
 import { toast } from "sonner";
 import { getHistory, getAllHighlights, ReadingHistory } from "@/lib/persistence";
+import { motion } from "framer-motion";
 
 // Helper for section groups (Matches Settings)
 const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
@@ -227,7 +228,12 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="w-full max-w-[720px] mx-auto px-6 py-12 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring" as const, stiffness: 400, damping: 25 }}
+            className="w-full max-w-[720px] mx-auto px-6 py-12 space-y-12"
+        >
             {/* Header */}
             <div className="flex items-center justify-between gap-4 border-b border-border/50 pb-8">
                 <div className="flex items-center gap-4">
@@ -320,6 +326,6 @@ export default function ProfilePage() {
                 </Section>
 
             </div>
-        </div>
+        </motion.div>
     );
 }

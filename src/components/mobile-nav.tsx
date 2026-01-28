@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, BookOpen, Library, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 export function MobileNav() {
     const pathname = usePathname();
@@ -30,21 +31,28 @@ export function MobileNav() {
                             key={tab.name}
                             href={tab.href}
                             className={cn(
-                                "group flex flex-col items-center justify-center gap-1.5 w-full h-full transition-colors duration-200",
+                                "group relative flex flex-col items-center justify-center gap-1.5 w-full h-full transition-colors duration-200",
                                 isActive
                                     ? "text-primary"
                                     : "text-muted-foreground hover:text-foreground"
                             )}
                         >
+                            {isActive && (
+                                <motion.div
+                                    layoutId="mobile-nav-indicator"
+                                    className="absolute inset-0 bg-primary/10 rounded-xl"
+                                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                                />
+                            )}
                             <Icon
                                 className={cn(
-                                    "h-5 w-5 transition-transform duration-200",
+                                    "h-5 w-5 relative z-10 transition-transform duration-200",
                                     isActive && "scale-110"
                                 )}
                                 strokeWidth={1.5}
                             />
                             <span className={cn(
-                                "text-[10px] font-mono tracking-tight",
+                                "text-[10px] font-mono tracking-tight relative z-10",
                                 isActive && "font-bold"
                             )}>
                                 {tab.name}

@@ -9,11 +9,11 @@ import { createClient } from "@/lib/supabase/client"
 
 // Verse of the day - hardcoded for now, could be fetched from an API
 const VERSE = {
-  text: "In the beginning was the Word, and the Word was with God, and the Word was God.",
-  book: "John",
+  text: "In the beginning God created heaven and earth.",
+  book: "Genesis",
   chapter: 1,
   verse: 1,
-  translation: "RSV-CE"
+  translation: "DRA"
 }
 
 // Daily wisdom quote
@@ -28,20 +28,21 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.1
+      staggerChildren: 0.08,
+      delayChildren: 0.05
     }
   }
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.5,
-      ease: "easeOut" as const
+      type: "spring" as const,
+      stiffness: 400,
+      damping: 25
     }
   }
 }

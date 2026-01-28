@@ -5,9 +5,9 @@ import { toast } from "sonner"
 
 export function DailyContent() {
     const verse = {
-        text: "In the beginning was the Word, and the Word was with God, and the Word was God.",
-        ref: "John 1:1",
-        version: "RSV-CE"
+        text: "In the beginning God created heaven and earth.",
+        ref: "Genesis 1:1",
+        version: "DRA"
     }
 
     const quote = {

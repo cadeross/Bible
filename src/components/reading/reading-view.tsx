@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation"
 import { ChevronLeft, ChevronRight, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useFocusMode } from "@/contexts/focus-mode"
+import { motion } from "framer-motion"
 
 interface ReadingViewProps {
     chapter: BibleChapter

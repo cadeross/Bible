@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { BOOK_LIST, TRANSLATIONS } from "@/lib/bible-api"
 import { BIBLE_BOOKS } from "@/lib/bible-data"
 import { Book, Languages, Type, Hash, Palette, ChevronLeft, ChevronRight } from "lucide-react"
+import { motion } from "framer-motion"
 import { QuickSelector } from "./quick-selector"
 
 
@@ -153,13 +154,15 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                 <div className="h-4 w-[1px] bg-border/50" />
 
                 <div className="flex items-center gap-0">
-                    <button
+                    <motion.button
                         onClick={() => handleChapterChange((Math.max(1, currentChapter - 1)).toString())}
                         disabled={currentChapter <= 1}
+                        whileHover={{ scale: 1.15 }}
+                        whileTap={{ scale: 0.9 }}
                         className="p-1 px-2 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed group transition-colors"
                     >
                         <ChevronLeft className="h-3 w-3 opacity-50 group-hover:opacity-100 transition-opacity" />
-                    </button>
+                    </motion.button>
 
                     <ChapterInput
                         currentChapter={currentChapter}
@@ -167,13 +170,15 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                         onChange={(val) => handleChapterChange(val.toString())}
                     />
 
-                    <button
+                    <motion.button
                         onClick={() => handleChapterChange((Math.min(chapterCount, currentChapter + 1)).toString())}
                         disabled={currentChapter >= chapterCount}
+                        whileHover={{ scale: 1.15 }}
+                        whileTap={{ scale: 0.9 }}
                         className="p-1 px-2 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed group transition-colors"
                     >
                         <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100 transition-opacity" />
-                    </button>
+                    </motion.button>
                 </div>
 
                 <div className="h-4 w-[1px] bg-border/50" />

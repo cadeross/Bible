@@ -329,71 +329,79 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                 />
             )}
 
-            <div className="space-y-4">
-                {/* Chapter Header */}
-                <div className="text-center mb-12 opacity-50 hover:opacity-100 transition-opacity">
-                    <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                        {chapter.reference}
-                    </h1>
-                    <p className="text-xs text-muted-foreground mt-1">{chapter.translation_name}</p>
-                </div>
-
-                {/* Verses */}
-                <div className="prose dark:prose-invert max-w-none">
-                    {chapter.verses.map((verse, i) => {
-                        const highlight = highlights.find(h => h.verse === verse.verse)
-                        const colorConfig = highlight ? HIGHLIGHT_COLORS.find(c => c.id === highlight.color) : null
-                        const bgClass = colorConfig ? colorConfig.class : ""
-
-                        return (
-                            <React.Fragment key={verse.verse}>
-                                <motion.span
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.002, duration: 0.2 }}
-                                    data-verse={verse.verse}
-                                    className={cn(
-                                        "inline cursor-pointer transition-colors duration-200 rounded px-[2px] -mx-[2px] relative",
-                                        bgClass || "hover:bg-primary/5",
-                                    )}
-                                    // Click Handler (Default Highlight)
-                                    onClick={() => handleVerseClick(verse.verse, verse.text)}
-                                    // Right Click (Context Menu)
-                                    onContextMenu={(e) => handleContextMenu(e, verse.verse)}
-                                    // Long Press Handlers (Menu)
-                                    onMouseDown={(e) => handleTouchStart(verse.verse, e)}
-                                    onMouseUp={handleTouchEnd}
-                                    onMouseLeave={handleTouchEnd}
-                                    onTouchStart={(e) => handleTouchStart(verse.verse, e)}
-                                    onTouchEnd={handleTouchEnd}
-                                >
-                                    {showVerseNumbers && (
-                                        <sup className="mr-1 text-[0.6em] text-muted-foreground/50 select-none font-mono">
-                                            {verse.verse}
-                                        </sup>
-                                    )}
-                                    <span className={cn(
-                                        "transition-colors duration-200",
-                                        redLetters && isRedLetterVerse(bookName, chapterNum, verse.verse) && "text-red-700 dark:text-red-400"
-                                    )}>
-                                        {verse.text}
-                                    </span>
-                                </motion.span>
-                                {" "}
-                            </React.Fragment>
-                        )
-                    })}
-                </div>
-
-                {/* Citation / Copyright */}
-                {chapter.translation_note && (
-                    <div className="mt-12 text-center opacity-40 hover:opacity-80 transition-opacity">
-                        <p className="text-[10px] font-mono leading-relaxed max-w-lg mx-auto">
-                            {chapter.translation_note}
-                        </p>
-                    </div>
-                )}
+            {/* Chapter Header - Static, not animated */}
+            <div className="text-center mb-12 opacity-50 hover:opacity-100 transition-opacity">
+                <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                    {chapter.reference}
+                </h1>
+                <p className="text-xs text-muted-foreground mt-1">{chapter.translation_name}</p>
             </div>
+
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={`${bookName}-${chapterNum}`}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ type: "spring" as const, stiffness: 500, damping: 30 }}
+                >
+                    {/* Verses */}
+                    <div className="prose dark:prose-invert max-w-none">
+                        {chapter.verses.map((verse, i) => {
+                            const highlight = highlights.find(h => h.verse === verse.verse)
+                            const colorConfig = highlight ? HIGHLIGHT_COLORS.find(c => c.id === highlight.color) : null
+                            const bgClass = colorConfig ? colorConfig.class : ""
+
+                            return (
+                                <React.Fragment key={verse.verse}>
+                                    <motion.span
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: i * 0.002, duration: 0.2 }}
+                                        data-verse={verse.verse}
+                                        className={cn(
+                                            "inline cursor-pointer transition-colors duration-200 rounded px-[2px] -mx-[2px] relative",
+                                            bgClass || "hover:bg-primary/5",
+                                        )}
+                                        // Click Handler (Default Highlight)
+                                        onClick={() => handleVerseClick(verse.verse, verse.text)}
+                                        // Right Click (Context Menu)
+                                        onContextMenu={(e) => handleContextMenu(e, verse.verse)}
+                                        // Long Press Handlers (Menu)
+                                        onMouseDown={(e) => handleTouchStart(verse.verse, e)}
+                                        onMouseUp={handleTouchEnd}
+                                        onMouseLeave={handleTouchEnd}
+                                        onTouchStart={(e) => handleTouchStart(verse.verse, e)}
+                                        onTouchEnd={handleTouchEnd}
+                                    >
+                                        {showVerseNumbers && (
+                                            <sup className="mr-1 text-[0.6em] text-muted-foreground/50 select-none font-mono">
+                                                {verse.verse}
+                                            </sup>
+                                        )}
+                                        <span className={cn(
+                                            "transition-colors duration-200",
+                                            redLetters && isRedLetterVerse(bookName, chapterNum, verse.verse) && "text-red-700 dark:text-red-400"
+                                        )}>
+                                            {verse.text}
+                                        </span>
+                                    </motion.span>
+                                    {" "}
+                                </React.Fragment>
+                            )
+                        })}
+                    </div>
+
+                    {/* Citation / Copyright */}
+                    {chapter.translation_note && (
+                        <div className="mt-12 text-center opacity-40 hover:opacity-80 transition-opacity">
+                            <p className="text-[10px] font-mono leading-relaxed max-w-lg mx-auto">
+                                {chapter.translation_note}
+                            </p>
+                        </div>
+                    )}
+                </motion.div>
+            </AnimatePresence>
         </div>
     )
 }

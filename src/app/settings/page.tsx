@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 // Settings page is preferences only for now.
 import { Monitor, Moon, Sun, Type, Hash, Palette, User, Settings as SettingsIcon, PenTool } from "lucide-react"
 import Link from "next/link"
+import { motion } from "framer-motion"
 
 const HIGHLIGHT_COLORS = [
     { id: "yellow", class: "bg-yellow-500/30", border: "border-yellow-500/50" },
@@ -119,7 +120,12 @@ export default function SettingsPage() {
     )
 
     return (
-        <div className="w-full max-w-[720px] mx-auto px-6 py-12 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring" as const, stiffness: 400, damping: 25 }}
+            className="w-full max-w-[720px] mx-auto px-6 py-12 space-y-12"
+        >
 
             {/* Header */}
             <div className="flex items-center gap-4 border-b border-border/50 pb-8">
@@ -271,6 +277,6 @@ export default function SettingsPage() {
                 </div>
 
             </div>
-        </div>
+        </motion.div>
     )
 }
