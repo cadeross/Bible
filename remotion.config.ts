@@ -8,7 +8,7 @@ Config.overrideWebpackConfig((currentConfiguration) => {
             rules: [
                 ...(currentConfiguration.module?.rules?.filter((rule) => {
                     if (rule === '...') return false;
-                    if (rule.test?.toString().includes('.css')) return false;
+                    if (typeof rule !== 'string' && rule && 'test' in rule && rule.test?.toString().includes('.css')) return false;
                     return true;
                 }) ?? []),
                 {

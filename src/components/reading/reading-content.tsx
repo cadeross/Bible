@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { isRedLetterVerse } from "@/lib/red-letter-data"
 import { Highlight } from "@/lib/persistence"
 import { Trash2, StickyNote } from "lucide-react"
+import { NoteDialog } from "./note-dialog"
 
 interface ReadingContentProps {
     chapter: BibleChapter
@@ -241,6 +242,81 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
         window.getSelection()?.removeAllRanges()
     }
 
+
+    const [noteDialogOpen, setNoteDialogOpen] = React.useState(false)
+
+    // ... (existing handlers)
+
+    const handleOpenNote = () => {
+        setMenuOpen(false)
+        setNoteDialogOpen(true)
+    }
+
+    const handleSaveNote = async (content: string) => {
+        const newHighlights = [...highlights]
+        const persistence = await import("@/lib/persistence")
+
+        // If no color selected for these verses yet, use default
+        // If color exists, keep it.
+        const targetColor = defaultHighlightColor
+
+        for (const vId of selectedVerses) {
+            const existingIdx = newHighlights.findIndex(h => h.verse === vId)
+            let colorToKeep = existingIdx !== -1 ? newHighlights[existingIdx].color : targetColor
+            let idToKeep = existingIdx !== -1 ? newHighlights[existingIdx].id : undefined
+
+            if (existingIdx !== -1) newHighlights.splice(existingIdx, 1)
+
+            const verseData = chapter.verses.find(v => v.verse === vId)
+            if (verseData) {
+                const h: Highlight = {
+                    id: idToKeep,
+                    book: bookName,
+                    chapter: chapterNum,
+                    verse: vId,
+                    color: colorToKeep,
+                    content: verseData.text,
+                    note: content, // Update note
+                    created_at: new Date().toISOString()
+                }
+                newHighlights.push(h)
+                await persistence.saveHighlight(h)
+            }
+        }
+        setHighlights(newHighlights)
+        setNoteDialogOpen(false)
+        window.getSelection()?.removeAllRanges()
+    }
+
+    const handleDeleteNote = async () => {
+        // Just clear the note field, keep highlight
+        const newHighlights = [...highlights]
+        const persistence = await import("@/lib/persistence")
+
+        for (const vId of selectedVerses) {
+            const existingIdx = newHighlights.findIndex(h => h.verse === vId)
+            if (existingIdx !== -1) {
+                const h = newHighlights[existingIdx]
+                h.note = undefined // Clear note
+                // We need to trigger save to persist the clearance
+                // saveHighlight handles updates.
+                await persistence.saveHighlight(h)
+                // Update local state
+                newHighlights[existingIdx] = h
+            }
+        }
+        setHighlights([...newHighlights])
+        setNoteDialogOpen(false)
+    }
+
+    // Helper to get initial note content
+    const getInitialNoteContent = () => {
+        if (selectedVerses.length === 0) return ""
+        // Use note from first selected verse
+        const h = highlights.find(h => h.verse === selectedVerses[0])
+        return h?.note || ""
+    }
+
     const getFontClass = () => {
         switch (fontFamily) {
             case "sans": return "font-sans"
@@ -259,6 +335,15 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
             )}
             style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight }}
         >
+            <NoteDialog
+                isOpen={noteDialogOpen}
+                onOpenChange={setNoteDialogOpen}
+                verseRef={`${bookName} ${chapterNum}:${selectedVerses.join(',')}`}
+                initialContent={getInitialNoteContent()}
+                onSave={handleSaveNote}
+                onDelete={getInitialNoteContent() ? handleDeleteNote : undefined}
+            />
+
             {/* Elegant Floating Highlight Menu */}
             <AnimatePresence>
                 {menuOpen && (
@@ -292,12 +377,7 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                         <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                                // Placeholder for Note functionality
-                                console.log("Add note for verses", selectedVerses)
-                                alert("Note feature coming soon!")
-                                setMenuOpen(false)
-                            }}
+                            onClick={handleOpenNote}
                             className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
                             title="Add Note"
                         >
@@ -362,6 +442,11 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                                         className={cn(
                                             "inline cursor-pointer transition-colors duration-200 rounded px-[2px] -mx-[2px] relative",
                                             bgClass || "hover:bg-primary/5",
+                                            // Show indicator if there's a note but no color? Or just highlight logic
+                                            // If highlight exists, we show color. Note is hidden metadata unless we add visual indicator.
+                                            // Plan didn't specify visual indicator for notes in text, just in library.
+                                            // But standard behavior: highlighted usually means note possibility.
+                                            highlight?.note && !bgClass && "underline decoration-dotted decoration-primary/50" // Fallback if no color? But logic enforces color.
                                         )}
                                         // Click Handler (Default Highlight)
                                         onClick={() => handleVerseClick(verse.verse, verse.text)}
@@ -405,3 +490,4 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
         </div>
     )
 }
+

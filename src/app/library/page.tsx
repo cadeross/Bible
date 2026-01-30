@@ -3,8 +3,9 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { getAllHighlights, getAllWisdom, Highlight, SavedWisdom } from "@/lib/persistence";
-import { PenTool, ArrowRight, BookOpen, Heart, Quote } from "lucide-react";
+import { PenTool, ArrowRight, BookOpen, Heart, Quote, StickyNote, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NoteDialog } from "@/components/reading/note-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { BIBLE_BOOKS } from "@/lib/bible-data";
 
@@ -102,7 +103,79 @@ export default function LibraryPage() {
 
     }, [rawHighlights]);
 
-    const [activeTab, setActiveTab] = useState<'highlights' | 'wisdom'>('highlights');
+    const notes = useMemo(() => {
+        return rawHighlights
+            .filter(h => h.note && h.note.trim().length > 0)
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    }, [rawHighlights])
+
+    const [activeTab, setActiveTab] = useState<'highlights' | 'wisdom' | 'notes'>('highlights');
+
+    // Note Editing State
+    const [editingNote, setEditingNote] = useState<Highlight | null>(null)
+    const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false)
+
+    const handleEditNote = (note: Highlight) => {
+        setEditingNote(note)
+        setIsNoteDialogOpen(true)
+    }
+
+    const handleSaveEditedNote = async (content: string) => {
+        if (!editingNote) return
+
+        const persistence = await import("@/lib/persistence")
+
+        // Optimistic Update
+        const updatedHighlights = rawHighlights.map(h => {
+            if (h.id === editingNote.id) {
+                return { ...h, note: content }
+            }
+            return h
+        })
+        setRawHighlights(updatedHighlights)
+
+        // DB Update
+        const updatedNote = { ...editingNote, note: content }
+        await persistence.saveHighlight(updatedNote)
+
+        setIsNoteDialogOpen(false)
+        setEditingNote(null)
+    }
+
+    const handleDeleteNote = async () => {
+        if (!editingNote) return
+
+        const persistence = await import("@/lib/persistence")
+
+        // Optimistic Update: Remove note content but keep highlight if color exists?
+        // Logic: If user deletes note, we update record to have empty note.
+        const updatedHighlights = rawHighlights.map(h => {
+            if (h.id === editingNote.id) {
+                return { ...h, note: undefined }
+            }
+            return h
+        })
+        setRawHighlights(updatedHighlights)
+
+        const updatedNote = { ...editingNote, note: undefined }
+        await persistence.saveHighlight(updatedNote)
+
+        setIsNoteDialogOpen(false)
+        setEditingNote(null)
+    }
+
+    const handleShareNote = async (h: Highlight) => {
+        const text = `"${h.content}"\n- ${h.book} ${h.chapter}:${h.verse}\n\nNote:\n${h.note}`
+        if (navigator.share) {
+            try {
+                await navigator.share({ text })
+            } catch (e) { console.error(e) }
+        } else {
+            navigator.clipboard.writeText(text)
+            // simplified toast or alert checking
+            alert("copied to clipboard") // valid specifically for this context if toast not imported
+        }
+    }
 
     if (loading) {
         return (
@@ -115,6 +188,7 @@ export default function LibraryPage() {
     }
 
     if (rawHighlights.length === 0 && wisdom.length === 0) {
+        // ... (Empty state remains same)
         return (
             <div className="flex min-h-[80vh] flex-col items-center justify-center p-4 font-mono">
                 <div className="text-center space-y-4">
@@ -150,6 +224,14 @@ export default function LibraryPage() {
             transition={{ type: "spring" as const, stiffness: 400, damping: 25 }}
             className="w-full max-w-[720px] mx-auto px-6 py-12 space-y-12"
         >
+            <NoteDialog
+                isOpen={isNoteDialogOpen}
+                onOpenChange={setIsNoteDialogOpen}
+                verseRef={editingNote ? `${editingNote.book} ${editingNote.chapter}:${editingNote.verse}` : ""}
+                initialContent={editingNote?.note || ""}
+                onSave={handleSaveEditedNote}
+                onDelete={handleDeleteNote}
+            />
 
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-border/50 pb-8">
@@ -169,7 +251,8 @@ export default function LibraryPage() {
                 <div className="flex p-1 border border-border/60 rounded-lg self-start sm:self-center">
                     {[
                         { id: 'highlights', count: groupedHighlights.length, icon: PenTool },
-                        { id: 'wisdom', count: wisdom.length, icon: Heart }
+                        { id: 'wisdom', count: wisdom.length, icon: Heart },
+                        { id: 'notes', count: notes.length, icon: StickyNote }
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -256,6 +339,75 @@ export default function LibraryPage() {
                                                     </p>
                                                 </div>
                                             </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
+                        ) : activeTab === 'notes' ? (
+                            <motion.div
+                                key="notes"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="space-y-6"
+                            >
+                                {notes.length === 0 ? (
+                                    <div className="text-center py-12 text-muted-foreground italic font-mono text-sm">no notes yet.</div>
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {notes.map((note, idx) => (
+                                            <div
+                                                key={note.id || idx}
+                                                className="group relative block p-4 rounded-md bg-secondary/10 border border-border/50 hover:border-primary/20 transition-all"
+                                            >
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <Link
+                                                            href={`/read/${note.book}/${note.chapter}?translation=dra`}
+                                                            className="text-[10px] font-bold uppercase tracking-widest text-primary/70 hover:text-primary transition-colors flex items-center gap-2 font-mono"
+                                                        >
+                                                            <StickyNote className="h-3 w-3" />
+                                                            {note.book} {note.chapter}:{note.verse}
+                                                        </Link>
+                                                        <span className="text-[10px] text-muted-foreground/50 font-mono">
+                                                            {new Date(note.created_at).toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Note Content */}
+                                                    <div className="pl-4 border-l-2 border-primary/20">
+                                                        <p className="text-sm leading-relaxed text-foreground/90 font-serif italic whitespace-pre-wrap">
+                                                            {note.note}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Verse Context (Dimmed) */}
+                                                    <p className="text-xs text-muted-foreground/60 line-clamp-1 italic font-serif px-1">
+                                                        "{note.content}"
+                                                    </p>
+
+                                                    {/* Actions */}
+                                                    <div className="flex items-center justify-end gap-2 pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() => handleShareNote(note)}
+                                                            className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                                                            title="Share Note"
+                                                        >
+                                                            <Share2 className="h-3.5 w-3.5" />
+                                                            <span className="sr-only">Share</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEditNote(note)}
+                                                            className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                                                            title="Edit Note"
+                                                        >
+                                                            <PenTool className="h-3.5 w-3.5" />
+                                                            <span className="sr-only">Edit</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         ))}
                                     </div>
                                 )}
