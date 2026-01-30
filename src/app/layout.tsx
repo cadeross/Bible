@@ -30,7 +30,7 @@ const merriweather = Merriweather({
 });
 
 export const metadata: Metadata = {
-  title: "Bible App",
+  title: "OpenWrit",
   description: "A modern, beautiful Bible reading experience.",
   icons: {
     icon: [

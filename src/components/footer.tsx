@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { usePathname } from "next/navigation"
+import Link from "next/link"
 
 import { cn } from "@/lib/utils"
 import {
@@ -90,12 +91,10 @@ export function Footer() {
                 )}
 
 
-                <HowToDialog>
-                    <button className="flex items-center gap-2 hover:text-primary transition-colors group cursor-pointer">
-                        <HelpCircle className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-                        <span className="opacity-50 group-hover:opacity-100 transition-opacity pb-px">how to</span>
-                    </button>
-                </HowToDialog>
+                <Link href="/how-to" className="flex items-center gap-2 hover:text-primary transition-colors group">
+                    <HelpCircle className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+                    <span className="opacity-50 group-hover:opacity-100 transition-opacity pb-px">how to</span>
+                </Link>
 
                 <ChangelogDialog>
                     <button className="flex items-center gap-2 hover:text-primary transition-colors group cursor-pointer">

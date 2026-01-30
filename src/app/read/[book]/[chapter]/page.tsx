@@ -16,8 +16,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { book, chapter } = await params;
     const bookTitle = decodeURIComponent(book);
     return {
-        title: `${bookTitle} ${chapter} - Daily Bread`,
-        description: `Read ${bookTitle} chapter ${chapter} on Daily Bread.`,
+        title: `${bookTitle} ${chapter} - OpenWrit`,
+        description: `Read ${bookTitle} chapter ${chapter} on OpenWrit.`,
     };
 }
 

@@ -153,112 +153,113 @@ export default function Home() {
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 md:py-0">
-      <motion.div
-        className="w-full max-w-2xl mx-auto space-y-16"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {/* Welcome */}
-        <motion.div variants={itemVariants} className="text-center space-y-2">
-          <h1 className="text-3xl md:text-4xl font-mono font-bold text-primary tracking-tight">
-            {greeting}
-          </h1>
-          {username ? (
-            <p className="font-mono text-lg text-muted-foreground">
-              {username}
-            </p>
-          ) : (
-            <div className="flex items-center justify-center gap-2 font-mono text-sm text-muted-foreground/60">
-              <Link href="/profile" className="hover:text-primary transition-colors">sign in</Link>
-              <span>/</span>
-              <Link href="/profile" className="hover:text-primary transition-colors">sign up</Link>
-            </div>
-          )}
-        </motion.div>
+    <motion.div
+      className="w-full max-w-[720px] mx-auto px-6 py-12 space-y-16"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Welcome */}
+      <motion.div variants={itemVariants} className="text-center space-y-4">
 
-        {/* Verse of the Day */}
-        <motion.div variants={itemVariants} className="space-y-6">
-          <div className="flex items-center justify-center gap-3 text-xs font-mono text-muted-foreground/50 uppercase tracking-widest">
-            <div className="w-8 h-px bg-border" />
-            <span>verse of the day</span>
-            <div className="w-8 h-px bg-border" />
-          </div>
 
-          <blockquote className="text-center">
-            <p className="text-lg md:text-xl font-mono leading-relaxed text-foreground/70">
-              "{VERSE.text}"
-            </p>
-          </blockquote>
-
-          <div className="flex items-center justify-center gap-4">
-            <Link
-              href={`/read/${VERSE.book}/${VERSE.chapter}`}
-              className="font-mono text-sm text-primary hover:underline underline-offset-4 decoration-primary/30 transition-all"
-            >
-              {VERSE.book} {VERSE.chapter}:{VERSE.verse}
+        <h1 className="text-3xl md:text-4xl font-mono font-bold text-primary tracking-tight">
+          {greeting}
+        </h1>
+        {username ? (
+          <p className="font-mono text-lg text-muted-foreground">
+            {username}
+          </p>
+        ) : (
+          <div className="flex items-center justify-center font-mono text-sm text-muted-foreground/60">
+            <Link href="/profile" className="hover:text-primary transition-colors">
+              sign in / sign up
             </Link>
-            <span className="text-muted-foreground/30">·</span>
-            <span className="font-mono text-sm text-muted-foreground/50">
-              {VERSE.translation}
-            </span>
-            <span className="text-muted-foreground/30">·</span>
-            <button
-              onClick={handleHighlight}
-              className="font-mono text-sm text-muted-foreground/50 hover:text-primary transition-colors flex items-center gap-1"
-            >
-              <BookOpen className="h-3 w-3" />
-              save
-            </button>
           </div>
-        </motion.div>
-
-        {/* Divider */}
-        <motion.div variants={itemVariants} className="flex justify-center">
-          <div className="w-1 h-1 rounded-full bg-primary/20" />
-        </motion.div>
-
-        {/* Daily Wisdom */}
-        <motion.div variants={itemVariants} className="space-y-6">
-          <div className="flex items-center justify-center gap-3 text-xs font-mono text-muted-foreground/50 uppercase tracking-widest">
-            <div className="w-8 h-px bg-border" />
-            <span>daily wisdom</span>
-            <div className="w-8 h-px bg-border" />
-          </div>
-
-          <blockquote className="text-center">
-            <p className="text-lg md:text-xl font-mono leading-relaxed text-foreground/70">
-              "{WISDOM.text}"
-            </p>
-          </blockquote>
-
-          <div className="flex items-center justify-center gap-4">
-            <span className="font-mono text-sm text-muted-foreground/50">
-              — {WISDOM.author}
-            </span>
-            <span className="text-muted-foreground/30">·</span>
-            <button
-              onClick={handleSaveWisdom}
-              className="font-mono text-sm text-muted-foreground/50 hover:text-primary transition-colors flex items-center gap-1"
-            >
-              <Heart className="h-3 w-3" />
-              save
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Start Reading CTA */}
-        <motion.div variants={itemVariants} className="flex justify-center pt-4">
-          <Link
-            href="/read"
-            className="group flex items-center gap-2 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
-          >
-            <span>start reading</span>
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-        </motion.div>
+        )}
       </motion.div>
-    </div>
+
+      {/* Verse of the Day */}
+      <motion.div variants={itemVariants} className="space-y-6">
+        <div className="flex items-center justify-center gap-3 text-xs font-mono text-muted-foreground/50 uppercase tracking-widest">
+          <div className="w-8 h-px bg-border" />
+          <span>verse of the day</span>
+          <div className="w-8 h-px bg-border" />
+        </div>
+
+        <blockquote className="text-center">
+          <p className="text-lg md:text-xl font-mono leading-relaxed text-foreground/70">
+            "{VERSE.text}"
+          </p>
+        </blockquote>
+
+        {/* Unified hover container */}
+        <div className="group flex items-center justify-center gap-4 transition-opacity duration-300 hover:opacity-100 opacity-60">
+          <Link
+            href={`/read/${VERSE.book}/${VERSE.chapter}`}
+            className="font-mono text-sm text-primary transition-colors"
+          >
+            {VERSE.book} {VERSE.chapter}:{VERSE.verse}
+          </Link>
+          <span className="text-muted-foreground/30">·</span>
+          <span className="font-mono text-sm text-muted-foreground/50">
+            {VERSE.translation}
+          </span>
+          <span className="text-muted-foreground/30">·</span>
+          <button
+            onClick={handleHighlight}
+            className="font-mono text-sm text-muted-foreground/50 hover:text-primary transition-colors flex items-center gap-1"
+          >
+            <BookOpen className="h-3 w-3" />
+            save
+          </button>
+        </div>
+      </motion.div>
+
+      {/* Divider */}
+      <motion.div variants={itemVariants} className="flex justify-center">
+        <div className="w-1 h-1 rounded-full bg-primary/20" />
+      </motion.div>
+
+      {/* Daily Wisdom */}
+      <motion.div variants={itemVariants} className="space-y-6">
+        <div className="flex items-center justify-center gap-3 text-xs font-mono text-muted-foreground/50 uppercase tracking-widest">
+          <div className="w-8 h-px bg-border" />
+          <span>daily wisdom</span>
+          <div className="w-8 h-px bg-border" />
+        </div>
+
+        <blockquote className="text-center">
+          <p className="text-lg md:text-xl font-mono leading-relaxed text-foreground/70">
+            "{WISDOM.text}"
+          </p>
+        </blockquote>
+
+        <div className="flex items-center justify-center gap-4">
+          <span className="font-mono text-sm text-muted-foreground/50">
+            — {WISDOM.author}
+          </span>
+          <span className="text-muted-foreground/30">·</span>
+          <button
+            onClick={handleSaveWisdom}
+            className="font-mono text-sm text-muted-foreground/50 hover:text-primary transition-colors flex items-center gap-1"
+          >
+            <Heart className="h-3 w-3" />
+            save
+          </button>
+        </div>
+      </motion.div>
+
+      {/* Start Reading CTA */}
+      <motion.div variants={itemVariants} className="flex justify-center pt-4">
+        <Link
+          href="/read"
+          className="group flex items-center gap-2 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
+        >
+          <span>start reading</span>
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </Link>
+      </motion.div>
+    </motion.div>
   )
 }

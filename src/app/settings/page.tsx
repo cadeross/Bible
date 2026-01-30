@@ -1,12 +1,12 @@
 "use client"
 
 import { useTheme } from "next-themes"
-import { useReadingPreferences, FontType } from "@/contexts/reading-preferences"
+import { useReadingPreferences, FontType, PaletteType } from "@/contexts/reading-preferences"
 import { cn } from "@/lib/utils"
 // Settings page is preferences only for now.
 import { Monitor, Moon, Sun, Type, Hash, Palette, User, Settings as SettingsIcon, PenTool } from "lucide-react"
 import Link from "next/link"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 
 const HIGHLIGHT_COLORS = [
     { id: "yellow", class: "bg-yellow-500/30", border: "border-yellow-500/50" },
@@ -33,8 +33,11 @@ export default function SettingsPage() {
         redLetters,
         setRedLetters,
         defaultHighlightColor,
-        setDefaultHighlightColor
+        setDefaultHighlightColor,
+        palette,
+        setPalette
     } = useReadingPreferences()
+
 
     // User State for Preferences
     const [user, setUser] = useState<any>(null);
@@ -165,28 +168,133 @@ export default function SettingsPage() {
                 {/* APPEARANCE */}
                 <Section title="Appearance">
                     <SettingRow label="Theme" description="choose your preferred color scheme">
-                        <ButtonGroup>
-                            <Toggle
-                                active={theme === 'light'}
+                        <div className="flex gap-3">
+                            {/* Light Theme Card */}
+                            <button
                                 onClick={() => setTheme('light')}
-                                label="light"
-                                icon={Sun}
-                            />
-                            <Toggle
-                                active={theme === 'dark'}
+                                className={cn(
+                                    "group relative w-20 h-16 rounded-lg border-2 overflow-hidden transition-all duration-200",
+                                    theme === 'light'
+                                        ? "border-primary ring-2 ring-primary/20 scale-105"
+                                        : "border-border/50 hover:border-border hover:scale-102"
+                                )}
+                            >
+                                {/* Mini preview */}
+                                <div className="absolute inset-0 bg-[#fafafa]">
+                                    <div className="absolute top-1 left-1 right-1 h-2 bg-[#e5e5e5] rounded-sm" />
+                                    <div className="absolute top-4 left-1 w-4 h-1.5 bg-[#3b82f6] rounded-sm" />
+                                    <div className="absolute top-6 left-1 right-1 h-1 bg-[#d4d4d4] rounded-sm" />
+                                    <div className="absolute top-8 left-1 right-2 h-1 bg-[#d4d4d4] rounded-sm" />
+                                    <div className="absolute top-10 left-1 right-3 h-1 bg-[#d4d4d4] rounded-sm" />
+                                </div>
+                                <div className="absolute bottom-0 inset-x-0 bg-[#e5e5e5]/80 py-0.5 flex items-center justify-center gap-1">
+                                    <Sun className="h-2 w-2 text-[#737373]" />
+                                    <span className="text-[8px] font-mono text-[#737373]">light</span>
+                                </div>
+                            </button>
+
+                            {/* Dark Theme Card */}
+                            <button
                                 onClick={() => setTheme('dark')}
-                                label="dark"
-                                icon={Moon}
-                            />
-                            <Toggle
-                                active={theme === 'system'}
+                                className={cn(
+                                    "group relative w-20 h-16 rounded-lg border-2 overflow-hidden transition-all duration-200",
+                                    theme === 'dark'
+                                        ? "border-primary ring-2 ring-primary/20 scale-105"
+                                        : "border-border/50 hover:border-border hover:scale-102"
+                                )}
+                            >
+                                {/* Mini preview */}
+                                <div className="absolute inset-0 bg-[#171717]">
+                                    <div className="absolute top-1 left-1 right-1 h-2 bg-[#262626] rounded-sm" />
+                                    <div className="absolute top-4 left-1 w-4 h-1.5 bg-[#60a5fa] rounded-sm" />
+                                    <div className="absolute top-6 left-1 right-1 h-1 bg-[#404040] rounded-sm" />
+                                    <div className="absolute top-8 left-1 right-2 h-1 bg-[#404040] rounded-sm" />
+                                    <div className="absolute top-10 left-1 right-3 h-1 bg-[#404040] rounded-sm" />
+                                </div>
+                                <div className="absolute bottom-0 inset-x-0 bg-[#262626]/80 py-0.5 flex items-center justify-center gap-1">
+                                    <Moon className="h-2 w-2 text-[#a3a3a3]" />
+                                    <span className="text-[8px] font-mono text-[#a3a3a3]">dark</span>
+                                </div>
+                            </button>
+
+                            {/* Auto Theme Card */}
+                            <button
                                 onClick={() => setTheme('system')}
-                                label="auto"
-                                icon={Monitor}
-                            />
-                        </ButtonGroup>
+                                className={cn(
+                                    "group relative w-20 h-16 rounded-lg border-2 overflow-hidden transition-all duration-200",
+                                    theme === 'system'
+                                        ? "border-primary ring-2 ring-primary/20 scale-105"
+                                        : "border-border/50 hover:border-border hover:scale-102"
+                                )}
+                            >
+                                {/* Split preview - light/dark */}
+                                <div className="absolute inset-0">
+                                    {/* Left half - light */}
+                                    <div className="absolute inset-y-0 left-0 w-1/2 bg-[#fafafa]">
+                                        <div className="absolute top-1 left-1 right-0.5 h-2 bg-[#e5e5e5] rounded-sm" />
+                                        <div className="absolute top-4 left-1 w-3 h-1.5 bg-[#3b82f6] rounded-sm" />
+                                        <div className="absolute top-6 left-1 right-0.5 h-1 bg-[#d4d4d4] rounded-sm" />
+                                        <div className="absolute top-8 left-1 right-1 h-1 bg-[#d4d4d4] rounded-sm" />
+                                    </div>
+                                    {/* Right half - dark */}
+                                    <div className="absolute inset-y-0 right-0 w-1/2 bg-[#171717]">
+                                        <div className="absolute top-1 left-0.5 right-1 h-2 bg-[#262626] rounded-sm" />
+                                        <div className="absolute top-4 right-1 w-3 h-1.5 bg-[#60a5fa] rounded-sm" />
+                                        <div className="absolute top-6 left-0.5 right-1 h-1 bg-[#404040] rounded-sm" />
+                                        <div className="absolute top-8 left-1 right-1 h-1 bg-[#404040] rounded-sm" />
+                                    </div>
+                                </div>
+                                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-r from-[#e5e5e5]/80 to-[#262626]/80 py-0.5 flex items-center justify-center gap-1">
+                                    <Monitor className="h-2 w-2 text-[#737373]" />
+                                    <span className="text-[8px] font-mono text-[#737373]">auto</span>
+                                </div>
+                            </button>
+                        </div>
                     </SettingRow>
 
+                    <SettingRow label="Color Palette" description="accent colors and tones">
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                { id: 'standard', bg: '#18181b', accent: '#3b82f6', muted: '#27272a', text: '#fafafa' },
+                                { id: 'terminal', bg: '#0d1117', accent: '#39d353', muted: '#161b22', text: '#c9d1d9' },
+                                { id: 'solarized', bg: '#002b36', accent: '#268bd2', muted: '#073642', text: '#839496' },
+                                { id: 'sepia', bg: '#f4ecd8', accent: '#8b7355', muted: '#e8dcc8', text: '#5c4a32' },
+                                { id: 'midnight', bg: '#0f0f23', accent: '#ffff66', muted: '#10101a', text: '#cccccc' },
+                                { id: 'lavender', bg: '#1a1a2e', accent: '#b4a7d6', muted: '#16162a', text: '#e0d8ef' },
+                                { id: 'rose', bg: '#1f1a1a', accent: '#f472b6', muted: '#2a1f1f', text: '#fce7f3' },
+                                { id: 'oled', bg: '#000000', accent: '#ffffff', muted: '#0a0a0a', text: '#e5e5e5' },
+                            ].map((p) => (
+                                <button
+                                    key={p.id}
+                                    onClick={() => setPalette(p.id as PaletteType)}
+                                    title={p.id}
+                                    className={cn(
+                                        "w-10 h-12 rounded overflow-hidden p-1 flex flex-col gap-1 transition-all duration-300 hover:scale-105 active:scale-95",
+                                        palette === p.id
+                                            ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                            : "opacity-60 hover:opacity-100"
+                                    )}
+                                    style={{ backgroundColor: p.bg }}
+                                >
+                                    {/* Header - book/chapter */}
+                                    <div className="flex items-center justify-center gap-0.5 pb-0.5" style={{ borderBottom: `0.5px solid ${p.muted}` }}>
+                                        <div className="h-0.5 w-4 rounded-full" style={{ backgroundColor: p.accent }} />
+                                    </div>
+
+                                    {/* Verse lines */}
+                                    <div className="flex-1 flex flex-col justify-start gap-0.5">
+                                        <div className="h-0.5 w-full rounded-full opacity-60" style={{ backgroundColor: p.text }} />
+                                        <div className="h-0.5 w-5/6 rounded-full opacity-40" style={{ backgroundColor: p.text }} />
+                                        <div className="h-0.5 w-full rounded-full opacity-40" style={{ backgroundColor: p.text }} />
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </SettingRow>
+                </Section>
+
+                {/* READING */}
+                <Section title="Reading">
                     <SettingRow label="Font Family" description="typeface for reading view">
                         <ButtonGroup>
                             <Toggle
@@ -209,10 +317,7 @@ export default function SettingsPage() {
                             />
                         </ButtonGroup>
                     </SettingRow>
-                </Section>
 
-                {/* READING */}
-                <Section title="Reading">
                     <SettingRow label="Font Size" description={`adjust text size (${fontSize}px)`}>
                         <div className="flex items-center gap-4 bg-secondary/20 p-2 rounded-md">
                             <button
@@ -269,12 +374,7 @@ export default function SettingsPage() {
                     </SettingRow>
                 </Section>
 
-                {/* Version Info */}
-                <div className="pt-8 border-t border-border/30">
-                    <p className="text-[10px] text-muted-foreground font-mono text-center opacity-50">
-                        bible-web v0.1.0 • monkeytype inspired
-                    </p>
-                </div>
+
 
             </div>
         </motion.div>
