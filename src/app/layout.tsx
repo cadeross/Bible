@@ -11,6 +11,8 @@ import { Toaster } from "sonner";
 import { MainLayout } from "@/components/main-layout";
 import { FocusProvider } from "@/contexts/focus-mode";
 import { Agentation } from "agentation";
+import { Suspense } from "react";
+import Loading from "./loading";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -81,7 +83,9 @@ export default function RootLayout({
               <Header />
               <CommandMenu />
               <MainLayout>
-                {children}
+                <Suspense fallback={<Loading />}>
+                  {children}
+                </Suspense>
               </MainLayout>
 
               <Footer />
@@ -116,7 +120,7 @@ export default function RootLayout({
               />
               <Analytics />
               <SpeedInsights />
-              {process.env.NODE_ENV === "development" && <Agentation />}
+              {/* {process.env.NODE_ENV === "development" && <Agentation />} */}
             </FocusProvider>
           </ReadingPreferencesProvider>
         </ThemeProvider>

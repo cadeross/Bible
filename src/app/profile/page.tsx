@@ -10,6 +10,7 @@ import { User, LogOut, Cloud, Activity, Palette } from "lucide-react";
 import { toast } from "sonner";
 import { getHistory, getAllHighlights, ReadingHistory } from "@/lib/persistence";
 import { motion } from "framer-motion";
+import Loading from "../loading";
 
 // Helper for section groups (Matches Settings)
 const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
@@ -164,13 +165,7 @@ export default function ProfilePage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center">
-                <div className="w-16 h-1 bg-muted overflow-hidden">
-                    <div className="w-full h-full bg-primary animate-progress origin-left-right" />
-                </div>
-            </div>
-        );
+        return <Loading />
     }
 
     if (!user) {

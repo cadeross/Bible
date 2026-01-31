@@ -2,12 +2,24 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getAllHighlights, getAllWisdom, Highlight, SavedWisdom } from "@/lib/persistence";
-import { PenTool, ArrowRight, BookOpen, Heart, Quote, StickyNote, Share2 } from "lucide-react";
+import { PenTool, ArrowRight, BookOpen, Heart, Quote, StickyNote, Share2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NoteDialog } from "@/components/reading/note-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { BIBLE_BOOKS } from "@/lib/bible-data";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import Loading from "../loading";
 
 interface GroupedHighlight extends Highlight {
     verseEnd: number;
@@ -110,10 +122,12 @@ export default function LibraryPage() {
     }, [rawHighlights])
 
     const [activeTab, setActiveTab] = useState<'highlights' | 'wisdom' | 'notes'>('highlights');
+    const router = useRouter()
 
     // Note Editing State
     const [editingNote, setEditingNote] = useState<Highlight | null>(null)
     const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false)
+    const [noteToDelete, setNoteToDelete] = useState<Highlight | null>(null)
 
     const handleEditNote = (note: Highlight) => {
         setEditingNote(note)
@@ -142,49 +156,66 @@ export default function LibraryPage() {
         setEditingNote(null)
     }
 
-    const handleDeleteNote = async () => {
-        if (!editingNote) return
+    const handleDeleteNote = async (noteToDelete?: Highlight) => {
+        const target = noteToDelete || editingNote
+        if (!target) return
 
         const persistence = await import("@/lib/persistence")
 
-        // Optimistic Update: Remove note content but keep highlight if color exists?
-        // Logic: If user deletes note, we update record to have empty note.
+        // Optimistic Update
         const updatedHighlights = rawHighlights.map(h => {
-            if (h.id === editingNote.id) {
+            if (h.id === target.id) {
                 return { ...h, note: undefined }
             }
             return h
         })
         setRawHighlights(updatedHighlights)
 
-        const updatedNote = { ...editingNote, note: undefined }
+        const updatedNote = { ...target, note: undefined }
         await persistence.saveHighlight(updatedNote)
 
         setIsNoteDialogOpen(false)
         setEditingNote(null)
+        setNoteToDelete(null)
     }
 
     const handleShareNote = async (h: Highlight) => {
-        const text = `"${h.content}"\n- ${h.book} ${h.chapter}:${h.verse}\n\nNote:\n${h.note}`
+        const ref = `${h.book} ${h.chapter}:${h.verse}`
+        const url = `${window.location.origin}/share?ref=${encodeURIComponent(ref)}&text=${encodeURIComponent(h.content)}&note=${encodeURIComponent(h.note || "")}`
+
         if (navigator.share) {
             try {
-                await navigator.share({ text })
+                await navigator.share({
+                    title: `Note on ${ref}`,
+                    url
+                })
             } catch (e) { console.error(e) }
         } else {
-            navigator.clipboard.writeText(text)
+            navigator.clipboard.writeText(url)
             // simplified toast or alert checking
-            alert("copied to clipboard") // valid specifically for this context if toast not imported
+            alert("Deep link copied to clipboard")
+        }
+    }
+
+    const handleShareWisdom = async (w: SavedWisdom) => {
+        const ref = w.source || "Daily Wisdom"
+        const url = `${window.location.origin}/share?ref=${encodeURIComponent(ref)}&text=${encodeURIComponent(w.content)}&note=${encodeURIComponent("")}`
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `Wisdom from ${ref}`,
+                    url
+                })
+            } catch (e) { console.error(e) }
+        } else {
+            navigator.clipboard.writeText(url)
+            alert("Deep link copied to clipboard")
         }
     }
 
     if (loading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center">
-                <div className="w-16 h-1 bg-muted overflow-hidden">
-                    <div className="w-full h-full bg-primary animate-progress origin-left-right" />
-                </div>
-            </div>
-        );
+        return <Loading />
     }
 
     if (rawHighlights.length === 0 && wisdom.length === 0) {
@@ -310,16 +341,16 @@ export default function LibraryPage() {
                                 ) : (
                                     <div className="grid grid-cols-1 gap-4">
                                         {groupedHighlights.map((highlight, idx) => (
-                                            <Link
+                                            <div
                                                 key={highlight.id || idx}
-                                                href={`/read/${highlight.book}/${highlight.chapter}?translation=dra`}
-                                                className={cn(
-                                                    "group relative block p-4 rounded-md bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20",
-                                                )}
+                                                className="group relative block p-4 rounded-md bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20"
                                             >
-                                                <div className="space-y-3">
+                                                <div className="space-y-2">
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2 font-mono">
+                                                        <Link
+                                                            href={`/read/${highlight.book}/${highlight.chapter}?translation=dra`}
+                                                            className="text-[10px] font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2 font-mono"
+                                                        >
                                                             <span className={cn(
                                                                 "w-1.5 h-1.5 rounded-full",
                                                                 highlight.color === "yellow" && "bg-yellow-500",
@@ -329,16 +360,26 @@ export default function LibraryPage() {
                                                                 highlight.color === "purple" && "bg-purple-500",
                                                             )} />
                                                             {highlight.book} {highlight.chapter}:{highlight.verse}{highlight.verseEnd > highlight.verse ? `-${highlight.verseEnd}` : ''}
-                                                        </span>
+                                                        </Link>
                                                         <span className="text-[10px] text-muted-foreground/50 font-mono">
                                                             {new Date(highlight.created_at).toLocaleDateString()}
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm leading-relaxed text-foreground/90 group-hover:text-foreground transition-colors font-serif italic line-clamp-3">
-                                                        "{highlight.content || "view verse content"}"
-                                                    </p>
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <p className="text-sm leading-relaxed text-foreground/90 font-serif italic line-clamp-3">
+                                                            "{highlight.content || "view verse content"}"
+                                                        </p>
+                                                        <button
+                                                            onClick={() => handleShareNote(highlight)}
+                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-all shrink-0"
+                                                            title="Share Highlight"
+                                                        >
+                                                            <Share2 className="h-3.5 w-3.5" />
+                                                            <span className="sr-only">Share</span>
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </Link>
+                                            </div>
                                         ))}
                                     </div>
                                 )}
@@ -359,17 +400,15 @@ export default function LibraryPage() {
                                         {notes.map((note, idx) => (
                                             <div
                                                 key={note.id || idx}
-                                                className="group relative block p-4 rounded-md bg-secondary/10 border border-border/50 hover:border-primary/20 transition-all"
+                                                onClick={() => router.push(`/read/${note.book}/${note.chapter}?translation=dra`)}
+                                                className="group relative block p-4 pb-2 rounded-md bg-secondary/10 border border-border/50 hover:border-primary/20 transition-all cursor-pointer hover:bg-secondary/20"
                                             >
-                                                <div className="space-y-4">
+                                                <div className="space-y-3">
                                                     <div className="flex items-center justify-between">
-                                                        <Link
-                                                            href={`/read/${note.book}/${note.chapter}?translation=dra`}
-                                                            className="text-[10px] font-bold uppercase tracking-widest text-primary/70 hover:text-primary transition-colors flex items-center gap-2 font-mono"
-                                                        >
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2 font-mono">
                                                             <StickyNote className="h-3 w-3" />
                                                             {note.book} {note.chapter}:{note.verse}
-                                                        </Link>
+                                                        </span>
                                                         <span className="text-[10px] text-muted-foreground/50 font-mono">
                                                             {new Date(note.created_at).toLocaleDateString()}
                                                         </span>
@@ -388,9 +427,22 @@ export default function LibraryPage() {
                                                     </p>
 
                                                     {/* Actions */}
-                                                    <div className="flex items-center justify-end gap-2 pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button
-                                                            onClick={() => handleShareNote(note)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                setNoteToDelete(note)
+                                                            }}
+                                                            className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-md transition-colors"
+                                                            title="Delete Note"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                handleShareNote(note)
+                                                            }}
                                                             className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
                                                             title="Share Note"
                                                         >
@@ -398,7 +450,10 @@ export default function LibraryPage() {
                                                             <span className="sr-only">Share</span>
                                                         </button>
                                                         <button
-                                                            onClick={() => handleEditNote(note)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                handleEditNote(note)
+                                                            }}
                                                             className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
                                                             title="Edit Note"
                                                         >
@@ -442,10 +497,21 @@ export default function LibraryPage() {
                                                     <p className="text-sm leading-relaxed text-foreground/90 group-hover:text-foreground transition-colors font-serif italic">
                                                         "{item.content}"
                                                     </p>
-                                                    <div className="text-right">
-                                                        <span className="text-[10px] font-mono text-primary/60">
-                                                            — {item.source || "Unknown"}
-                                                        </span>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="text-right flex-1">
+                                                            <span className="text-[10px] font-mono text-primary/60">
+                                                                — {item.source || "Unknown"}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                                onClick={() => handleShareWisdom(item)}
+                                                                className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                                                                title="Share Wisdom"
+                                                            >
+                                                                <Share2 className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -455,9 +521,28 @@ export default function LibraryPage() {
                             </motion.div>
                         )}
                     </AnimatePresence>
-
                 </div>
             </div>
+
+            <AlertDialog open={!!noteToDelete} onOpenChange={(open) => !open && setNoteToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Note</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this note? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => handleDeleteNote(noteToDelete!)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </motion.div>
     );
 }

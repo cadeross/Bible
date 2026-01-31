@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { isRedLetterVerse } from "@/lib/red-letter-data"
 import { Highlight } from "@/lib/persistence"
-import { Trash2, StickyNote } from "lucide-react"
+import { Trash2, StickyNote, Share2 } from "lucide-react"
 import { NoteDialog } from "./note-dialog"
 
 interface ReadingContentProps {
@@ -309,10 +309,42 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
         setNoteDialogOpen(false)
     }
 
+    const handleShareSelection = async () => {
+        // Gather content
+        const versesToShare = chapter.verses.filter(v => selectedVerses.includes(v.verse))
+            .sort((a, b) => a.verse - b.verse)
+
+        if (versesToShare.length === 0) return
+
+        const textContent = versesToShare.map(v => v.text).join(' ')
+        // Check if there are notes attached to any of these
+        const relevantNotes = highlights
+            .filter(h => selectedVerses.includes(h.verse) && h.note)
+            .map(h => h.note)
+            .join('\n\n')
+
+        const ref = `${bookName} ${chapterNum}:${versesToShare[0].verse}${versesToShare.length > 1 ? `-${versesToShare[versesToShare.length - 1].verse}` : ''}`
+
+        const url = `${window.location.origin}/share?ref=${encodeURIComponent(ref)}&text=${encodeURIComponent(textContent)}&note=${encodeURIComponent(relevantNotes)}`
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `Quote from ${ref}`,
+                    url: url
+                })
+            } catch (e) { console.error(e) }
+        } else {
+            navigator.clipboard.writeText(url)
+            alert("Deep link copied to clipboard!")
+        }
+        setMenuOpen(false)
+        window.getSelection()?.removeAllRanges()
+    }
+
     // Helper to get initial note content
     const getInitialNoteContent = () => {
         if (selectedVerses.length === 0) return ""
-        // Use note from first selected verse
         const h = highlights.find(h => h.verse === selectedVerses[0])
         return h?.note || ""
     }
@@ -382,6 +414,16 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                             title="Add Note"
                         >
                             <StickyNote className="h-4 w-4" />
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleShareSelection}
+                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                            title="Share"
+                        >
+                            <Share2 className="h-4 w-4" />
                         </motion.button>
 
                         <div className="w-[1px] h-5 bg-border mx-1" />
@@ -460,8 +502,11 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                                         onTouchEnd={handleTouchEnd}
                                     >
                                         {showVerseNumbers && (
-                                            <sup className="mr-1 text-[0.6em] text-muted-foreground/50 select-none font-mono">
-                                                {verse.verse}
+                                            <sup className="mr-1 text-[0.6em] text-muted-foreground/50 select-none font-mono flex items-center gap-0.5 inline-flex">
+                                                <span>{verse.verse}</span>
+                                                {highlight?.note && (
+                                                    <StickyNote className="h-2 w-2 text-primary/70" />
+                                                )}
                                             </sup>
                                         )}
                                         <span className={cn(

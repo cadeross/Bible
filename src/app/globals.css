@@ -43,10 +43,14 @@
     transition: background-color 0.4s ease, color 0.4s ease;
   }
 
-  /* Custom Selection Color */
   ::selection {
     background-color: var(--primary);
     color: var(--primary-foreground);
+  }
+
+  /* Force hide any nprogress bars if present */
+  #nprogress {
+    display: none !important;
   }
 }
 

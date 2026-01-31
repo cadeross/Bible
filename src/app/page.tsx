@@ -167,9 +167,9 @@ export default function Home() {
           {greeting}
         </h1>
         {username ? (
-          <p className="font-mono text-lg text-muted-foreground">
+          <Link href="/profile" className="font-mono text-lg text-muted-foreground hover:text-primary transition-colors">
             {username}
-          </p>
+          </Link>
         ) : (
           <div className="flex items-center justify-center font-mono text-sm text-muted-foreground/60">
             <Link href="/profile" className="hover:text-primary transition-colors">
