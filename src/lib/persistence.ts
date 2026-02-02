@@ -270,7 +270,11 @@ export async function saveHistory(history: ReadingHistory) {
                 completed_at: history.completed_at
             }]);
 
-        if (error) console.error("Error saving history", error);
+        if (error) {
+            console.error("Error saving history DETAILS:", JSON.stringify(error, null, 2));
+        } else {
+            console.log("History saved successfully:", history);
+        }
     } else {
         const local = localStorage.getItem("reading_history");
         const items: ReadingHistory[] = local ? JSON.parse(local) : [];

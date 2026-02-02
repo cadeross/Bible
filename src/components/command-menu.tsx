@@ -25,7 +25,7 @@ export function CommandMenu() {
             }
 
             // Check if key is a single character letter/number/symbol and no modifiers
-            if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+            if (e.key && e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
                 if (!e.key.match(/^[a-zA-Z0-9]$/)) return;
 
                 e.preventDefault()

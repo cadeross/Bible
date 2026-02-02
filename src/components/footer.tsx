@@ -58,13 +58,13 @@ export function Footer() {
                     </svg>
                     <span className="pb-px">x.com</span>
                 </a>
-                <a
+                {/* <a
                     href="#"
                     className="flex items-center gap-2 hover:text-primary transition-colors group"
                 >
                     <Heart className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
                     <span className="pb-px">support</span>
-                </a>
+                </a> */}
                 <Link
                     href="/contact"
                     className="flex items-center gap-2 hover:text-primary transition-colors group"

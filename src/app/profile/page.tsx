@@ -11,6 +11,14 @@ import { toast } from "sonner";
 import { getHistory, getAllHighlights, ReadingHistory } from "@/lib/persistence";
 import { motion } from "framer-motion";
 import Loading from "../loading";
+import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    ChartLegend,
+    ChartLegendContent
+} from "@/components/ui/chart";
 
 // Helper for section groups (Matches Settings)
 const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
@@ -58,10 +66,23 @@ const formatTime = (seconds: number) => {
     return `${m}m`;
 }
 
+// Chart Configs
+const activityConfig = {
+    minutes: {
+        label: "Minutes Read",
+        color: "hsl(var(--primary))",
+    },
+};
+
+const bookConfig = {
+    minutes: {
+        label: "Minutes",
+    },
+};
+
 export default function ProfilePage() {
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
     const [stats, setStats] = useState({
         words: 0,
         chapters: 0,
@@ -69,7 +90,21 @@ export default function ProfilePage() {
         highlights: 0,
         timeSeconds: 0
     });
+
+    // Heatmap State
+    const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
     const [activityMap, setActivityMap] = useState<Record<string, number>>({});
+
+    // Chart Data States
+    const [activityData, setActivityData] = useState<any[]>([]);
+    const [bookData, setBookData] = useState<any[]>([]);
+
+    // Previous Period Stats (for comparisons)
+    const [prevStats, setPrevStats] = useState({
+        words: 0,
+        chapters: 0,
+        timeSeconds: 0
+    });
 
     const router = useRouter();
     const supabase = createClient();
@@ -89,9 +124,10 @@ export default function ProfilePage() {
                 let totalTime = 0;
                 const uniqueChapters = new Set();
                 const dailyActivity: Record<string, number> = {};
-                const monthlyActivity: Record<string, number> = {}; // Stores seconds
+                const monthlyActivity: Record<string, number> = {};
+                const bookStats: Record<string, number> = {};
 
-                history.forEach(h => {
+                history.forEach((h: any) => {
                     totalWords += (h.words_read || 0);
                     const duration = h.duration_seconds || 60;
                     totalTime += duration;
@@ -106,6 +142,9 @@ export default function ProfilePage() {
                     // Monthly Aggregation (Seconds)
                     const month = h.completed_at.slice(0, 7);
                     monthlyActivity[month] = (monthlyActivity[month] || 0) + duration;
+
+                    // Book Aggregation
+                    bookStats[h.book] = (bookStats[h.book] || 0) + duration;
                 });
 
                 // Calculate Streak (Days with ANY activity)
@@ -143,7 +182,62 @@ export default function ProfilePage() {
                     timeSeconds: totalTime
                 });
 
+                // Set Activity Map for Heatmap
                 setActivityMap(viewMode === 'day' ? dailyActivity : monthlyActivity);
+
+                // Process Last 30 Days for Bar Chart
+                const last30Days = [];
+                const today = new Date();
+                for (let i = 29; i >= 0; i--) {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - i);
+                    const dateStr = d.toISOString().split('T')[0];
+                    last30Days.push({
+                        date: dateStr,
+                        displayDate: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                        minutes: Math.round((dailyActivity[dateStr] || 0) / 60)
+                    });
+                }
+                setActivityData(last30Days);
+
+                // Process Book Distribution
+                const sortedBooks = Object.entries(bookStats)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([book, seconds]) => ({
+                        book,
+                        minutes: Math.round(seconds / 60),
+                        fill: "hsl(var(--primary))"
+                    }));
+                setBookData(sortedBooks.slice(0, 5));
+
+                // Calculate Previous Period Stats (Last 7 days vs Previous 7 days)
+                const now = new Date();
+                let last7Words = 0, prev7Words = 0;
+                let last7Chapters = new Set(), prev7Chapters = new Set();
+                let last7Time = 0, prev7Time = 0;
+
+                history.forEach((h: any) => {
+                    const completedAt = new Date(h.completed_at);
+                    const daysDiff = Math.floor((now.getTime() - completedAt.getTime()) / (1000 * 60 * 60 * 24));
+                    const chapterKey = `${h.book}-${h.chapter}`;
+                    const duration = h.duration_seconds || 60;
+
+                    if (daysDiff < 7) {
+                        last7Words += h.words_read || 0;
+                        last7Chapters.add(chapterKey);
+                        last7Time += duration;
+                    } else if (daysDiff < 14) {
+                        prev7Words += h.words_read || 0;
+                        prev7Chapters.add(chapterKey);
+                        prev7Time += duration;
+                    }
+                });
+
+                setPrevStats({
+                    words: prev7Words,
+                    chapters: prev7Chapters.size,
+                    timeSeconds: prev7Time
+                });
             }
             setLoading(false);
         };
@@ -252,26 +346,108 @@ export default function ProfilePage() {
                 {/* STATS */}
                 <Section title="Statistics">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        {[
-                            { label: "time read", value: formatTime(stats.timeSeconds) },
-                            { label: "chapters", value: stats.chapters.toLocaleString() },
-                            { label: "words read", value: stats.words.toLocaleString() },
-                            { label: "day streak", value: stats.streak }
-                        ].map((stat, i) => (
-                            <div key={i} className="bg-secondary/10 p-4 rounded-md space-y-2 border border-border/50">
-                                <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{stat.label}</p>
-                                <p className="text-2xl font-mono font-bold text-primary">{stat.value}</p>
-                            </div>
-                        ))}
+                        {(() => {
+                            // Helper: Calculate change percentage
+                            const calcChange = (current: number, previous: number) => {
+                                if (previous === 0) return current > 0 ? 100 : 0;
+                                return Math.round(((current - previous) / previous) * 100);
+                            };
+
+                            const kpis = [
+                                {
+                                    label: "time read",
+                                    value: formatTime(stats.timeSeconds),
+                                    change: calcChange(stats.timeSeconds, prevStats.timeSeconds)
+                                },
+                                {
+                                    label: "chapters",
+                                    value: stats.chapters.toLocaleString(),
+                                    change: calcChange(stats.chapters, prevStats.chapters)
+                                },
+                                {
+                                    label: "words read",
+                                    value: stats.words > 1000 ? `${(stats.words / 1000).toFixed(1)}K` : stats.words.toLocaleString(),
+                                    change: calcChange(stats.words, prevStats.words)
+                                },
+                                {
+                                    label: "day streak",
+                                    value: stats.streak,
+                                    change: null // No comparison for streak
+                                }
+                            ];
+
+                            return kpis.map((stat, i) => (
+                                <div key={i} className="bg-secondary/10 p-4 rounded-md space-y-2 border border-border/50">
+                                    <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{stat.label}</p>
+                                    <p className="text-2xl font-mono font-bold text-primary">{stat.value}</p>
+                                    {stat.change !== null && (
+                                        <div className="flex items-center gap-1">
+                                            <span className={`text-[10px] font-mono font-medium ${stat.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                {stat.change >= 0 ? '↑' : '↓'} {Math.abs(stat.change)}%
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground/60 font-mono">vs prev week</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ));
+                        })()}
                     </div>
                 </Section>
 
-                {/* ACTIVITY HEATMAP */}
-                <Section title="Activity">
+                <div className="grid md:grid-cols-2 gap-8">
+                    {/* ACTIVITY CHART */}
+                    <Section title="Activity (Last 30 Days)">
+                        <ChartContainer config={activityConfig} className="min-h-[200px] w-full">
+                            <BarChart accessibilityLayer data={activityData}>
+                                <XAxis
+                                    dataKey="displayDate"
+                                    tickLine={false}
+                                    tickMargin={10}
+                                    axisLine={false}
+                                    tickFormatter={(value) => value}
+                                    minTickGap={30}
+                                />
+                                <ChartTooltip content={<ChartTooltipContent />} cursor={{ fill: 'hsl(var(--muted)/0.2)' }} />
+                                <Bar dataKey="minutes" fill="var(--color-minutes)" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ChartContainer>
+                    </Section>
+
+                    {/* DISTRIBUTION CHART */}
+                    <Section title="Book Distribution">
+                        <ChartContainer config={bookConfig} className="min-h-[200px] w-full max-h-[300px]">
+                            <PieChart>
+                                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                                <Pie
+                                    data={bookData}
+                                    dataKey="minutes"
+                                    nameKey="book"
+                                    innerRadius={60}
+                                    strokeWidth={0}
+                                    paddingAngle={2}
+                                >
+                                    <LabelList
+                                        dataKey="book"
+                                        className="fill-background"
+                                        stroke="none"
+                                        fontSize={12}
+                                        formatter={(value: any) => value}
+                                    />
+                                    {bookData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={`hsl(var(--primary) / ${1 - (index * 0.15)})`} stroke="none" />
+                                    ))}
+                                </Pie>
+                            </PieChart>
+                        </ChartContainer>
+                    </Section>
+                </div>
+
+                {/* YEARLY HEATMAP */}
+                <Section title="Yearly Activity">
                     <div className="flex items-center justify-end space-x-2 text-xs font-mono mb-2">
-                        <span className={viewMode === 'day' ? "text-primary font-bold" : "text-muted-foreground cursor-pointer"} onClick={() => setViewMode('day')}>Day</span>
+                        <span className={viewMode === 'day' ? "text-primary font-bold" : "text-muted-foreground cursor-pointer hover:text-primary transition-colors"} onClick={() => setViewMode('day')}>Day</span>
                         <span className="text-muted-foreground">/</span>
-                        <span className={viewMode === 'month' ? "text-primary font-bold" : "text-muted-foreground cursor-pointer"} onClick={() => setViewMode('month')}>Month</span>
+                        <span className={viewMode === 'month' ? "text-primary font-bold" : "text-muted-foreground cursor-pointer hover:text-primary transition-colors"} onClick={() => setViewMode('month')}>Month</span>
                     </div>
 
                     <div className="p-4 bg-secondary/5 rounded-md border border-border/30 overflow-x-auto">
@@ -294,19 +470,19 @@ export default function ProfilePage() {
                                     if (seconds > 60 * 60 * 10) bg = "bg-primary";
                                 }
 
-                                const width = viewMode === 'month' ? "w-8" : "w-2 sm:w-3";
+                                const width = viewMode === 'month' ? "w-8" : "w-1.5 sm:w-2"; // Slightly thinner for cleaner look
 
                                 return (
                                     <div
                                         key={date}
                                         title={`${date}: ${formatTime(seconds)}`}
-                                        className={`${width} h-full max-h-[${seconds > 0 ? '100%' : '10px'}] rounded-[1px] ${bg} transition-colors`}
-                                        style={{ height: viewMode === 'month' ? '100%' : undefined }} // For months make them bars? Or simply squares. Let's stick to squares for now for consistency, or boxes.
+                                        className={`${width} h-full max-h-[${seconds > 0 ? '100%' : '20%'}] rounded-[1px] ${bg} transition-all duration-300`}
+                                        style={{ height: viewMode === 'month' ? '100%' : undefined }}
                                     >
                                         {/* For month view maybe show label? */}
                                         {viewMode === 'month' && (
-                                            <div className="flex items-end justify-center h-full pb-1">
-                                                {/* Optional: Label */}
+                                            <div className="hidden">
+                                                {/* Hidden label */}
                                             </div>
                                         )}
                                     </div>
@@ -314,8 +490,8 @@ export default function ProfilePage() {
                             })}
                         </div>
                         <div className="flex justify-between mt-2 text-[10px] text-muted-foreground font-mono">
-                            <span>Less</span>
-                            <span>More</span>
+                            <span>{new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toLocaleDateString()}</span>
+                            <span>Today</span>
                         </div>
                     </div>
                 </Section>
