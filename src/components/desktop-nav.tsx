@@ -13,7 +13,7 @@ export function DesktopNav() {
         { name: 'home', href: '/' },
         { name: 'read', href: '/read' },
         { name: 'search', href: '/search' },
-        { name: 'notes', href: '/notes' },
+        { name: 'library', href: '/library' },
     ];
 
     return (

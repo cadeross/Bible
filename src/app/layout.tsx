@@ -121,6 +121,7 @@ export default function RootLayout({
               <Analytics />
               <SpeedInsights />
               {/* {process.env.NODE_ENV === "development" && <Agentation />} */}
+              <Agentation />
             </FocusProvider>
           </ReadingPreferencesProvider>
         </ThemeProvider>

@@ -50,12 +50,34 @@ export async function getAllTranslations() {
         }));
 
         // Deduplicate: Filter out API translations that match legacy IDs
+        // Deduplicate: Filter out API translations that match legacy IDs or Abbreviations
         const legacyIds = new Set(legacyTranslations.map(t => t.id.toLowerCase()));
-        const uniqueApiTranslations = apiTranslations.filter(t =>
-            (!t.abbreviation || !legacyIds.has(t.abbreviation.toLowerCase())) &&
-            t.abbreviation?.toUpperCase() !== 'MSG' &&
-            !t.name.includes("The Message")
-        );
+        const legacyAbbrevs = new Set(legacyTranslations.map(t => (t.abbreviation || t.id).toLowerCase()));
+
+        const uniqueApiTranslations = apiTranslations.filter(t => {
+            const id = t.id.toLowerCase();
+            const abbrev = (t.abbreviation || "").toLowerCase();
+            const name = t.name.toLowerCase();
+
+            // Hard exclusions for "The Message"
+            if (abbrev === 'msg' || name.includes("the message")) return false;
+
+            // Aggressive deduplication for World English Bible
+            // API.bible has many variants (UK, Catholic, etc) that clutter the list
+            // We force use of our specific defined WEB versions in the legacy list
+            if (name.includes("world english bible")) return false;
+
+            // Same for KJV - if the name is just "King James Version" (or close), skip it
+            // We have our own KJV entry.
+            if (name === "king james version" || name === "king james version (1769)" || id === 'kjv') return false;
+
+            // General Checks against legacy list
+            const isLegacyId = legacyIds.has(id);
+            const isLegacyAbbrev = abbrev && legacyAbbrevs.has(abbrev);
+            const isLegacyName = legacyTranslations.some(lt => lt.name.toLowerCase() === name);
+
+            return !isLegacyId && !isLegacyAbbrev && !isLegacyName;
+        });
 
         return [...legacyTranslations, ...uniqueApiTranslations];
     } catch (e) {

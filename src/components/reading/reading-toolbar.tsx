@@ -190,7 +190,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                     icon={<Languages className="h-3 w-3" />}
                     placeholder="Ver"
                     displayFormat="id"
-                    popoverWidth="w-[160px]"
+                    popoverWidth="w-[320px]"
                     className="max-w-[80px]"
                 />
             </div>

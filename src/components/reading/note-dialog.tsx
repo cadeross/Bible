@@ -1,21 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Trash2 } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { X, Save, Trash2 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface NoteDialogProps {
     isOpen: boolean
@@ -35,10 +23,13 @@ export function NoteDialog({
     onDelete
 }: NoteDialogProps) {
     const [content, setContent] = useState(initialContent)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     useEffect(() => {
         if (isOpen) {
             setContent(initialContent)
+            // Focus hack to ensure keyboard is ready
+            setTimeout(() => textareaRef.current?.focus(), 100)
         }
     }, [isOpen, initialContent])
 
@@ -47,87 +38,95 @@ export function NoteDialog({
         onOpenChange(false)
     }
 
-    const [showDeleteAlert, setShowDeleteAlert] = useState(false)
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault()
+            handleSave()
+        }
+        if (e.key === 'Escape') {
+            onOpenChange(false)
+        }
+    }
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-background/80 backdrop-blur-xl border border-border/50 shadow-2xl gap-0 sm:rounded-2xl duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]">
-                <DialogHeader className="px-6 py-4 border-b border-border/10 bg-muted/20">
-                    <DialogTitle className="font-serif italic text-xl font-normal text-muted-foreground">
-                        {verseRef}
-                    </DialogTitle>
-                    <DialogDescription className="sr-only">
-                        Edit note for {verseRef}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="p-6">
-                    <Textarea
-                        placeholder="Write your thoughts..."
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        className="min-h-[200px] resize-none border-none focus-visible:ring-0 px-0 py-0 text-lg leading-relaxed font-serif bg-transparent placeholder:text-muted-foreground/30"
-                        autoFocus
+        <AnimatePresence>
+            {isOpen && (
+                <>
+                    {/* Backdrop */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        onClick={() => onOpenChange(false)}
+                        className="fixed inset-0 z-50 bg-background/60 backdrop-blur-md"
                     />
-                </div>
 
-                <DialogFooter className="px-6 py-3 bg-muted/20 flex items-center justify-between sm:justify-between border-t border-border/10">
-                    <div>
-                        {onDelete && initialContent && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setShowDeleteAlert(true)}
-                                className="text-muted-foreground hover:text-destructive transition-colors h-8 px-2"
-                            >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                <span className="text-xs">Delete Note</span>
-                            </Button>
-                        )}
-                    </div>
-                    <div className="flex gap-3">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onOpenChange(false)}
-                            className="text-muted-foreground hover:text-foreground"
+                    {/* Dialog Container */}
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            transition={{ type: "spring", duration: 0.4, bounce: 0.3 }}
+                            className="w-full max-w-lg pointer-events-auto"
                         >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleSave}
-                            size="sm"
-                            className="px-6 font-mono text-xs uppercase tracking-wider shadow-lg shadow-primary/20"
-                        >
-                            Save Note
-                        </Button>
-                    </div>
-                </DialogFooter>
-            </DialogContent>
+                            <div className="relative overflow-hidden rounded-xl bg-card border border-border shadow-2xl">
+                                {/* Header */}
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+                                    <h2 className="text-sm font-medium text-muted-foreground font-mono tracking-tight">
+                                        {verseRef}
+                                    </h2>
+                                    <div className="flex items-center gap-1">
+                                        {onDelete && initialContent && (
+                                            <button
+                                                onClick={onDelete}
+                                                className="p-1.5 text-muted-foreground hover:text-destructive transition-colors rounded-md hover:bg-muted"
+                                                title="Delete Note"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => onOpenChange(false)}
+                                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
 
-            <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Note</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete this note? This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={() => {
-                                if (onDelete) onDelete()
-                                setShowDeleteAlert(false)
-                                onOpenChange(false)
-                            }}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </Dialog>
+                                {/* Editor */}
+                                <div className="p-4">
+                                    <textarea
+                                        ref={textareaRef}
+                                        value={content}
+                                        onChange={(e) => setContent(e.target.value)}
+                                        onKeyDown={handleKeyDown}
+                                        placeholder="type your note..."
+                                        className="w-full h-48 bg-transparent border-0 resize-none focus:ring-0 p-0 text-base text-card-foreground placeholder:text-muted-foreground/50 font-sans leading-relaxed selection:bg-primary/20"
+                                        spellCheck={false}
+                                    />
+                                </div>
+
+                                {/* Footer / Actions */}
+                                <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-t border-border">
+                                    <div className="text-xs text-muted-foreground font-mono">
+                                        <span className="hidden sm:inline">CMD + ENTER to save</span>
+                                    </div>
+                                    <button
+                                        onClick={handleSave}
+                                        className="flex items-center gap-2 px-4 py-1.5 text-xs font-semibold text-primary-foreground bg-primary hover:opacity-90 active:scale-95 transition-all rounded-md shadow-sm"
+                                    >
+                                        <Save className="w-3 h-3" />
+                                        SAVE
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                </>
+            )}
+        </AnimatePresence>
     )
 }

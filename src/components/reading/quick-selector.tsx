@@ -180,13 +180,15 @@ export function QuickSelector({
                                                 item.id === value && index !== highlightedIndex && "text-primary font-semibold"
                                             )}
                                         >
-                                            <span className="flex items-center gap-2">
+                                            <span className="flex-1 min-w-0 flex items-center gap-2 text-left [mask-image:linear-gradient(to_right,black_90%,transparent_100%)] overflow-hidden">
                                                 {displayFormat === 'id' && (
                                                     <span className="font-mono text-[10px] opacity-70 w-16 uppercase shrink-0 text-left">
                                                         {item.abbreviation || item.id}
                                                     </span>
                                                 )}
-                                                <span className="truncate">{item.name}</span>
+                                                <span className="whitespace-nowrap font-medium pr-4">
+                                                    {item.name}
+                                                </span>
                                             </span>
                                             {item.id === value && (
                                                 <Check

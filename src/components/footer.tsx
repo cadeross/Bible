@@ -65,13 +65,13 @@ export function Footer() {
                     <Heart className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
                     <span className="pb-px">support</span>
                 </a>
-                <a
-                    href="mailto:hello@example.com"
+                <Link
+                    href="/contact"
                     className="flex items-center gap-2 hover:text-primary transition-colors group"
                 >
                     <Mail className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
                     <span className="pb-px">contact</span>
-                </a>
+                </Link>
             </div>
 
             {/* Right side: Theme & Version */}
