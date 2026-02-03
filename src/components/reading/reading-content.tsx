@@ -42,6 +42,11 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
     React.useEffect(() => {
         startTimeRef.current = Date.now();
 
+        // Save last read position
+        import("@/lib/persistence").then(({ updateLastRead }) => {
+            updateLastRead(bookName, chapterNum);
+        });
+
         return () => {
             // Cleanup: Log Duration
             const duration = (Date.now() - startTimeRef.current) / 1000;

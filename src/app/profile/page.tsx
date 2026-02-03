@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AuthTabs } from "@/components/auth/auth-tabs";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { User, LogOut, Cloud, Activity, Palette } from "lucide-react";
+import { User, LogOut, Cloud, Activity, Palette, Camera } from "lucide-react";
 import { toast } from "sonner";
-import { getHistory, getAllHighlights, ReadingHistory } from "@/lib/persistence";
+import { getHistory, getAllHighlights, ReadingHistory, getProfile, uploadAvatar } from "@/lib/persistence";
 import { motion } from "framer-motion";
 import Loading from "../loading";
-import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
+import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import {
     ChartContainer,
     ChartTooltip,
@@ -33,28 +33,35 @@ const Section = ({ title, children }: { title: string, children: React.ReactNode
     </div>
 )
 
-// Helper: Get Past 365 Days
-const getYearDays = () => {
-    const days = [];
+// Helper: Get Past Days organized for GitHub-style grid (weeks x 7 days)
+// maxWeeks limits how many weeks to show (from most recent)
+const getYearDaysGrid = (maxWeeks: number = 53) => {
+    const weeks: string[][] = [];
     const today = new Date();
-    for (let i = 364; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(d.getDate() - i);
-        days.push(d.toISOString().split('T')[0]); // YYYY-MM-DD
-    }
-    return days;
-};
+    const currentDayOfWeek = today.getDay(); // 0 = Sunday
 
-// Helper: Get Past 12 Months
-const getYearMonths = () => {
-    const months = [];
-    const today = new Date();
-    for (let i = 11; i >= 0; i--) {
-        const d = new Date(today);
-        d.setMonth(d.getMonth() - i);
-        months.push(d.toISOString().slice(0, 7)); // YYYY-MM
+    // Calculate how many weeks back to go based on maxWeeks
+    const daysBack = (maxWeeks - 1) * 7 + currentDayOfWeek;
+
+    // Start from maxWeeks ago, aligned to Sunday
+    const startDate = new Date(today);
+    startDate.setDate(startDate.getDate() - daysBack);
+
+    let currentDate = new Date(startDate);
+
+    for (let week = 0; week < maxWeeks; week++) {
+        const weekDays: string[] = [];
+        for (let day = 0; day < 7; day++) {
+            if (currentDate <= today) {
+                weekDays.push(currentDate.toISOString().split('T')[0]);
+            } else {
+                weekDays.push(''); // Empty for future dates
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        weeks.push(weekDays);
     }
-    return months;
+    return weeks;
 };
 
 // Helper: Format Seconds to Time String (e.g. 1h 30m)
@@ -70,7 +77,7 @@ const formatTime = (seconds: number) => {
 const activityConfig = {
     minutes: {
         label: "Minutes Read",
-        color: "hsl(var(--primary))",
+        color: "var(--primary)",
     },
 };
 
@@ -87,12 +94,12 @@ export default function ProfilePage() {
         words: 0,
         chapters: 0,
         streak: 0,
+        highestStreak: 0,
         highlights: 0,
         timeSeconds: 0
     });
 
     // Heatmap State
-    const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
     const [activityMap, setActivityMap] = useState<Record<string, number>>({});
 
     // Chart Data States
@@ -106,6 +113,29 @@ export default function ProfilePage() {
         timeSeconds: 0
     });
 
+    // Profile photo state
+    const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+    const [isHoveringAvatar, setIsHoveringAvatar] = useState(false);
+
+    // Heatmap container ref for responsive width
+    const heatmapContainerRef = useRef<HTMLDivElement>(null);
+    const [heatmapWeeks, setHeatmapWeeks] = useState(26); // Default to ~6 months
+
+    // Calculate how many weeks fit in the heatmap container
+    useEffect(() => {
+        const calculateWeeks = () => {
+            if (heatmapContainerRef.current) {
+                const containerWidth = heatmapContainerRef.current.clientWidth - 32; // minus padding
+                const weekWidth = 14; // 11px cell + 3px gap
+                const maxWeeks = Math.floor(containerWidth / weekWidth);
+                setHeatmapWeeks(Math.min(Math.max(maxWeeks, 12), 53));
+            }
+        };
+        calculateWeeks();
+        window.addEventListener('resize', calculateWeeks);
+        return () => window.removeEventListener('resize', calculateWeeks);
+    }, []);
+
     const router = useRouter();
     const supabase = createClient();
 
@@ -118,6 +148,12 @@ export default function ProfilePage() {
                 // Fetch Data
                 const history = await getHistory();
                 const highlights = await getAllHighlights();
+                const profile = await getProfile();
+
+                // Load avatar from profile
+                if (profile?.avatar_url) {
+                    setProfilePhoto(profile.avatar_url);
+                }
 
                 // Process History
                 let totalWords = 0;
@@ -174,20 +210,53 @@ export default function ProfilePage() {
                     tempCursor.setDate(tempCursor.getDate() - 1);
                 }
 
+                // Calculate highest streak ever
+                let highestStreak = streak;
+                let currentStreakCount = 0;
+                const sortedDates = Object.keys(dailyActivity).sort();
+                for (let i = 0; i < sortedDates.length; i++) {
+                    if (i === 0) {
+                        currentStreakCount = 1;
+                    } else {
+                        const prevDate = new Date(sortedDates[i - 1]);
+                        const currDate = new Date(sortedDates[i]);
+                        const diffDays = Math.floor((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+                        if (diffDays === 1) {
+                            currentStreakCount++;
+                        } else {
+                            currentStreakCount = 1;
+                        }
+                    }
+                    highestStreak = Math.max(highestStreak, currentStreakCount);
+                }
+
                 setStats({
                     words: totalWords,
                     chapters: uniqueChapters.size,
                     streak: streak,
+                    highestStreak: highestStreak,
                     highlights: highlights.length,
                     timeSeconds: totalTime
                 });
 
                 // Set Activity Map for Heatmap
-                setActivityMap(viewMode === 'day' ? dailyActivity : monthlyActivity);
+                setActivityMap(dailyActivity);
 
                 // Process Last 30 Days for Bar Chart
                 const last30Days = [];
                 const today = new Date();
+                // Calculate max minutes to determine placeholder height
+                let maxMinutes = 0;
+                for (let i = 29; i >= 0; i--) {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - i);
+                    const dateStr = d.toISOString().split('T')[0];
+                    const mins = Math.round((dailyActivity[dateStr] || 0) / 60);
+                    if (mins > maxMinutes) maxMinutes = mins;
+                }
+                // Placeholder is max minutes or a default of 30 for empty charts
+                const placeholderHeight = Math.max(maxMinutes, 30);
+
                 for (let i = 29; i >= 0; i--) {
                     const d = new Date(today);
                     d.setDate(d.getDate() - i);
@@ -195,20 +264,20 @@ export default function ProfilePage() {
                     last30Days.push({
                         date: dateStr,
                         displayDate: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                        minutes: Math.round((dailyActivity[dateStr] || 0) / 60)
+                        minutes: Math.round((dailyActivity[dateStr] || 0) / 60),
+                        placeholder: placeholderHeight
                     });
                 }
                 setActivityData(last30Days);
 
-                // Process Book Distribution
+                // Process Book Distribution - show ALL books read
                 const sortedBooks = Object.entries(bookStats)
                     .sort(([, a], [, b]) => b - a)
                     .map(([book, seconds]) => ({
                         book,
-                        minutes: Math.round(seconds / 60),
-                        fill: "hsl(var(--primary))"
+                        minutes: Math.round(seconds / 60)
                     }));
-                setBookData(sortedBooks.slice(0, 5));
+                setBookData(sortedBooks.slice(0, 10)); // Show top 10 books
 
                 // Calculate Previous Period Stats (Last 7 days vs Previous 7 days)
                 const now = new Date();
@@ -250,7 +319,7 @@ export default function ProfilePage() {
         });
 
         return () => subscription.unsubscribe();
-    }, [router, supabase, viewMode]);
+    }, [router, supabase]);
 
     const handleSignOut = async () => {
         await supabase.auth.signOut();
@@ -326,8 +395,48 @@ export default function ProfilePage() {
             {/* Header */}
             <div className="flex items-center justify-between gap-4 border-b border-border/50 pb-8">
                 <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                        <User className="h-6 w-6" />
+                    {/* Profile Photo with Upload */}
+                    <div
+                        className="relative h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary cursor-pointer group overflow-hidden"
+                        onMouseEnter={() => setIsHoveringAvatar(true)}
+                        onMouseLeave={() => setIsHoveringAvatar(false)}
+                        onClick={() => document.getElementById('profile-photo-input')?.click()}
+                    >
+                        {profilePhoto ? (
+                            <img src={profilePhoto} alt="Profile" className="h-full w-full object-cover" />
+                        ) : (
+                            <User className="h-6 w-6" />
+                        )}
+                        {/* Hover overlay */}
+                        <div className={`absolute inset-0 bg-background/80 flex items-center justify-center transition-opacity duration-200 ${isHoveringAvatar ? 'opacity-100' : 'opacity-0'}`}>
+                            <Camera className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <input
+                            id="profile-photo-input"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    // Show preview immediately
+                                    const reader = new FileReader();
+                                    reader.onload = (e) => {
+                                        setProfilePhoto(e.target?.result as string);
+                                    };
+                                    reader.readAsDataURL(file);
+
+                                    // Upload to storage
+                                    const url = await uploadAvatar(file);
+                                    if (url) {
+                                        setProfilePhoto(url);
+                                        toast.success('Profile photo saved');
+                                    } else {
+                                        toast.error('Failed to save photo');
+                                    }
+                                }
+                            }}
+                        />
                     </div>
                     <div className="space-y-1">
                         <h1 className="text-2xl font-bold tracking-tight font-mono text-primary">{user.user_metadata?.username || "user"}</h1>
@@ -370,16 +479,20 @@ export default function ProfilePage() {
                                     change: calcChange(stats.words, prevStats.words)
                                 },
                                 {
-                                    label: "day streak",
+                                    label: "streak",
                                     value: stats.streak,
-                                    change: null // No comparison for streak
+                                    change: null, // No comparison for streak
+                                    isStreak: true
                                 }
                             ];
 
-                            return kpis.map((stat, i) => (
+                            return kpis.map((stat: any, i) => (
                                 <div key={i} className="bg-secondary/10 p-4 rounded-md space-y-2 border border-border/50">
                                     <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{stat.label}</p>
-                                    <p className="text-2xl font-mono font-bold text-primary">{stat.value}</p>
+                                    <p className="text-2xl font-mono font-bold text-primary">
+                                        {stat.isStreak ? `${stat.value}` : stat.value}
+                                        {stat.isStreak && <span className="text-sm font-normal text-muted-foreground ml-1">days</span>}
+                                    </p>
                                     {stat.change !== null && (
                                         <div className="flex items-center gap-1">
                                             <span className={`text-[10px] font-mono font-medium ${stat.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
@@ -388,16 +501,23 @@ export default function ProfilePage() {
                                             <span className="text-[10px] text-muted-foreground/60 font-mono">vs prev week</span>
                                         </div>
                                     )}
+                                    {stat.isStreak && (
+                                        <p className="text-[10px] text-muted-foreground/60 font-mono">
+                                            {stats.streak === stats.highestStreak && stats.streak > 0
+                                                ? '✨ personal best!'
+                                                : `best: ${stats.highestStreak} days`}
+                                        </p>
+                                    )}
                                 </div>
                             ));
                         })()}
                     </div>
                 </Section>
 
-                <div className="grid md:grid-cols-2 gap-8">
+                <div className="grid md:grid-cols-[1fr,auto,1fr] gap-0 md:gap-8">
                     {/* ACTIVITY CHART */}
                     <Section title="Activity (Last 30 Days)">
-                        <ChartContainer config={activityConfig} className="min-h-[200px] w-full">
+                        <ChartContainer config={activityConfig} className="min-h-[200px] w-full [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground">
                             <BarChart accessibilityLayer data={activityData}>
                                 <XAxis
                                     dataKey="displayDate"
@@ -406,91 +526,97 @@ export default function ProfilePage() {
                                     axisLine={false}
                                     tickFormatter={(value) => value}
                                     minTickGap={30}
+                                    tick={{ fill: 'var(--muted-foreground)', fontSize: 10, fontFamily: 'monospace' }}
                                 />
                                 <ChartTooltip content={<ChartTooltipContent />} cursor={{ fill: 'hsl(var(--muted)/0.2)' }} />
-                                <Bar dataKey="minutes" fill="var(--color-minutes)" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="minutes" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ChartContainer>
                     </Section>
 
-                    {/* DISTRIBUTION CHART */}
+                    {/* Vertical Separator */}
+                    <div className="hidden md:block w-px bg-border/40 self-stretch mx-4" />
+
+                    {/* DISTRIBUTION CHART - Horizontal Bar */}
                     <Section title="Book Distribution">
-                        <ChartContainer config={bookConfig} className="min-h-[200px] w-full max-h-[300px]">
-                            <PieChart>
-                                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                                <Pie
-                                    data={bookData}
+                        <ChartContainer config={bookConfig} className="min-h-[200px] w-full">
+                            <BarChart
+                                data={bookData}
+                                layout="vertical"
+                                margin={{ left: 0, right: 16 }}
+                            >
+                                <XAxis
+                                    type="number"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tick={{ fill: 'var(--muted-foreground)', fontSize: 10, fontFamily: 'monospace' }}
+                                    tickFormatter={(value) => `${value}m`}
+                                />
+                                <YAxis
+                                    type="category"
+                                    dataKey="book"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tick={{ fill: 'var(--foreground)', fontSize: 10, fontFamily: 'monospace' }}
+                                    width={70}
+                                />
+                                <ChartTooltip
+                                    content={<ChartTooltipContent />}
+                                    cursor={{ fill: 'var(--muted)', opacity: 0.1 }}
+                                />
+                                <Bar
                                     dataKey="minutes"
-                                    nameKey="book"
-                                    innerRadius={60}
-                                    strokeWidth={0}
-                                    paddingAngle={2}
-                                >
-                                    <LabelList
-                                        dataKey="book"
-                                        className="fill-background"
-                                        stroke="none"
-                                        fontSize={12}
-                                        formatter={(value: any) => value}
-                                    />
-                                    {bookData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={`hsl(var(--primary) / ${1 - (index * 0.15)})`} stroke="none" />
-                                    ))}
-                                </Pie>
-                            </PieChart>
+                                    fill="var(--primary)"
+                                    radius={[0, 4, 4, 0]}
+                                />
+                            </BarChart>
                         </ChartContainer>
                     </Section>
                 </div>
 
-                {/* YEARLY HEATMAP */}
+                {/* YEARLY HEATMAP - GitHub Style */}
                 <Section title="Yearly Activity">
-                    <div className="flex items-center justify-end space-x-2 text-xs font-mono mb-2">
-                        <span className={viewMode === 'day' ? "text-primary font-bold" : "text-muted-foreground cursor-pointer hover:text-primary transition-colors"} onClick={() => setViewMode('day')}>Day</span>
-                        <span className="text-muted-foreground">/</span>
-                        <span className={viewMode === 'month' ? "text-primary font-bold" : "text-muted-foreground cursor-pointer hover:text-primary transition-colors"} onClick={() => setViewMode('month')}>Month</span>
-                    </div>
+                    <div ref={heatmapContainerRef} className="p-4 bg-secondary/5 rounded-md border border-border/30 overflow-hidden">
+                        {/* Weeks grid - responsive, shows only what fits */}
+                        <div className="flex gap-[3px]">
+                            {getYearDaysGrid(heatmapWeeks).map((week, weekIndex) => (
+                                <div key={weekIndex} className="flex flex-col gap-[3px]">
+                                    {week.map((date, dayIndex) => {
+                                        if (!date) return <div key={dayIndex} className="w-[11px] h-[11px]" />;
 
-                    <div className="p-4 bg-secondary/5 rounded-md border border-border/30 overflow-x-auto">
-                        <div className="flex gap-1 min-w-max items-end h-[40px]">
-                            {(viewMode === 'day' ? getYearDays() : getYearMonths()).map((date, i) => {
-                                const seconds = activityMap[date] || 0;
-                                let bg = "bg-secondary/20";
+                                        const seconds = activityMap[date] || 0;
+                                        let bg = "bg-primary/10";
 
-                                if (viewMode === 'day') {
-                                    // Scale: 1m, 15m, 30m, 60m
-                                    if (seconds > 0) bg = "bg-primary/20";
-                                    if (seconds > 60 * 15) bg = "bg-primary/40";
-                                    if (seconds > 60 * 30) bg = "bg-primary/70";
-                                    if (seconds > 60 * 60) bg = "bg-primary";
-                                } else {
-                                    // Scale: 15m, 1h, 5h, 10h
-                                    if (seconds > 0) bg = "bg-primary/20";
-                                    if (seconds > 60 * 60) bg = "bg-primary/40";
-                                    if (seconds > 60 * 60 * 5) bg = "bg-primary/70";
-                                    if (seconds > 60 * 60 * 10) bg = "bg-primary";
-                                }
+                                        // Scale: 1m, 15m, 30m, 60m+
+                                        if (seconds > 0) bg = "bg-primary/25";
+                                        if (seconds > 60 * 15) bg = "bg-primary/50";
+                                        if (seconds > 60 * 30) bg = "bg-primary/75";
+                                        if (seconds > 60 * 60) bg = "bg-primary";
 
-                                const width = viewMode === 'month' ? "w-8" : "w-1.5 sm:w-2"; // Slightly thinner for cleaner look
-
-                                return (
-                                    <div
-                                        key={date}
-                                        title={`${date}: ${formatTime(seconds)}`}
-                                        className={`${width} h-full max-h-[${seconds > 0 ? '100%' : '20%'}] rounded-[1px] ${bg} transition-all duration-300`}
-                                        style={{ height: viewMode === 'month' ? '100%' : undefined }}
-                                    >
-                                        {/* For month view maybe show label? */}
-                                        {viewMode === 'month' && (
-                                            <div className="hidden">
-                                                {/* Hidden label */}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                                        return (
+                                            <div
+                                                key={date}
+                                                title={`${date}: ${formatTime(seconds)}`}
+                                                className={`w-[11px] h-[11px] rounded-[2px] ${bg} cursor-default transition-all duration-150 hover:scale-125 hover:ring-2 hover:ring-primary/30 hover:z-10`}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            ))}
                         </div>
-                        <div className="flex justify-between mt-2 text-[10px] text-muted-foreground font-mono">
+
+                        {/* Legend and date range */}
+                        <div className="flex justify-between items-center mt-3 text-[10px] text-muted-foreground font-mono">
                             <span>{new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toLocaleDateString()}</span>
+                            <div className="flex items-center gap-1">
+                                <span className="mr-1">Less</span>
+                                <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/10" />
+                                <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/25" />
+                                <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/50" />
+                                <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/75" />
+                                <div className="w-[11px] h-[11px] rounded-[2px] bg-primary" />
+                                <span className="ml-1">More</span>
+                            </div>
                             <span>Today</span>
                         </div>
                     </div>

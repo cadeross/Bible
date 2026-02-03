@@ -305,3 +305,97 @@ export async function getHistory(): Promise<ReadingHistory[]> {
         return local ? JSON.parse(local) : [];
     }
 }
+
+// --- User Profile ---
+
+export interface Profile {
+    id: string;
+    last_read_book: string | null;
+    last_read_chapter: number | null;
+    avatar_url: string | null;
+    updated_at: string;
+}
+
+export async function getProfile(): Promise<Profile | null> {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) return null;
+
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+    if (error) {
+        // Profile might not exist yet - that's ok
+        if (error.code !== 'PGRST116') {
+            console.error("Error fetching profile", error);
+        }
+        return null;
+    }
+    return data;
+}
+
+export async function updateLastRead(book: string, chapter: number): Promise<void> {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) return;
+
+    const { error } = await supabase
+        .from('profiles')
+        .upsert({
+            id: session.user.id,
+            last_read_book: book,
+            last_read_chapter: chapter,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+
+    if (error) {
+        console.error("Error updating last read position", error);
+    }
+}
+
+export async function uploadAvatar(file: File): Promise<string | null> {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) return null;
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${session.user.id}/avatar.${fileExt}`;
+
+    // Upload file to storage
+    const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+    if (uploadError) {
+        console.error("Error uploading avatar", uploadError);
+        return null;
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+    const avatarUrl = urlData.publicUrl;
+
+    // Update profile with avatar URL
+    const { error: updateError } = await supabase
+        .from('profiles')
+        .upsert({
+            id: session.user.id,
+            avatar_url: avatarUrl,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+
+    if (updateError) {
+        console.error("Error updating avatar URL", updateError);
+    }
+
+    return avatarUrl;
+}

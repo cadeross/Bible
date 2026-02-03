@@ -1,7 +1,36 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { getProfile } from "@/lib/persistence";
+import { createClient } from "@/lib/supabase/client";
+import Loading from "../loading";
 
 export default function ReadPage() {
-    // Default to John 1 if no last read state is available (server-side we don't know preferences yet)
-    // Client-side redirect could handle "Resume" better, but for now this is a safe default.
-    redirect("/read/Genesis/1");
+    const router = useRouter();
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const checkLastRead = async () => {
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (session) {
+                // Try to get last read position from profile
+                const profile = await getProfile();
+                if (profile?.last_read_book && profile?.last_read_chapter) {
+                    router.replace(`/read/${encodeURIComponent(profile.last_read_book)}/${profile.last_read_chapter}`);
+                    return;
+                }
+            }
+
+            // Default to Genesis 1 if no last read position
+            router.replace("/read/Genesis/1");
+        };
+
+        checkLastRead();
+    }, [router]);
+
+    // Show loading state while checking
+    return <Loading />;
 }
