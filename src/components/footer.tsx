@@ -15,7 +15,9 @@ import {
     Laptop,
     Eye,
     EyeOff,
-    HelpCircle
+    HelpCircle,
+    Lightbulb,
+    Info
 } from "lucide-react"
 
 import { HowToDialog } from "@/components/how-to-dialog"
@@ -72,6 +74,13 @@ export function Footer() {
                     <Mail className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
                     <span className="pb-px">contact</span>
                 </Link>
+                <Link
+                    href="/features"
+                    className="flex items-center gap-2 hover:text-primary transition-colors group"
+                >
+                    <Lightbulb className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+                    <span className="pb-px">features</span>
+                </Link>
             </div>
 
             {/* Right side: Theme & Version */}
@@ -90,6 +99,10 @@ export function Footer() {
                     </button>
                 )}
 
+                <Link href="/about" className="flex items-center gap-2 hover:text-primary transition-colors group">
+                    <Info className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+                    <span className="opacity-50 group-hover:opacity-100 transition-opacity pb-px">about</span>
+                </Link>
 
                 <Link href="/how-to" className="flex items-center gap-2 hover:text-primary transition-colors group">
                     <HelpCircle className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />

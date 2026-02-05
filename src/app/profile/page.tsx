@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AuthTabs } from "@/components/auth/auth-tabs";
@@ -19,6 +19,7 @@ import {
     ChartLegend,
     ChartLegendContent
 } from "@/components/ui/chart";
+import { CalHeatmapWrapper } from "@/components/ui/cal-heatmap-wrapper";
 
 // Helper for section groups (Matches Settings)
 const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
@@ -33,36 +34,7 @@ const Section = ({ title, children }: { title: string, children: React.ReactNode
     </div>
 )
 
-// Helper: Get Past Days organized for GitHub-style grid (weeks x 7 days)
-// maxWeeks limits how many weeks to show (from most recent)
-const getYearDaysGrid = (maxWeeks: number = 53) => {
-    const weeks: string[][] = [];
-    const today = new Date();
-    const currentDayOfWeek = today.getDay(); // 0 = Sunday
 
-    // Calculate how many weeks back to go based on maxWeeks
-    const daysBack = (maxWeeks - 1) * 7 + currentDayOfWeek;
-
-    // Start from maxWeeks ago, aligned to Sunday
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - daysBack);
-
-    let currentDate = new Date(startDate);
-
-    for (let week = 0; week < maxWeeks; week++) {
-        const weekDays: string[] = [];
-        for (let day = 0; day < 7; day++) {
-            if (currentDate <= today) {
-                weekDays.push(currentDate.toISOString().split('T')[0]);
-            } else {
-                weekDays.push(''); // Empty for future dates
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-        weeks.push(weekDays);
-    }
-    return weeks;
-};
 
 // Helper: Format Seconds to Time String (e.g. 1h 30m)
 const formatTime = (seconds: number) => {
@@ -117,24 +89,7 @@ export default function ProfilePage() {
     const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
     const [isHoveringAvatar, setIsHoveringAvatar] = useState(false);
 
-    // Heatmap container ref for responsive width
-    const heatmapContainerRef = useRef<HTMLDivElement>(null);
-    const [heatmapWeeks, setHeatmapWeeks] = useState(26); // Default to ~6 months
 
-    // Calculate how many weeks fit in the heatmap container
-    useEffect(() => {
-        const calculateWeeks = () => {
-            if (heatmapContainerRef.current) {
-                const containerWidth = heatmapContainerRef.current.clientWidth - 32; // minus padding
-                const weekWidth = 14; // 11px cell + 3px gap
-                const maxWeeks = Math.floor(containerWidth / weekWidth);
-                setHeatmapWeeks(Math.min(Math.max(maxWeeks, 12), 53));
-            }
-        };
-        calculateWeeks();
-        window.addEventListener('resize', calculateWeeks);
-        return () => window.removeEventListener('resize', calculateWeeks);
-    }, []);
 
     const router = useRouter();
     const supabase = createClient();
@@ -419,6 +374,13 @@ export default function ProfilePage() {
                             onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
+                                    // Check file size (3MB limit)
+                                    const maxSize = 3 * 1024 * 1024; // 3MB in bytes
+                                    if (file.size > maxSize) {
+                                        toast.error('Image must be under 3MB');
+                                        return;
+                                    }
+
                                     // Show preview immediately
                                     const reader = new FileReader();
                                     reader.onload = (e) => {
@@ -574,40 +536,12 @@ export default function ProfilePage() {
                     </Section>
                 </div>
 
-                {/* YEARLY HEATMAP - GitHub Style */}
+                {/* YEARLY HEATMAP - Cal-Heatmap */}
                 <Section title="Yearly Activity">
-                    <div ref={heatmapContainerRef} className="p-4 bg-secondary/5 rounded-md border border-border/30 overflow-hidden">
-                        {/* Weeks grid - responsive, shows only what fits */}
-                        <div className="flex gap-[3px]">
-                            {getYearDaysGrid(heatmapWeeks).map((week, weekIndex) => (
-                                <div key={weekIndex} className="flex flex-col gap-[3px]">
-                                    {week.map((date, dayIndex) => {
-                                        if (!date) return <div key={dayIndex} className="w-[11px] h-[11px]" />;
-
-                                        const seconds = activityMap[date] || 0;
-                                        let bg = "bg-primary/10";
-
-                                        // Scale: 1m, 15m, 30m, 60m+
-                                        if (seconds > 0) bg = "bg-primary/25";
-                                        if (seconds > 60 * 15) bg = "bg-primary/50";
-                                        if (seconds > 60 * 30) bg = "bg-primary/75";
-                                        if (seconds > 60 * 60) bg = "bg-primary";
-
-                                        return (
-                                            <div
-                                                key={date}
-                                                title={`${date}: ${formatTime(seconds)}`}
-                                                className={`w-[11px] h-[11px] rounded-[2px] ${bg} cursor-default transition-all duration-150 hover:scale-125 hover:ring-2 hover:ring-primary/30 hover:z-10`}
-                                            />
-                                        );
-                                    })}
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Legend and date range */}
-                        <div className="flex justify-between items-center mt-3 text-[10px] text-muted-foreground font-mono">
-                            <span>{new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toLocaleDateString()}</span>
+                    <div className="p-4 bg-secondary/5 rounded-md border border-border/30 overflow-hidden">
+                        <CalHeatmapWrapper data={activityMap} />
+                        {/* Legend */}
+                        <div className="flex justify-end items-center mt-3 text-[10px] text-muted-foreground font-mono">
                             <div className="flex items-center gap-1">
                                 <span className="mr-1">Less</span>
                                 <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/10" />
@@ -617,7 +551,6 @@ export default function ProfilePage() {
                                 <div className="w-[11px] h-[11px] rounded-[2px] bg-primary" />
                                 <span className="ml-1">More</span>
                             </div>
-                            <span>Today</span>
                         </div>
                     </div>
                 </Section>
