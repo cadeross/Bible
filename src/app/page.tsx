@@ -2,25 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { ArrowRight, BookOpen, Heart } from "lucide-react"
+import { ArrowRight, BookOpen, Heart, Church } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
-
-// Verse of the day - hardcoded for now, could be fetched from an API
-const VERSE = {
-  text: "In the beginning God created heaven and earth.",
-  book: "Genesis",
-  chapter: 1,
-  verse: 1,
-  translation: "DRA"
-}
-
-// Daily wisdom quote
-const WISDOM = {
-  text: "Our hearts are restless until they rest in Thee.",
-  author: "St. Augustine of Hippo"
-}
+import { getDailyContent, parseVerseRef, getLiturgicalColorClass, DailyContent, FALLBACK_CONTENT } from "@/lib/daily-content"
 
 // Animation variants for staggered entrance
 const containerVariants = {
@@ -71,29 +57,49 @@ export default function Home() {
   const [username, setUsername] = useState<string>("")
   const [greeting, setGreeting] = useState<string>("")
   const [mounted, setMounted] = useState(false)
+  const [dailyContent, setDailyContent] = useState<DailyContent>(FALLBACK_CONTENT)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     setMounted(true)
     setGreeting(getGreeting())
 
-    const getUser = async () => {
+    const loadData = async () => {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user?.user_metadata?.username) {
-        setUsername(user.user_metadata.username)
+
+      // Fetch user and daily content in parallel
+      const [userResult, content] = await Promise.all([
+        supabase.auth.getUser(),
+        getDailyContent()
+      ])
+
+      if (userResult.data.user?.user_metadata?.username) {
+        setUsername(userResult.data.user.user_metadata.username)
       }
+
+      setDailyContent(content)
+      setIsLoading(false)
     }
-    getUser()
+
+    loadData()
   }, [])
 
+  // Parse the verse reference for linking
+  const parsedVerse = parseVerseRef(dailyContent.verse_ref)
+
   const handleHighlight = async () => {
+    if (!parsedVerse) {
+      toast.error("Invalid verse reference")
+      return
+    }
+
     try {
       const { saveHighlight } = await import("@/lib/persistence")
       await saveHighlight({
-        book: VERSE.book,
-        chapter: VERSE.chapter,
-        verse: VERSE.verse,
-        content: VERSE.text,
+        book: parsedVerse.book,
+        chapter: parsedVerse.chapter,
+        verse: parsedVerse.verse,
+        content: dailyContent.verse_text,
         color: "yellow",
         created_at: new Date().toISOString()
       })
@@ -121,8 +127,8 @@ export default function Home() {
     try {
       const { saveWisdom } = await import("@/lib/persistence")
       await saveWisdom({
-        content: WISDOM.text,
-        source: WISDOM.author,
+        content: dailyContent.wisdom_text,
+        source: dailyContent.wisdom_author,
         created_at: new Date().toISOString()
       })
 
@@ -161,8 +167,6 @@ export default function Home() {
     >
       {/* Welcome */}
       <motion.div variants={itemVariants} className="text-center space-y-4">
-
-
         <h1 className="text-3xl md:text-4xl font-mono font-bold text-primary tracking-tight">
           {greeting}
         </h1>
@@ -179,6 +183,26 @@ export default function Home() {
         )}
       </motion.div>
 
+      {/* Liturgical Info (if available) */}
+      {(dailyContent.feast_name || dailyContent.liturgical_season) && (
+        <motion.div variants={itemVariants} className="text-center space-y-2">
+          {dailyContent.feast_name && (
+            <div className="flex items-center justify-center gap-2">
+              <Church className={`h-4 w-4 ${getLiturgicalColorClass(dailyContent.liturgical_color)}`} />
+              <span className={`font-mono text-sm ${getLiturgicalColorClass(dailyContent.liturgical_color)}`}>
+                {dailyContent.feast_name}
+              </span>
+            </div>
+          )}
+          {dailyContent.liturgical_season && !dailyContent.feast_name && (
+            <span className={`font-mono text-xs text-muted-foreground/60`}>
+              {dailyContent.liturgical_season}
+              {dailyContent.rank && dailyContent.rank !== 'Weekday' && ` · ${dailyContent.rank}`}
+            </span>
+          )}
+        </motion.div>
+      )}
+
       {/* Verse of the Day */}
       <motion.div variants={itemVariants} className="space-y-6">
         <div className="flex items-center justify-center gap-3 text-xs font-mono text-muted-foreground/50 uppercase tracking-widest">
@@ -188,22 +212,28 @@ export default function Home() {
         </div>
 
         <blockquote className="text-center">
-          <p className="text-lg md:text-xl font-mono leading-relaxed text-foreground/70">
-            "{VERSE.text}"
+          <p className={`text-lg md:text-xl font-mono leading-relaxed text-foreground/70 ${isLoading ? 'animate-pulse' : ''}`}>
+            "{dailyContent.verse_text}"
           </p>
         </blockquote>
 
         {/* Unified hover container */}
         <div className="group flex items-center justify-center gap-4 transition-opacity duration-300 hover:opacity-100 opacity-60">
-          <Link
-            href={`/read/${VERSE.book}/${VERSE.chapter}`}
-            className="font-mono text-sm text-primary transition-colors"
-          >
-            {VERSE.book} {VERSE.chapter}:{VERSE.verse}
-          </Link>
+          {parsedVerse ? (
+            <Link
+              href={`/read/${parsedVerse.book}/${parsedVerse.chapter}`}
+              className="font-mono text-sm text-primary transition-colors"
+            >
+              {dailyContent.verse_ref}
+            </Link>
+          ) : (
+            <span className="font-mono text-sm text-primary">
+              {dailyContent.verse_ref}
+            </span>
+          )}
           <span className="text-muted-foreground/30">·</span>
           <span className="font-mono text-sm text-muted-foreground/50">
-            {VERSE.translation}
+            {dailyContent.verse_source}
           </span>
           <span className="text-muted-foreground/30">·</span>
           <button
@@ -230,14 +260,14 @@ export default function Home() {
         </div>
 
         <blockquote className="text-center">
-          <p className="text-lg md:text-xl font-mono leading-relaxed text-foreground/70">
-            "{WISDOM.text}"
+          <p className={`text-lg md:text-xl font-mono leading-relaxed text-foreground/70 ${isLoading ? 'animate-pulse' : ''}`}>
+            "{dailyContent.wisdom_text}"
           </p>
         </blockquote>
 
         <div className="flex items-center justify-center gap-4">
           <span className="font-mono text-sm text-muted-foreground/50">
-            — {WISDOM.author}
+            — {dailyContent.wisdom_author}
           </span>
           <span className="text-muted-foreground/30">·</span>
           <button
