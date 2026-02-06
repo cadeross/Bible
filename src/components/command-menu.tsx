@@ -14,6 +14,16 @@ export function CommandMenu() {
     const router = useRouter()
 
     React.useEffect(() => {
+        const handleOpen = () => {
+            setOpen(true)
+            setInput("")
+            setSelectedIndex(0)
+        }
+        window.addEventListener("open-command-menu", handleOpen as EventListener)
+        return () => window.removeEventListener("open-command-menu", handleOpen as EventListener)
+    }, [])
+
+    React.useEffect(() => {
         const down = (e: KeyboardEvent) => {
             // Ignore if input/textarea is focused
             if (

@@ -47,31 +47,53 @@ const Section = ({ title, children }: { title: string, children: React.ReactNode
 
 const QuickActionCard = ({
   href,
+  onClick,
   title,
   description,
   icon: Icon
 }: {
-  href: string
+  href?: string
+  onClick?: () => void
   title: string
   description: string
   icon: React.ElementType
-}) => (
-  <Link
-    href={href}
-    className="group flex items-start gap-3 rounded-lg border border-border/50 bg-secondary/10 p-4 transition-colors hover:bg-secondary/20 hover:border-border"
-  >
-    <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center">
-      <Icon className="h-4 w-4" />
-    </div>
-    <div className="flex-1 space-y-1">
-      <div className="flex items-center gap-2">
-        <span className="font-mono text-sm text-foreground/90">{title}</span>
-        <ArrowRight className="h-3 w-3 text-muted-foreground/60 transition-transform group-hover:translate-x-1" />
+}) => {
+  const content = (
+    <>
+      <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+        <Icon className="h-4 w-4" />
       </div>
-      <p className="text-xs text-muted-foreground">{description}</p>
-    </div>
-  </Link>
-)
+      <div className="flex-1 space-y-1 text-left">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-sm text-foreground/90">{title}</span>
+          <ArrowRight className="h-3 w-3 text-muted-foreground/60 transition-transform group-hover:translate-x-1" />
+        </div>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+    </>
+  )
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="group flex items-start gap-3 rounded-lg border border-border/50 bg-secondary/10 p-4 transition-colors hover:bg-secondary/20 hover:border-border"
+      >
+        {content}
+      </Link>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex items-start gap-3 rounded-lg border border-border/50 bg-secondary/10 p-4 transition-colors hover:bg-secondary/20 hover:border-border"
+    >
+      {content}
+    </button>
+  )
+}
 
 // Dynamic greeting based on time of day
 function getGreeting(): string {
@@ -191,6 +213,11 @@ export default function Home() {
     }
   }
 
+  const handleOpenQuickSearch = () => {
+    if (typeof window === "undefined") return
+    window.dispatchEvent(new Event("open-command-menu"))
+  }
+
   if (!mounted) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -244,19 +271,6 @@ export default function Home() {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-muted-foreground/60">
-            <Link href="/read" className="hover:text-primary transition-colors">
-              start reading
-            </Link>
-            <span className="text-muted-foreground/30">·</span>
-            <Link href="/search" className="hover:text-primary transition-colors">
-              search
-            </Link>
-            <span className="text-muted-foreground/30">·</span>
-            <Link href="/library" className="hover:text-primary transition-colors">
-              library
-            </Link>
-          </div>
         </div>
       </motion.div>
 
@@ -343,9 +357,9 @@ export default function Home() {
               icon={BookOpen}
             />
             <QuickActionCard
-              href="/search"
+              onClick={handleOpenQuickSearch}
               title="Search scripture"
-              description="Find verses, themes, and keywords fast."
+              description="Open the quick search palette."
               icon={Search}
             />
             <QuickActionCard

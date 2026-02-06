@@ -12,7 +12,6 @@ export function DesktopNav() {
     const tabs = [
         { name: 'home', href: '/' },
         { name: 'read', href: '/read' },
-        { name: 'search', href: '/search' },
         { name: 'library', href: '/library' },
     ];
 
