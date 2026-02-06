@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { ArrowRight, BookOpen, Heart, Church } from "lucide-react"
+import { ArrowRight, BookOpen, Church, Clock, Heart, HelpCircle, Library, Search } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -33,29 +33,59 @@ const itemVariants = {
   }
 }
 
+const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
+  <div className="space-y-4">
+    <h2 className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
+      <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+      {title}
+    </h2>
+    <div className="pl-4 border-l border-border/40 space-y-4">
+      {children}
+    </div>
+  </div>
+)
+
+const QuickActionCard = ({
+  href,
+  title,
+  description,
+  icon: Icon
+}: {
+  href: string
+  title: string
+  description: string
+  icon: React.ElementType
+}) => (
+  <Link
+    href={href}
+    className="group flex items-start gap-3 rounded-lg border border-border/50 bg-secondary/10 p-4 transition-colors hover:bg-secondary/20 hover:border-border"
+  >
+    <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+      <Icon className="h-4 w-4" />
+    </div>
+    <div className="flex-1 space-y-1">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-sm text-foreground/90">{title}</span>
+        <ArrowRight className="h-3 w-3 text-muted-foreground/60 transition-transform group-hover:translate-x-1" />
+      </div>
+      <p className="text-xs text-muted-foreground">{description}</p>
+    </div>
+  </Link>
+)
+
 // Dynamic greeting based on time of day
 function getGreeting(): string {
   const hour = new Date().getHours()
-  const greetings = [
-    "good morning",
-    "good afternoon",
-    "good evening",
-    "welcome back",
-    "hello again",
-    "greetings"
-  ]
-
-  if (hour >= 5 && hour < 12) return greetings[0] // morning
-  if (hour >= 12 && hour < 17) return greetings[1] // afternoon
-  if (hour >= 17 && hour < 22) return greetings[2] // evening
-
-  // Late night/random variation
-  return greetings[Math.floor(Math.random() * 3) + 3]
+  if (hour >= 5 && hour < 12) return "good morning"
+  if (hour >= 12 && hour < 17) return "good afternoon"
+  if (hour >= 17 && hour < 22) return "good evening"
+  return "good night"
 }
 
 export default function Home() {
   const [username, setUsername] = useState<string>("")
   const [greeting, setGreeting] = useState<string>("")
+  const [todayLabel, setTodayLabel] = useState<string>("")
   const [mounted, setMounted] = useState(false)
   const [dailyContent, setDailyContent] = useState<DailyContent>(FALLBACK_CONTENT)
   const [isLoading, setIsLoading] = useState(true)
@@ -63,6 +93,13 @@ export default function Home() {
   useEffect(() => {
     setMounted(true)
     setGreeting(getGreeting())
+    setTodayLabel(
+      new Intl.DateTimeFormat(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric"
+      }).format(new Date())
+    )
 
     const loadData = async () => {
       const supabase = createClient()
@@ -83,6 +120,10 @@ export default function Home() {
 
     loadData()
   }, [])
+
+  const liturgyLabel = dailyContent.feast_name || dailyContent.liturgical_season
+  const liturgyRank = dailyContent.rank && dailyContent.rank !== "Weekday" ? dailyContent.rank : ""
+  const liturgyColorClass = getLiturgicalColorClass(dailyContent.liturgical_color)
 
   // Parse the verse reference for linking
   const parsedVerse = parseVerseRef(dailyContent.verse_ref)
@@ -160,135 +201,167 @@ export default function Home() {
 
   return (
     <motion.div
-      className="w-full max-w-[720px] mx-auto px-6 py-12 space-y-16"
+      className="w-full max-w-[900px] mx-auto px-6 py-12 space-y-12"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
-      {/* Welcome */}
-      <motion.div variants={itemVariants} className="text-center space-y-4">
-        <h1 className="text-3xl md:text-4xl font-mono font-bold text-primary tracking-tight">
-          {greeting}
-        </h1>
-        {username ? (
-          <Link href="/profile" className="font-mono text-lg text-muted-foreground hover:text-primary transition-colors">
-            {username}
-          </Link>
-        ) : (
-          <div className="flex items-center justify-center font-mono text-sm text-muted-foreground/60">
-            <Link href="/profile" className="hover:text-primary transition-colors">
-              sign in / sign up
+      {/* Header */}
+      <motion.div variants={itemVariants} className="space-y-5 border-b border-border/50 pb-8">
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60">
+            <span className="h-px w-8 bg-border" />
+            openwrit
+          </div>
+
+          <div className="space-y-4">
+            <h1 className="text-4xl md:text-6xl font-mono font-bold text-primary tracking-tight leading-tight">
+              {greeting}
+            </h1>
+            <div className="text-xs font-mono text-muted-foreground/60">
+              a quiet place for daily reading
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-muted-foreground/60">
+            {todayLabel && (
+              <span className={`flex items-center gap-2 ${isLoading ? "animate-pulse" : ""}`}>
+                <Clock className="h-3 w-3" />
+                {todayLabel}
+              </span>
+            )}
+            {liturgyLabel && (
+              <>
+                <span className="text-muted-foreground/30">·</span>
+                <span className="flex items-center gap-2">
+                  <Church className={`h-3 w-3 ${liturgyColorClass}`} />
+                  <span className={`${liturgyColorClass}`}>
+                    {liturgyLabel}
+                    {liturgyRank ? ` · ${liturgyRank}` : ""}
+                  </span>
+                </span>
+              </>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-muted-foreground/60">
+            <Link href="/read" className="hover:text-primary transition-colors">
+              start reading
+            </Link>
+            <span className="text-muted-foreground/30">·</span>
+            <Link href="/search" className="hover:text-primary transition-colors">
+              search
+            </Link>
+            <span className="text-muted-foreground/30">·</span>
+            <Link href="/library" className="hover:text-primary transition-colors">
+              library
             </Link>
           </div>
-        )}
+        </div>
       </motion.div>
 
-      {/* Liturgical Info (if available) */}
-      {(dailyContent.feast_name || dailyContent.liturgical_season) && (
-        <motion.div variants={itemVariants} className="text-center space-y-2">
-          {dailyContent.feast_name && (
-            <div className="flex items-center justify-center gap-2">
-              <Church className={`h-4 w-4 ${getLiturgicalColorClass(dailyContent.liturgical_color)}`} />
-              <span className={`font-mono text-sm ${getLiturgicalColorClass(dailyContent.liturgical_color)}`}>
-                {dailyContent.feast_name}
-              </span>
+      {/* Daily Focus */}
+      <motion.div variants={itemVariants}>
+        <div className="grid gap-6">
+          <div className="rounded-lg border border-border/50 bg-secondary/10 p-6 md:p-7 space-y-5">
+            <div className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+              verse of the day
             </div>
-          )}
-          {dailyContent.liturgical_season && !dailyContent.feast_name && (
-            <span className={`font-mono text-xs text-muted-foreground/60`}>
-              {dailyContent.liturgical_season}
-              {dailyContent.rank && dailyContent.rank !== 'Weekday' && ` · ${dailyContent.rank}`}
-            </span>
-          )}
-        </motion.div>
-      )}
 
-      {/* Verse of the Day */}
-      <motion.div variants={itemVariants} className="space-y-6">
-        <div className="flex items-center justify-center gap-3 text-xs font-mono text-muted-foreground/50 uppercase tracking-widest">
-          <div className="w-8 h-px bg-border" />
-          <span>verse of the day</span>
-          <div className="w-8 h-px bg-border" />
-        </div>
+            <blockquote className="max-w-[760px]">
+              <p className={`text-lg md:text-xl font-mono leading-relaxed text-foreground/70 ${isLoading ? "animate-pulse" : ""}`}>
+                "{dailyContent.verse_text}"
+              </p>
+            </blockquote>
 
-        <blockquote className="text-center">
-          <p className={`text-lg md:text-xl font-mono leading-relaxed text-foreground/70 ${isLoading ? 'animate-pulse' : ''}`}>
-            "{dailyContent.verse_text}"
-          </p>
-        </blockquote>
+            <div className="flex flex-wrap items-center justify-between gap-4 text-sm font-mono">
+              <div className="flex flex-wrap items-center gap-3 text-muted-foreground/60">
+                {parsedVerse ? (
+                  <Link
+                    href={`/read/${parsedVerse.book}/${parsedVerse.chapter}`}
+                    className="text-primary transition-colors hover:underline underline-offset-4 decoration-primary/40"
+                  >
+                    {dailyContent.verse_ref}
+                  </Link>
+                ) : (
+                  <span className="text-primary">
+                    {dailyContent.verse_ref}
+                  </span>
+                )}
+                <span className="text-muted-foreground/30">·</span>
+                <span className={isLoading ? "animate-pulse" : ""}>
+                  {dailyContent.verse_source}
+                </span>
+              </div>
+              <button
+                onClick={handleHighlight}
+                className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
+              >
+                <BookOpen className="h-3 w-3" />
+                save to library
+              </button>
+            </div>
+          </div>
 
-        {/* Unified hover container */}
-        <div className="group flex items-center justify-center gap-4 transition-opacity duration-300 hover:opacity-100 opacity-60">
-          {parsedVerse ? (
-            <Link
-              href={`/read/${parsedVerse.book}/${parsedVerse.chapter}`}
-              className="font-mono text-sm text-primary transition-colors"
-            >
-              {dailyContent.verse_ref}
-            </Link>
-          ) : (
-            <span className="font-mono text-sm text-primary">
-              {dailyContent.verse_ref}
-            </span>
-          )}
-          <span className="text-muted-foreground/30">·</span>
-          <span className="font-mono text-sm text-muted-foreground/50">
-            {dailyContent.verse_source}
-          </span>
-          <span className="text-muted-foreground/30">·</span>
-          <button
-            onClick={handleHighlight}
-            className="font-mono text-sm text-muted-foreground/50 hover:text-primary transition-colors flex items-center gap-1"
-          >
-            <BookOpen className="h-3 w-3" />
-            save
-          </button>
-        </div>
-      </motion.div>
+          <div className="rounded-lg border border-border/50 bg-secondary/10 p-6 md:p-7 space-y-5">
+            <div className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+              daily wisdom
+            </div>
 
-      {/* Divider */}
-      <motion.div variants={itemVariants} className="flex justify-center">
-        <div className="w-1 h-1 rounded-full bg-primary/20" />
-      </motion.div>
+            <blockquote className="max-w-[760px]">
+              <p className={`text-lg md:text-xl font-mono leading-relaxed text-foreground/70 ${isLoading ? "animate-pulse" : ""}`}>
+                "{dailyContent.wisdom_text}"
+              </p>
+            </blockquote>
 
-      {/* Daily Wisdom */}
-      <motion.div variants={itemVariants} className="space-y-6">
-        <div className="flex items-center justify-center gap-3 text-xs font-mono text-muted-foreground/50 uppercase tracking-widest">
-          <div className="w-8 h-px bg-border" />
-          <span>daily wisdom</span>
-          <div className="w-8 h-px bg-border" />
-        </div>
-
-        <blockquote className="text-center">
-          <p className={`text-lg md:text-xl font-mono leading-relaxed text-foreground/70 ${isLoading ? 'animate-pulse' : ''}`}>
-            "{dailyContent.wisdom_text}"
-          </p>
-        </blockquote>
-
-        <div className="flex items-center justify-center gap-4">
-          <span className="font-mono text-sm text-muted-foreground/50">
-            — {dailyContent.wisdom_author}
-          </span>
-          <span className="text-muted-foreground/30">·</span>
-          <button
-            onClick={handleSaveWisdom}
-            className="font-mono text-sm text-muted-foreground/50 hover:text-primary transition-colors flex items-center gap-1"
-          >
-            <Heart className="h-3 w-3" />
-            save
-          </button>
+            <div className="flex flex-wrap items-center justify-between gap-4 text-sm font-mono">
+              <span className="text-muted-foreground/60">
+                — {dailyContent.wisdom_author}
+              </span>
+              <button
+                onClick={handleSaveWisdom}
+                className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
+              >
+                <Heart className="h-3 w-3" />
+                save to collection
+              </button>
+            </div>
+          </div>
         </div>
       </motion.div>
 
-      {/* Start Reading CTA */}
-      <motion.div variants={itemVariants} className="flex justify-center pt-4">
-        <Link
-          href="/read"
-          className="group flex items-center gap-2 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
-        >
-          <span>start reading</span>
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </Link>
+      {/* Quick Actions */}
+      <motion.div variants={itemVariants}>
+        <Section title="Quick Actions">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <QuickActionCard
+              href="/read"
+              title="Start reading"
+              description="Open a book and settle into the text."
+              icon={BookOpen}
+            />
+            <QuickActionCard
+              href="/search"
+              title="Search scripture"
+              description="Find verses, themes, and keywords fast."
+              icon={Search}
+            />
+            <QuickActionCard
+              href="/library"
+              title="Your library"
+              description="Highlights, wisdom, and saved notes."
+              icon={Library}
+            />
+            <QuickActionCard
+              href="/how-to"
+              title="How it works"
+              description="Shortcuts, tips, and reading tools."
+              icon={HelpCircle}
+            />
+          </div>
+        </Section>
       </motion.div>
     </motion.div>
   )
