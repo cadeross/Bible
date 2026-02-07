@@ -276,106 +276,109 @@ export default function Home() {
 
       {/* Daily Focus */}
       <motion.div variants={itemVariants}>
-        <div className="grid gap-6">
-          <div className="rounded-lg border border-border/50 bg-secondary/10 p-6 md:p-7 space-y-5">
-            <div className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-              verse of the day
-            </div>
+        <div className="grid gap-8 lg:grid-cols-[1.4fr_0.8fr] lg:items-start">
+          <div className="space-y-10">
+            <div className="space-y-4">
+              <h2 className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                Verse of the day
+              </h2>
 
-            <blockquote className="max-w-[760px]">
-              <p className={`text-lg md:text-xl font-mono leading-relaxed text-foreground/70 ${isLoading ? "animate-pulse" : ""}`}>
-                "{dailyContent.verse_text}"
-              </p>
-            </blockquote>
+              <div className="pl-4 border-l border-border/40 space-y-3">
+                <blockquote className="max-w-[760px]">
+                  <p className={`text-sm md:text-base font-mono leading-relaxed text-foreground/80 ${isLoading ? "animate-pulse" : ""}`}>
+                    "{dailyContent.verse_text}"
+                  </p>
+                </blockquote>
 
-            <div className="flex flex-wrap items-center justify-between gap-4 text-sm font-mono">
-              <div className="flex flex-wrap items-center gap-3 text-muted-foreground/60">
-                {parsedVerse ? (
-                  <Link
-                    href={`/read/${parsedVerse.book}/${parsedVerse.chapter}`}
-                    className="text-primary transition-colors hover:underline underline-offset-4 decoration-primary/40"
-                  >
-                    {dailyContent.verse_ref}
-                  </Link>
-                ) : (
-                  <span className="text-primary">
-                    {dailyContent.verse_ref}
+                <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted-foreground/60">
+                  {parsedVerse ? (
+                    <Link
+                      href={`/read/${parsedVerse.book}/${parsedVerse.chapter}`}
+                      className="text-primary transition-colors hover:underline underline-offset-4 decoration-primary/40"
+                    >
+                      {dailyContent.verse_ref}
+                    </Link>
+                  ) : (
+                    <span className="text-primary">
+                      {dailyContent.verse_ref}
+                    </span>
+                  )}
+                  <span className="text-muted-foreground/30">·</span>
+                  <span className={isLoading ? "animate-pulse" : ""}>
+                    {dailyContent.verse_source}
                   </span>
-                )}
-                <span className="text-muted-foreground/30">·</span>
-                <span className={isLoading ? "animate-pulse" : ""}>
-                  {dailyContent.verse_source}
-                </span>
+                  <span className="text-muted-foreground/30">·</span>
+                  <button
+                    onClick={handleHighlight}
+                    className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
+                  >
+                    <BookOpen className="h-3 w-3" />
+                    save
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={handleHighlight}
-                className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
-              >
-                <BookOpen className="h-3 w-3" />
-                save to library
-              </button>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                Daily wisdom
+              </h2>
+
+              <div className="pl-4 border-l border-border/40 space-y-3">
+                <blockquote>
+                  <p className={`text-sm md:text-base font-mono leading-relaxed text-foreground/70 ${isLoading ? "animate-pulse" : ""}`}>
+                    "{dailyContent.wisdom_text}"
+                  </p>
+                </blockquote>
+
+                <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted-foreground/60">
+                  <span>
+                    — {dailyContent.wisdom_author}
+                  </span>
+                  <span className="text-muted-foreground/30">·</span>
+                  <button
+                    onClick={handleSaveWisdom}
+                    className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
+                  >
+                    <Heart className="h-3 w-3" />
+                    save
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="rounded-lg border border-border/50 bg-secondary/10 p-6 md:p-7 space-y-5">
-            <div className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-              daily wisdom
-            </div>
-
-            <blockquote className="max-w-[760px]">
-              <p className={`text-lg md:text-xl font-mono leading-relaxed text-foreground/70 ${isLoading ? "animate-pulse" : ""}`}>
-                "{dailyContent.wisdom_text}"
-              </p>
-            </blockquote>
-
-            <div className="flex flex-wrap items-center justify-between gap-4 text-sm font-mono">
-              <span className="text-muted-foreground/60">
-                — {dailyContent.wisdom_author}
-              </span>
-              <button
-                onClick={handleSaveWisdom}
-                className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
-              >
-                <Heart className="h-3 w-3" />
-                save to collection
-              </button>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Quick Actions */}
-      <motion.div variants={itemVariants}>
-        <Section title="Quick Actions">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <Section title="Quick Actions">
+            <div className="grid gap-3">
             <QuickActionCard
               href="/read"
               title="Start reading"
-              description="Open a book and settle into the text."
+              description="Open a book and start reading."
               icon={BookOpen}
             />
-            <QuickActionCard
-              onClick={handleOpenQuickSearch}
-              title="Search scripture"
-              description="Open the quick search palette."
-              icon={Search}
-            />
+              <QuickActionCard
+                onClick={handleOpenQuickSearch}
+                title="Search scripture"
+                description="Open the quick search palette."
+                icon={Search}
+              />
             <QuickActionCard
               href="/library"
               title="Your library"
-              description="Highlights, wisdom, and saved notes."
+              description="Highlights, wisdom, and notes."
               icon={Library}
             />
-            <QuickActionCard
-              href="/how-to"
-              title="How it works"
-              description="Shortcuts, tips, and reading tools."
-              icon={HelpCircle}
-            />
-          </div>
-        </Section>
+              <QuickActionCard
+                href="/how-to"
+                title="How it works"
+                description="Shortcuts, tips, and reading tools."
+                icon={HelpCircle}
+              />
+            </div>
+          </Section>
+        </div>
       </motion.div>
     </motion.div>
   )
