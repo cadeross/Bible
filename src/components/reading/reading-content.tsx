@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { isRedLetterVerse } from "@/lib/red-letter-data"
 import { Highlight } from "@/lib/persistence"
 import { Trash2, StickyNote, Share2 } from "lucide-react"
-import { NoteDialog } from "./note-dialog"
+import { Sheet, SheetContent, SheetClose } from "@/components/ui/sheet"
 
 interface ReadingContentProps {
     chapter: BibleChapter
@@ -248,16 +248,25 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
     }
 
 
-    const [noteDialogOpen, setNoteDialogOpen] = React.useState(false)
+    const [noteOpen, setNoteOpen] = React.useState(false)
+    const [noteContent, setNoteContent] = React.useState("")
+    const [noteTouched, setNoteTouched] = React.useState(false)
+    const [noteStatus, setNoteStatus] = React.useState<"idle" | "saving" | "saved">("idle")
+    const noteSaveTimeout = React.useRef<NodeJS.Timeout | null>(null)
 
     // ... (existing handlers)
 
     const handleOpenNote = () => {
         setMenuOpen(false)
-        setNoteDialogOpen(true)
+        setNoteContent(getInitialNoteContent())
+        setNoteTouched(false)
+        setNoteStatus("idle")
+        setNoteOpen(true)
     }
 
-    const handleSaveNote = async (content: string) => {
+    const persistNoteContent = async (content: string) => {
+        if (selectedVerses.length === 0) return
+        const noteValue = content.length > 0 ? content : undefined
         const newHighlights = [...highlights]
         const persistence = await import("@/lib/persistence")
 
@@ -281,7 +290,7 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                     verse: vId,
                     color: colorToKeep,
                     content: verseData.text,
-                    note: content, // Update note
+                    note: noteValue, // Update note
                     created_at: new Date().toISOString()
                 }
                 newHighlights.push(h)
@@ -289,29 +298,14 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
             }
         }
         setHighlights(newHighlights)
-        setNoteDialogOpen(false)
-        window.getSelection()?.removeAllRanges()
     }
 
     const handleDeleteNote = async () => {
         // Just clear the note field, keep highlight
-        const newHighlights = [...highlights]
-        const persistence = await import("@/lib/persistence")
-
-        for (const vId of selectedVerses) {
-            const existingIdx = newHighlights.findIndex(h => h.verse === vId)
-            if (existingIdx !== -1) {
-                const h = newHighlights[existingIdx]
-                h.note = undefined // Clear note
-                // We need to trigger save to persist the clearance
-                // saveHighlight handles updates.
-                await persistence.saveHighlight(h)
-                // Update local state
-                newHighlights[existingIdx] = h
-            }
-        }
-        setHighlights([...newHighlights])
-        setNoteDialogOpen(false)
+        await persistNoteContent("")
+        setNoteContent("")
+        setNoteTouched(false)
+        setNoteStatus("saved")
     }
 
     const handleShareSelection = async () => {
@@ -354,6 +348,41 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
         return h?.note || ""
     }
 
+    const verseLabel = React.useMemo(() => {
+        if (selectedVerses.length === 0) return `${bookName} ${chapterNum}`
+        const sorted = [...selectedVerses].sort((a, b) => a - b)
+        const isContiguous = sorted.every((v, i) => i === 0 || v === sorted[i - 1] + 1)
+        const range = isContiguous
+            ? `${sorted[0]}${sorted.length > 1 ? `-${sorted[sorted.length - 1]}` : ""}`
+            : sorted.join(",")
+        return `${bookName} ${chapterNum}:${range}`
+    }, [selectedVerses, bookName, chapterNum])
+
+    const versePreview = React.useMemo(() => {
+        if (selectedVerses.length === 0) return ""
+        const selected = chapter.verses
+            .filter(v => selectedVerses.includes(v.verse))
+            .sort((a, b) => a.verse - b.verse)
+            .slice(0, 3)
+            .map(v => `${v.verse}. ${v.text}`)
+            .join(" ")
+        const more = selectedVerses.length > 3 ? " …" : ""
+        return `${selected}${more}`
+    }, [selectedVerses, chapter.verses])
+
+    React.useEffect(() => {
+        if (!noteOpen || !noteTouched) return
+        setNoteStatus("saving")
+        if (noteSaveTimeout.current) clearTimeout(noteSaveTimeout.current)
+        noteSaveTimeout.current = setTimeout(async () => {
+            await persistNoteContent(noteContent.trim())
+            setNoteStatus("saved")
+        }, 600)
+        return () => {
+            if (noteSaveTimeout.current) clearTimeout(noteSaveTimeout.current)
+        }
+    }, [noteContent, noteOpen, noteTouched, selectedVerses])
+
     const getFontClass = () => {
         switch (fontFamily) {
             case "sans": return "font-sans"
@@ -372,14 +401,63 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
             )}
             style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight }}
         >
-            <NoteDialog
-                isOpen={noteDialogOpen}
-                onOpenChange={setNoteDialogOpen}
-                verseRef={`${bookName} ${chapterNum}:${selectedVerses.join(',')}`}
-                initialContent={getInitialNoteContent()}
-                onSave={handleSaveNote}
-                onDelete={getInitialNoteContent() ? handleDeleteNote : undefined}
-            />
+            <Sheet
+                open={noteOpen}
+                onOpenChange={(open) => {
+                    if (!open && noteTouched) {
+                        persistNoteContent(noteContent.trim())
+                    }
+                    setNoteOpen(open)
+                }}
+            >
+                <SheetContent side="right" className="sm:max-w-md space-y-6">
+                    <div className="space-y-2">
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                            Note
+                        </p>
+                        <h2 className="text-lg font-mono text-foreground">
+                            {verseLabel}
+                        </h2>
+                        {versePreview && (
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                {versePreview}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="rounded-md border border-border/50 bg-secondary/10 p-3">
+                        <textarea
+                            value={noteContent}
+                            onChange={(e) => {
+                                setNoteContent(e.target.value)
+                                setNoteTouched(true)
+                            }}
+                            placeholder="Write a note…"
+                            className="w-full h-48 bg-transparent border-0 resize-none focus:ring-0 p-0 text-sm text-foreground placeholder:text-muted-foreground/50 font-sans leading-relaxed"
+                            spellCheck={false}
+                        />
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
+                        <span>
+                            {noteStatus === "saving" ? "saving…" : noteStatus === "saved" ? "saved" : " "}
+                        </span>
+                        <div className="flex items-center gap-2">
+                            {noteContent.trim().length > 0 && (
+                                <button
+                                    onClick={handleDeleteNote}
+                                    className="text-muted-foreground hover:text-destructive transition-colors"
+                                >
+                                    delete
+                                </button>
+                            )}
+                            <SheetClose className="text-muted-foreground hover:text-foreground transition-colors">
+                                done
+                            </SheetClose>
+                        </div>
+                    </div>
+                </SheetContent>
+            </Sheet>
 
             {/* Elegant Floating Highlight Menu */}
             <AnimatePresence>
@@ -540,4 +618,3 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
         </div>
     )
 }
-

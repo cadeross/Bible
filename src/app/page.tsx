@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { ArrowRight, BookOpen, Church, Clock, Heart, HelpCircle, Library, Search } from "lucide-react"
+import { BookOpen, Church, Clock, Heart, Share2 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -45,56 +45,6 @@ const Section = ({ title, children }: { title: string, children: React.ReactNode
   </div>
 )
 
-const QuickActionCard = ({
-  href,
-  onClick,
-  title,
-  description,
-  icon: Icon
-}: {
-  href?: string
-  onClick?: () => void
-  title: string
-  description: string
-  icon: React.ElementType
-}) => {
-  const content = (
-    <>
-      <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center">
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="flex-1 space-y-1 text-left">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-sm text-foreground/90">{title}</span>
-          <ArrowRight className="h-3 w-3 text-muted-foreground/60 transition-transform group-hover:translate-x-1" />
-        </div>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
-    </>
-  )
-
-  if (href) {
-    return (
-      <Link
-        href={href}
-        className="group flex items-start gap-3 rounded-lg border border-border/50 bg-secondary/10 p-4 transition-colors hover:bg-secondary/20 hover:border-border"
-      >
-        {content}
-      </Link>
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex items-start gap-3 rounded-lg border border-border/50 bg-secondary/10 p-4 transition-colors hover:bg-secondary/20 hover:border-border"
-    >
-      {content}
-    </button>
-  )
-}
-
 // Dynamic greeting based on time of day
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -108,6 +58,8 @@ export default function Home() {
   const [username, setUsername] = useState<string>("")
   const [greeting, setGreeting] = useState<string>("")
   const [todayLabel, setTodayLabel] = useState<string>("")
+  const [continueReading, setContinueReading] = useState<{ book: string, chapter: number } | null>(null)
+  const [streakDays, setStreakDays] = useState<number | null>(null)
   const [mounted, setMounted] = useState(false)
   const [dailyContent, setDailyContent] = useState<DailyContent>(FALLBACK_CONTENT)
   const [isLoading, setIsLoading] = useState(true)
@@ -125,11 +77,14 @@ export default function Home() {
 
     const loadData = async () => {
       const supabase = createClient()
+      const { getProfile, getHistory } = await import("@/lib/persistence")
 
-      // Fetch user and daily content in parallel
-      const [userResult, content] = await Promise.all([
+      // Fetch user, content, and reading context in parallel
+      const [userResult, content, profile, history] = await Promise.all([
         supabase.auth.getUser(),
-        getDailyContent()
+        getDailyContent(),
+        getProfile(),
+        getHistory()
       ])
 
       if (userResult.data.user?.user_metadata?.username) {
@@ -138,6 +93,50 @@ export default function Home() {
 
       setDailyContent(content)
       setIsLoading(false)
+
+      if (profile?.last_read_book && profile?.last_read_chapter) {
+        setContinueReading({
+          book: profile.last_read_book,
+          chapter: profile.last_read_chapter
+        })
+      } else if (history && history.length > 0) {
+        const sorted = [...history].sort((a, b) =>
+          new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
+        )
+        const latest = sorted[0]
+        if (latest?.book && latest?.chapter) {
+          setContinueReading({ book: latest.book, chapter: latest.chapter })
+        }
+      }
+
+      if (history) {
+        const dailyActivity: Record<string, number> = {}
+        history.forEach((h) => {
+          const day = h.completed_at.split("T")[0]
+          dailyActivity[day] = (dailyActivity[day] || 0) + (h.duration_seconds || 0)
+        })
+
+        const presence = new Set(Object.keys(dailyActivity))
+        let streak = 0
+        const cursor = new Date()
+        const todayStr = cursor.toISOString().split("T")[0]
+
+        if (!presence.has(todayStr)) {
+          cursor.setDate(cursor.getDate() - 1)
+          const yesterdayStr = cursor.toISOString().split("T")[0]
+          if (!presence.has(yesterdayStr)) {
+            setStreakDays(0)
+            return
+          }
+        }
+
+        while (presence.has(cursor.toISOString().split("T")[0])) {
+          streak++
+          cursor.setDate(cursor.getDate() - 1)
+        }
+
+        setStreakDays(streak)
+      }
     }
 
     loadData()
@@ -213,9 +212,27 @@ export default function Home() {
     }
   }
 
-  const handleOpenQuickSearch = () => {
-    if (typeof window === "undefined") return
-    window.dispatchEvent(new Event("open-command-menu"))
+  const handleShare = async (text: string, title: string) => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text })
+        return
+      }
+      await navigator.clipboard.writeText(text)
+      toast.success("copied")
+    } catch (error) {
+      toast.error("couldn't share")
+    }
+  }
+
+  const handleShareVerse = () => {
+    const text = `"${dailyContent.verse_text}" — ${dailyContent.verse_ref}`
+    handleShare(text, "Verse of the day")
+  }
+
+  const handleShareWisdom = () => {
+    const text = `"${dailyContent.wisdom_text}" — ${dailyContent.wisdom_author}`
+    handleShare(text, "Daily wisdom")
   }
 
   if (!mounted) {
@@ -236,9 +253,15 @@ export default function Home() {
       {/* Header */}
       <motion.div variants={itemVariants} className="space-y-5 border-b border-border/50 pb-8">
         <div className="space-y-5">
-          <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60">
+          <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60 w-full">
             <span className="h-px w-8 bg-border" />
             openwrit
+            {streakDays !== null && (
+              <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-border/50 bg-secondary/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground/70">
+                <span className="h-1 w-1 rounded-full bg-primary/40" />
+                streak {streakDays} day{streakDays === 1 ? "" : "s"}
+              </span>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -271,20 +294,26 @@ export default function Home() {
             )}
           </div>
 
+          {continueReading && (
+            <div className="space-y-1 text-xs font-mono text-muted-foreground/60">
+              <Link
+                href={`/read/${encodeURIComponent(continueReading.book)}/${continueReading.chapter}`}
+                className="inline-flex items-center gap-2 hover:text-primary transition-colors"
+              >
+                <BookOpen className="h-3 w-3" />
+                continue reading · {continueReading.book} {continueReading.chapter}
+              </Link>
+            </div>
+          )}
+
         </div>
       </motion.div>
 
       {/* Daily Focus */}
       <motion.div variants={itemVariants}>
-        <div className="grid gap-8 lg:grid-cols-[1.4fr_0.8fr] lg:items-start">
-          <div className="space-y-10">
-            <div className="space-y-4">
-              <h2 className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-                Verse of the day
-              </h2>
-
-              <div className="pl-4 border-l border-border/40 space-y-3">
+        <div className="space-y-10">
+            <Section title="Verse of the day">
+              <div className="group space-y-3">
                 <blockquote className="max-w-[760px]">
                   <p className={`text-sm md:text-base font-mono leading-relaxed text-foreground/80 ${isLoading ? "animate-pulse" : ""}`}>
                     "{dailyContent.verse_text}"
@@ -316,17 +345,19 @@ export default function Home() {
                     <BookOpen className="h-3 w-3" />
                     save
                   </button>
+                  <button
+                    onClick={handleShareVerse}
+                    className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
+                  >
+                    <Share2 className="h-3 w-3" />
+                    share verse
+                  </button>
                 </div>
               </div>
-            </div>
+            </Section>
 
-            <div className="space-y-4">
-              <h2 className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-                Daily wisdom
-              </h2>
-
-              <div className="pl-4 border-l border-border/40 space-y-3">
+            <Section title="Daily wisdom">
+              <div className="group space-y-3">
                 <blockquote>
                   <p className={`text-sm md:text-base font-mono leading-relaxed text-foreground/70 ${isLoading ? "animate-pulse" : ""}`}>
                     "{dailyContent.wisdom_text}"
@@ -345,39 +376,16 @@ export default function Home() {
                     <Heart className="h-3 w-3" />
                     save
                   </button>
+                  <button
+                    onClick={handleShareWisdom}
+                    className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
+                  >
+                    <Share2 className="h-3 w-3" />
+                    share quote
+                  </button>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <Section title="Quick Actions">
-            <div className="grid gap-3">
-            <QuickActionCard
-              href="/read"
-              title="Start reading"
-              description="Open a book and start reading."
-              icon={BookOpen}
-            />
-              <QuickActionCard
-                onClick={handleOpenQuickSearch}
-                title="Search scripture"
-                description="Open the quick search palette."
-                icon={Search}
-              />
-            <QuickActionCard
-              href="/library"
-              title="Your library"
-              description="Highlights, wisdom, and notes."
-              icon={Library}
-            />
-              <QuickActionCard
-                href="/how-to"
-                title="How it works"
-                description="Shortcuts, tips, and reading tools."
-                icon={HelpCircle}
-              />
-            </div>
-          </Section>
+            </Section>
         </div>
       </motion.div>
     </motion.div>
