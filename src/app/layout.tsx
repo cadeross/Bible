@@ -13,6 +13,7 @@ import { FocusProvider } from "@/contexts/focus-mode";
 import { Agentation } from "agentation";
 import { Suspense } from "react";
 import Loading from "./loading";
+import { PageGradients } from "@/components/ui/page-gradients";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -96,6 +97,7 @@ export default function RootLayout({
               </MainLayout>
 
               <Footer />
+              <PageGradients />
               <MobileNav />
               <Toaster
                 position="bottom-right"

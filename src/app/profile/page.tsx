@@ -19,7 +19,7 @@ import {
     ChartLegend,
     ChartLegendContent
 } from "@/components/ui/chart";
-import { CalHeatmapWrapper } from "@/components/ui/cal-heatmap-wrapper";
+import { CustomHeatmap } from "@/components/ui/custom-heatmap";
 
 // Helper for section groups (Matches Settings)
 const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
@@ -295,9 +295,9 @@ export default function ProfilePage() {
                     <div className="space-y-8 text-left order-2 md:order-1">
                         <div className="space-y-2">
                             <h1 className="text-4xl font-mono font-bold tracking-tight text-primary">account</h1>
-                                <p className="text-muted-foreground font-mono text-sm max-w-md leading-relaxed">
-                                    sign in to access cloud features and save your reading progress.
-                                </p>
+                            <p className="text-muted-foreground font-mono text-sm max-w-md leading-relaxed">
+                                sign in to access cloud features and save your reading progress.
+                            </p>
                         </div>
 
                         <div className="space-y-6">
@@ -533,22 +533,10 @@ export default function ProfilePage() {
                     </Section>
                 </div>
 
-                {/* YEARLY HEATMAP - Cal-Heatmap */}
+                {/* YEARLY HEATMAP - Custom */}
                 <Section title="Yearly Activity">
                     <div className="p-4 bg-secondary/5 rounded-md border border-border/30 overflow-hidden">
-                        <CalHeatmapWrapper data={activityMap} />
-                        {/* Legend */}
-                        <div className="flex justify-end items-center mt-3 text-[10px] text-muted-foreground font-mono">
-                            <div className="flex items-center gap-1">
-                                <span className="mr-1">Less</span>
-                                <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/10" />
-                                <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/25" />
-                                <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/50" />
-                                <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/75" />
-                                <div className="w-[11px] h-[11px] rounded-[2px] bg-primary" />
-                                <span className="ml-1">More</span>
-                            </div>
-                        </div>
+                        <CustomHeatmap data={activityMap} />
                     </div>
                 </Section>
 
