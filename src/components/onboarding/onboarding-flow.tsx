@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -10,63 +10,125 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useReadingPreferences } from "@/contexts/reading-preferences";
 import { useTheme } from "next-themes";
-import { ArrowRight, Check, ChevronRight, Moon, Sun, Monitor, Type } from "lucide-react";
+import { Check, ChevronRight, Moon, Sun, Monitor, Search, Mail, BookOpen, Sparkles, Bug } from "lucide-react";
 import { toast } from "sonner";
-
+import { ParticlesBackground } from "./particles-background";
 import { getAllTranslations } from "@/lib/bible-api";
+import { cn } from "@/lib/utils";
 
-type Step = 'welcome' | 'identity' | 'preferences' | 'content' | 'review' | 'complete';
+// DEV MODE - Set to true to skip saving and bypass username checks
+// const DEV_MODE = true;
+
+type Step = 'welcome' | 'identity' | 'preferences' | 'content' | 'daily-wisdom' | 'complete';
+
+// Sample Bible passages for preview
+const PREVIEW_PASSAGES = [
+    {
+        reference: "John 1:1-5",
+        verses: [
+            { num: 1, text: "In the beginning was the Word, and the Word was with God, and the Word was God." },
+            { num: 2, text: "The same was in the beginning with God." },
+            { num: 3, text: "All things were made by him; and without him was not any thing made that was made." },
+            { num: 4, text: "In him was life; and the life was the light of men." },
+            { num: 5, text: "And the light shineth in darkness; and the darkness comprehended it not." },
+        ]
+    },
+    {
+        reference: "Psalm 23:1-4",
+        verses: [
+            { num: 1, text: "The Lord is my shepherd; I shall not want." },
+            { num: 2, text: "He maketh me to lie down in green pastures: he leadeth me beside the still waters." },
+            { num: 3, text: "He restoreth my soul: he leadeth me in the paths of righteousness for his name's sake." },
+            { num: 4, text: "Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me; thy rod and thy staff they comfort me." },
+        ]
+    },
+    {
+        reference: "Romans 8:28-31",
+        verses: [
+            { num: 28, text: "And we know that all things work together for good to them that love God, to them who are the called according to his purpose." },
+            { num: 29, text: "For whom he did foreknow, he also did predestinate to be conformed to the image of his Son, that he might be the firstborn among many brethren." },
+            { num: 30, text: "Moreover whom he did predestinate, them he also called: and whom he called, them he also justified: and whom he justified, them he also glorified." },
+            { num: 31, text: "What shall we then say to these things? If God be for us, who can be against us?" },
+        ]
+    },
+    {
+        reference: "Philippians 4:6-7",
+        verses: [
+            { num: 6, text: "Be careful for nothing; but in every thing by prayer and supplication with thanksgiving let your requests be made known unto God." },
+            { num: 7, text: "And the peace of God, which passeth all understanding, shall keep your hearts and minds through Christ Jesus." },
+        ]
+    },
+];
 
 export function OnboardingFlow() {
     const [step, setStep] = useState<Step>('welcome');
     const [loading, setLoading] = useState(false);
+    const [devMode, setDevMode] = useState(false);
     const router = useRouter();
     const supabase = createClient();
 
     // Identity State
     const [username, setUsername] = useState("");
-    const [firstName, setFirstName] = useState("");
+    const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+    const [checkingUsername, setCheckingUsername] = useState(false);
 
     // Preferences State
-    const { fontFamily, setFontFamily, setFontSize, palette, setPalette, bibleVersion, setBibleVersion } = useReadingPreferences();
+    const { fontFamily, setFontFamily, palette, setPalette, bibleVersion, setBibleVersion } = useReadingPreferences();
     const { theme, setTheme } = useTheme();
 
     // Content State
     const [versions, setVersions] = useState<any[]>([]);
+    const [versionSearch, setVersionSearch] = useState("");
     const [scrollState, setScrollState] = useState({ canScrollUp: false, canScrollDown: true });
 
+    // Daily Wisdom State
+    const [dailyWisdom, setDailyWisdom] = useState(true);
+
+    // Preview State - random passage on mount only
+    const [previewPassageIndex] = useState(() => Math.floor(Math.random() * PREVIEW_PASSAGES.length));
+
+    // Load versions
     useEffect(() => {
         getAllTranslations().then(setVersions);
     }, []);
 
-    const TopScrollFade = ({ visible }: { visible: boolean }) => (
-        <div className={`absolute top-0 left-0 w-full h-12 bg-gradient-to-b from-background via-background/80 to-transparent pointer-events-none transition-opacity duration-300 z-10 ${visible ? 'opacity-100' : 'opacity-0'}`} />
-    );
-
-    const BottomScrollFade = ({ visible }: { visible: boolean }) => (
-        <div className={`absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none transition-opacity duration-300 z-10 ${visible ? 'opacity-100' : 'opacity-0'}`} />
-    );
-
-    // Review/Commitment State
-    const [dailyVerse, setDailyVerse] = useState(true);
-    const [updates, setUpdates] = useState(true);
-
-    // Initial Data Load
+    // Debounced username availability check
     useEffect(() => {
-        const loadUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                // Pre-fill if exists (e.g. from temp signup)
-                if (user.user_metadata?.username && !user.user_metadata.username.includes("@")) {
-                    setUsername(user.user_metadata.username);
-                }
-                if (user.user_metadata?.first_name) setFirstName(user.user_metadata.first_name);
-            }
-        };
-        loadUser();
-    }, []);
+        if (devMode) {
+            setUsernameAvailable(true);
+            return;
+        }
+        if (!username || username.length < 3) {
+            setUsernameAvailable(null);
+            return;
+        }
 
-    const steps: Step[] = ['welcome', 'identity', 'preferences', 'content', 'review', 'complete'];
+        const timer = setTimeout(async () => {
+            setCheckingUsername(true);
+            const { data, error } = await supabase
+                .from("profiles")
+                .select("username")
+                .eq("username", username.toLowerCase())
+                .maybeSingle();
+
+            setCheckingUsername(false);
+            setUsernameAvailable(data === null);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [username]);
+
+    // Filter versions by search
+    const filteredVersions = useMemo(() => {
+        if (!versionSearch.trim()) return versions;
+        const search = versionSearch.toLowerCase();
+        return versions.filter(v =>
+            v.abbreviation?.toLowerCase().includes(search) ||
+            v.name?.toLowerCase().includes(search)
+        );
+    }, [versions, versionSearch]);
+
+    const steps: Step[] = ['welcome', 'identity', 'preferences', 'content', 'daily-wisdom', 'complete'];
     const currentStepIndex = steps.indexOf(step);
     const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
@@ -82,16 +144,35 @@ export function OnboardingFlow() {
 
     const handleComplete = async () => {
         setLoading(true);
+
+        if (devMode) {
+            console.log('[DEV MODE] Skipping save - would have saved:', { username, dailyWisdom });
+            setStep('complete');
+            setLoading(false);
+            setTimeout(() => {
+                router.push('/');
+                router.refresh();
+            }, 3000);
+            return;
+        }
+
         const { error } = await supabase.auth.updateUser({
             data: {
                 username,
-                first_name: firstName,
-                receive_updates: updates,
-                daily_verse_emails: dailyVerse,
+                daily_verse_emails: dailyWisdom,
                 is_onboarded: true,
                 onboarded_at: new Date().toISOString()
             }
         });
+
+        // Also update profile username
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            await supabase
+                .from("profiles")
+                .update({ username: username.toLowerCase() })
+                .eq("id", user.id);
+        }
 
         if (error) {
             toast.error("Failed to save profile", { description: error.message });
@@ -102,11 +183,11 @@ export function OnboardingFlow() {
         setStep('complete');
         setLoading(false);
 
-        // Wait a moment then redirect
+        // Slow transition to home
         setTimeout(() => {
             router.push('/');
             router.refresh();
-        }, 1500);
+        }, 3000);
     };
 
     const variants = {
@@ -115,11 +196,23 @@ export function OnboardingFlow() {
         exit: { opacity: 0, x: -20, filter: 'blur(4px)' }
     };
 
+    const getFontClass = (font: string) => {
+        switch (font) {
+            case "sans": return "font-sans";
+            case "mono": return "font-mono";
+            case "pixel": return "font-pixel";
+            case "serif":
+            default: return "font-serif";
+        }
+    };
+
+    const currentPassage = PREVIEW_PASSAGES[previewPassageIndex];
+
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden font-mono text-sm max-w-2xl mx-auto w-full">
+        <div className="min-h-screen flex flex-col p-6 relative overflow-hidden font-mono text-sm max-w-2xl mx-auto w-full pt-24">
 
             {/* Progress Indicator */}
-            <div className="fixed top-0 left-0 w-full h-1 bg-secondary/20">
+            <div className="fixed top-0 left-0 w-full h-1 bg-secondary/20 z-50">
                 <motion.div
                     className="h-full bg-primary"
                     initial={{ width: 0 }}
@@ -129,12 +222,21 @@ export function OnboardingFlow() {
             </div>
 
             {/* Step Counter */}
-            <div className="absolute top-8 right-8 text-xs text-muted-foreground">
-                step {currentStepIndex + 1} / {steps.length}
-            </div>
+            {step !== 'welcome' && step !== 'complete' && (
+                <div className="fixed top-6 right-8 text-xs text-muted-foreground z-50">
+                    step {currentStepIndex} / {steps.length - 1}
+                </div>
+            )}
 
-            <main className="w-full max-w-md z-10">
+            {/* Particles only on welcome */}
+            {step === 'welcome' && <ParticlesBackground />}
+
+            <main className={cn(
+                "w-full z-10 transition-all duration-300",
+                step === 'preferences' ? 'max-w-4xl' : 'max-w-lg'
+            )}>
                 <AnimatePresence mode="wait">
+                    {/* WELCOME */}
                     {step === 'welcome' && (
                         <motion.div
                             key="welcome"
@@ -142,22 +244,65 @@ export function OnboardingFlow() {
                             initial="enter"
                             animate="center"
                             exit="exit"
-                            transition={{ duration: 0.3 }}
-                            className="space-y-8 text-left"
+                            transition={{ duration: 0.4 }}
+                            className="space-y-10 text-left"
                         >
-                            <div className="space-y-4">
-                                <h1 className="text-4xl font-bold tracking-tight text-primary">welcome.</h1>
-                                <p className="text-muted-foreground leading-relaxed">
-                                    let's configure your reading environment. <br />
-                                    takes less than a minute.
-                                </p>
+                            <div className="space-y-6">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60"
+                                >
+                                    <span className="h-px w-8 bg-border" />
+                                    openwrit
+                                </motion.div>
+
+                                <motion.h1
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="text-3xl md:text-4xl font-semibold tracking-tight text-primary"
+                                >
+                                    Welcome to a focused scripture experience.
+                                </motion.h1>
+
+                                <motion.p
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.4 }}
+                                    className="text-muted-foreground leading-relaxed max-w-sm"
+                                >
+                                    let's set up your personal reading experience, it takes less than a minute.
+                                </motion.p>
                             </div>
-                            <Button onClick={handleNext} className="group gap-2" size="lg">
-                                start setup <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                            </Button>
+
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.5 }}
+                                className="flex items-center gap-3"
+                            >
+                                <Button onClick={handleNext} size="lg" className="group gap-2 px-6">
+                                    get started <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                </Button>
+                                <button
+                                    onClick={() => setDevMode(!devMode)}
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-mono transition-all",
+                                        devMode
+                                            ? "bg-yellow-500/20 text-yellow-500 border border-yellow-500/50"
+                                            : "text-muted-foreground/30 hover:text-muted-foreground/50"
+                                    )}
+                                >
+                                    <Bug className="w-3 h-3" />
+                                    {devMode && "dev"}
+                                </button>
+                            </motion.div>
                         </motion.div>
                     )}
 
+                    {/* IDENTITY */}
                     {step === 'identity' && (
                         <motion.div
                             key="identity"
@@ -168,39 +313,46 @@ export function OnboardingFlow() {
                             className="space-y-8"
                         >
                             <div className="space-y-2">
-                                <h2 className="text-2xl font-bold text-primary">identity</h2>
-                                <p className="text-muted-foreground text-xs">how should we call you?</p>
+                                <h2 className="text-2xl font-bold text-primary">choose your username</h2>
+                                <p className="text-muted-foreground text-xs">this is how you'll be identified on OpenWrit</p>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label>username</Label>
+                            <div className="space-y-2">
+                                <Label>username</Label>
+                                <div className="relative">
                                     <Input
                                         value={username}
-                                        onChange={e => setUsername(e.target.value)}
-                                        placeholder="user"
-                                        className="bg-secondary/10 border-none focus-visible:ring-1 focus-visible:ring-primary/50"
+                                        onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                                        placeholder="reader"
+                                        className="bg-secondary/10 border-none focus-visible:ring-1 focus-visible:ring-primary/50 pr-10"
                                         autoFocus
+                                        maxLength={20}
                                     />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                        {checkingUsername && (
+                                            <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                        )}
+                                        {!checkingUsername && usernameAvailable === true && (
+                                            <Check className="w-4 h-4 text-green-500" />
+                                        )}
+                                        {!checkingUsername && usernameAvailable === false && (
+                                            <span className="text-xs text-destructive">taken</span>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>display name <span className="text-muted-foreground opacity-50">(optional)</span></Label>
-                                    <Input
-                                        value={firstName}
-                                        onChange={e => setFirstName(e.target.value)}
-                                        placeholder="Reader"
-                                        className="bg-secondary/10 border-none focus-visible:ring-1 focus-visible:ring-primary/50"
-                                    />
-                                </div>
+                                {username.length > 0 && username.length < 3 && (
+                                    <p className="text-xs text-muted-foreground">minimum 3 characters</p>
+                                )}
                             </div>
 
                             <div className="flex justify-between pt-4">
                                 <Button variant="ghost" onClick={handleBack} className="text-muted-foreground hover:text-foreground">back</Button>
-                                <Button onClick={handleNext} disabled={!username}>continue</Button>
+                                <Button onClick={handleNext} disabled={!username || username.length < 3 || !usernameAvailable}>continue</Button>
                             </div>
                         </motion.div>
                     )}
 
+                    {/* PREFERENCES / APPEARANCE */}
                     {step === 'preferences' && (
                         <motion.div
                             key="preferences"
@@ -208,105 +360,140 @@ export function OnboardingFlow() {
                             initial="enter"
                             animate="center"
                             exit="exit"
-                            className="space-y-8"
+                            className="space-y-6"
                         >
                             <div className="space-y-2">
                                 <h2 className="text-2xl font-bold text-primary">appearance</h2>
-                                <p className="text-muted-foreground text-xs">customize your reading experience</p>
+                                <p className="text-muted-foreground text-xs">
+                                    customize your reading experience. you can always change these in settings.
+                                </p>
                             </div>
 
-                            <div className="space-y-6">
-                                {/* Mode */}
-                                <div className="space-y-3">
-                                    <Label>mode</Label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {[
-                                            { value: 'system', icon: Monitor, label: 'system' },
-                                            { value: 'light', icon: Sun, label: 'light' },
-                                            { value: 'dark', icon: Moon, label: 'dark' },
-                                        ].map(opt => (
-                                            <button
-                                                key={opt.value}
-                                                onClick={() => setTheme(opt.value)}
-                                                className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all h-20 ${theme === opt.value ? 'bg-primary/10 border-primary text-primary' : 'bg-secondary/5 border-transparent text-muted-foreground hover:bg-secondary/10'}`}
-                                            >
-                                                <opt.icon className="w-4 h-4 mb-2 opacity-70" />
-                                                <span className="text-[10px] font-medium">{opt.label}</span>
-                                            </button>
-                                        ))}
+                            <div className="flex flex-col md:flex-row gap-6">
+                                {/* Left Column - Options (fixed width) */}
+                                <div className="space-y-5 w-full md:w-[320px] md:flex-shrink-0">
+                                    {/* Mode */}
+                                    <div className="space-y-2">
+                                        <Label className="text-xs">mode</Label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {[
+                                                { value: 'system', icon: Monitor, label: 'system' },
+                                                { value: 'light', icon: Sun, label: 'light' },
+                                                { value: 'dark', icon: Moon, label: 'dark' },
+                                            ].map(opt => (
+                                                <button
+                                                    key={opt.value}
+                                                    onClick={() => setTheme(opt.value)}
+                                                    className={cn(
+                                                        "flex flex-col items-center justify-center p-3 rounded-lg border transition-all h-16",
+                                                        theme === opt.value
+                                                            ? 'bg-primary/10 border-primary text-primary'
+                                                            : 'bg-secondary/5 border-transparent text-muted-foreground hover:bg-secondary/10'
+                                                    )}
+                                                >
+                                                    <opt.icon className="w-4 h-4 mb-1 opacity-70" />
+                                                    <span className="text-[10px] font-medium">{opt.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Palette */}
+                                    <div className="space-y-2">
+                                        <Label className="text-xs">palette</Label>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {[
+                                                { value: 'standard', label: 'Standard', bg: '#ffffff', fg: '#1a1a1a' },
+                                                { value: 'terminal', label: 'Terminal', bg: '#000000', fg: '#00ff41' },
+                                                { value: 'solarized', label: 'Solar', bg: '#fdf6e3', fg: '#b58900' },
+                                                { value: 'sepia', label: 'Sepia', bg: '#f8f4e5', fg: '#433422' },
+                                                { value: 'midnight', label: 'Midnight', bg: '#0f172a', fg: '#38bdf8' },
+                                                { value: 'lavender', label: 'Lavender', bg: '#f3e8ff', fg: '#9333ea' },
+                                                { value: 'rose', label: 'Rose', bg: '#fff1f2', fg: '#be123c' },
+                                                { value: 'oled', label: 'OLED', bg: '#000000', fg: '#ffffff' }
+                                            ].map(opt => (
+                                                <button
+                                                    key={opt.value}
+                                                    // @ts-ignore
+                                                    onClick={() => setPalette(opt.value)}
+                                                    className={cn(
+                                                        "flex flex-col items-center justify-center p-2 rounded-lg border transition-all h-16 group",
+                                                        palette === opt.value
+                                                            ? 'border-primary shadow-sm'
+                                                            : 'border-transparent hover:border-border'
+                                                    )}
+                                                >
+                                                    <div
+                                                        className={cn(
+                                                            "w-8 h-8 rounded-full shadow-md transition-transform group-hover:scale-110 mb-1",
+                                                            palette === opt.value && "ring-2 ring-primary ring-offset-2"
+                                                        )}
+                                                        style={{
+                                                            background: `linear-gradient(135deg, ${opt.bg} 50%, ${opt.fg} 50%)`
+                                                        }}
+                                                    />
+                                                    <span className="text-[9px] text-muted-foreground">{opt.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Typography */}
+                                    <div className="space-y-2">
+                                        <Label className="text-xs">typography</Label>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {[
+                                                { value: 'sans', label: 'Sans', className: 'font-sans' },
+                                                { value: 'serif', label: 'Serif', className: 'font-serif' },
+                                                { value: 'mono', label: 'Mono', className: 'font-mono' },
+                                                { value: 'pixel', label: 'Pixel', className: 'font-pixel' },
+                                            ].map(opt => (
+                                                <button
+                                                    key={opt.value}
+                                                    // @ts-ignore
+                                                    onClick={() => setFontFamily(opt.value)}
+                                                    className={cn(
+                                                        "flex flex-col items-center justify-center p-2 rounded-lg border transition-all h-16",
+                                                        fontFamily === opt.value
+                                                            ? 'bg-primary/10 border-primary text-primary'
+                                                            : 'bg-secondary/5 border-transparent text-muted-foreground hover:bg-secondary/10'
+                                                    )}
+                                                >
+                                                    <span className={cn("text-xl mb-0.5", opt.className)}>Ag</span>
+                                                    <span className="text-[9px] opacity-70">{opt.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Palette */}
-                                <div className="space-y-3">
-                                    <Label>palette</Label>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {[
-                                            { value: 'standard', label: 'Standard', color: '#ffffff', primary: '#1a1a1a', border: '#e5e5e5' },
-                                            { value: 'terminal', label: 'Terminal', color: '#000000', primary: '#00ff41', border: '#33cc33' },
-                                            { value: 'solarized', label: 'Solarized', color: '#fdf6e3', primary: '#b58900', border: '#e5e5e5' },
-                                            { value: 'sepia', label: 'Sepia', color: '#f8f4e5', primary: '#433422', border: '#e5e5e5' },
-                                            { value: 'midnight', label: 'Midnight', color: '#0f172a', primary: '#38bdf8', border: '#94a3b8' },
-                                            { value: 'lavender', label: 'Lavender', color: '#f3e8ff', primary: '#9333ea', border: '#c084fc' },
-                                            { value: 'rose', label: 'Rose', color: '#fff1f2', primary: '#be123c', border: '#fda4af' },
-                                            { value: 'oled', label: 'OLED', color: '#000000', primary: '#ffffff', border: '#333333' }
-                                        ].map(opt => (
-                                            <button
-                                                key={opt.value}
-                                                // @ts-ignore
-                                                onClick={() => setPalette(opt.value)}
-                                                className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all h-24 group ${palette === opt.value ? 'bg-primary/5 border-primary shadow-sm' : 'bg-secondary/5 border-transparent hover:bg-secondary/10'}`}
-                                            >
-                                                {/* Elegant Split Preview */}
-                                                <div
-                                                    className={`w-8 h-8 rounded-full mb-2 shadow-md ring-2 transition-transform duration-300 group-hover:scale-110 ${palette === opt.value ? 'ring-primary ring-offset-2' : 'ring-transparent'}`}
-                                                    style={{
-                                                        background: `linear-gradient(135deg, ${opt.color} 50%, ${opt.primary} 50%)`,
-                                                        borderColor: opt.border
-                                                    }}
-                                                />
-                                                <span className={`text-[10px] font-medium transition-colors ${palette === opt.value ? 'text-primary' : 'text-muted-foreground'}`}>{opt.label}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Typography */}
-                                <div className="space-y-3">
-                                    <Label>typography</Label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <button
-                                            onClick={() => setFontFamily('sans')}
-                                            className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all h-24 ${fontFamily === 'sans' ? 'bg-primary/5 border-primary text-primary' : 'bg-secondary/5 border-transparent text-muted-foreground hover:bg-secondary/10'}`}
-                                        >
-                                            <span className="font-sans text-2xl mb-1">Ag</span>
-                                            <span className="text-[10px] opacity-70">Sans</span>
-                                        </button>
-                                        <button
-                                            onClick={() => setFontFamily('serif')}
-                                            className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all h-24 ${fontFamily === 'serif' ? 'bg-primary/5 border-primary text-primary' : 'bg-secondary/5 border-transparent text-muted-foreground hover:bg-secondary/10'}`}
-                                        >
-                                            <span className="font-serif text-2xl mb-1">Ag</span>
-                                            <span className="text-[10px] opacity-70">Serif</span>
-                                        </button>
-                                        <button
-                                            onClick={() => setFontFamily('mono')}
-                                            className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all h-24 ${fontFamily === 'mono' ? 'bg-primary/5 border-primary text-primary' : 'bg-secondary/5 border-transparent text-muted-foreground hover:bg-secondary/10'}`}
-                                        >
-                                            <span className="font-mono text-2xl mb-1">Ag</span>
-                                            <span className="text-[10px] opacity-70">Mono</span>
-                                        </button>
+                                {/* Right Column - Preview */}
+                                <div className="space-y-2">
+                                    <Label className="text-xs flex items-center gap-2">
+                                        preview
+                                        <span className="text-muted-foreground/50">• {currentPassage.reference}</span>
+                                    </Label>
+                                    <div className="p-5 rounded-lg border border-border/50 bg-card/50 h-[280px] overflow-y-auto">
+                                        <div className={cn("text-sm leading-relaxed", getFontClass(fontFamily))}>
+                                            {currentPassage.verses.map(v => (
+                                                <span key={v.num}>
+                                                    <sup className="text-primary/60 text-[10px] mr-0.5">{v.num}</sup>
+                                                    {v.text}{" "}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex justify-between pt-4">
+                            <div className="flex justify-between pt-2">
                                 <Button variant="ghost" onClick={handleBack} className="text-muted-foreground hover:text-foreground">back</Button>
                                 <Button onClick={handleNext}>continue</Button>
                             </div>
                         </motion.div>
                     )}
 
+                    {/* CONTENT / VERSION PICKER */}
                     {step === 'content' && (
                         <motion.div
                             key="content"
@@ -314,23 +501,39 @@ export function OnboardingFlow() {
                             initial="enter"
                             animate="center"
                             exit="exit"
-                            className="space-y-8"
+                            className="space-y-6"
                         >
                             <div className="space-y-2">
-                                <h2 className="text-2xl font-bold text-primary">content</h2>
-                                <p className="text-muted-foreground text-xs">choose your preferred translation</p>
+                                <h2 className="text-2xl font-bold text-primary">translation</h2>
+                                <p className="text-muted-foreground text-xs">
+                                    pick your preferred version. you can switch anytime while reading.
+                                </p>
                             </div>
 
-                            <div className="relative group">
-                                {/* Top Fade Triggered by scroll state (managed by simple CSS classes for now or just stick absolute) */}
-                                {/* Let's use simple opacity transition based on JS state if possible, but for now just permanent or sticky? */}
-                                {/* User specifically asked for "when you scroll down". Simple way: 
-                                    Use a small React state for scroll position? Yes.
-                                */}
-                                <TopScrollFade visible={scrollState.canScrollUp} />
+                            {/* Search */}
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <Input
+                                    value={versionSearch}
+                                    onChange={e => setVersionSearch(e.target.value)}
+                                    placeholder="search by name or abbreviation..."
+                                    className="pl-10 bg-secondary/10 border-none focus-visible:ring-1 focus-visible:ring-primary/50"
+                                />
+                            </div>
+
+                            <div className="relative">
+                                {/* Scroll fades */}
+                                <div className={cn(
+                                    "absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-background to-transparent pointer-events-none z-10 transition-opacity",
+                                    scrollState.canScrollUp ? 'opacity-100' : 'opacity-0'
+                                )} />
+                                <div className={cn(
+                                    "absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-background to-transparent pointer-events-none z-10 transition-opacity",
+                                    scrollState.canScrollDown ? 'opacity-100' : 'opacity-0'
+                                )} />
 
                                 <div
-                                    className="space-y-4 h-[320px] overflow-y-auto pr-2 -mr-2 scrollbar-hide pb-12 pt-2"
+                                    className="space-y-2 h-[280px] overflow-y-auto pr-1 -mr-1 scrollbar-hide py-1"
                                     onScroll={(e) => {
                                         const target = e.currentTarget;
                                         setScrollState({
@@ -340,101 +543,142 @@ export function OnboardingFlow() {
                                     }}
                                 >
                                     <div className="grid grid-cols-2 gap-2">
-                                        {versions.length > 0 ? versions.map((v) => (
+                                        {filteredVersions.length > 0 ? filteredVersions.map((v) => (
                                             <button
                                                 key={v.id}
                                                 onClick={() => setBibleVersion(v.id)}
-                                                className={`flex items-center justify-between p-3 rounded-lg border transition-all text-left h-full ${bibleVersion === v.id ? 'bg-primary/10 border-primary text-primary' : 'bg-secondary/5 border-transparent text-muted-foreground hover:bg-secondary/10'}`}
+                                                className={cn(
+                                                    "flex items-center justify-between p-3 rounded-lg border transition-all text-left",
+                                                    bibleVersion === v.id
+                                                        ? 'bg-primary/10 border-primary text-primary'
+                                                        : 'bg-secondary/5 border-transparent text-muted-foreground hover:bg-secondary/10'
+                                                )}
                                             >
-                                                <div className="w-full">
+                                                <div className="w-full min-w-0">
                                                     <div className="font-semibold text-xs mb-0.5">{v.abbreviation?.toUpperCase() || v.id.toUpperCase()}</div>
-                                                    <div className="text-[10px] opacity-70 truncate w-full">{v.name}</div>
+                                                    <div className="text-[10px] opacity-70 truncate">{v.name}</div>
                                                 </div>
                                                 {bibleVersion === v.id && <Check className="w-3 h-3 ml-1 shrink-0" />}
                                             </button>
                                         )) : (
-                                            <div className="col-span-2 text-center py-10 text-muted-foreground animate-pulse">loading versions...</div>
+                                            <div className="col-span-2 text-center py-10 text-muted-foreground">
+                                                {versions.length === 0 ? (
+                                                    <span className="animate-pulse">loading versions...</span>
+                                                ) : (
+                                                    "no versions match your search"
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 </div>
-                                <BottomScrollFade visible={scrollState.canScrollDown} />
                             </div>
 
-                            <div className="flex justify-between pt-4">
+                            <div className="flex justify-between pt-2">
                                 <Button variant="ghost" onClick={handleBack} className="text-muted-foreground hover:text-foreground">back</Button>
                                 <Button onClick={handleNext}>continue</Button>
                             </div>
                         </motion.div>
                     )}
 
-                    {step === 'review' && (
+                    {/* DAILY WISDOM */}
+                    {step === 'daily-wisdom' && (
                         <motion.div
-                            key="review"
+                            key="daily-wisdom"
                             variants={variants}
                             initial="enter"
                             animate="center"
                             exit="exit"
-                            className="space-y-8"
+                            className="space-y-6"
                         >
                             <div className="space-y-2">
-                                <h2 className="text-2xl font-bold text-primary">commitments</h2>
-                                <p className="text-muted-foreground text-xs">stay consistent with updates</p>
+                                <h2 className="text-2xl font-bold text-primary">daily wisdom</h2>
+                                <p className="text-muted-foreground text-xs">start each day with Scripture</p>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="flex items-start space-x-3 p-4 bg-secondary/5 border border-border/40 rounded-lg hover:border-primary/40 transition-colors cursor-pointer" onClick={() => setDailyVerse(!dailyVerse)}>
-                                    <Checkbox checked={dailyVerse} onCheckedChange={(c) => setDailyVerse(!!c)} />
-                                    <div className="space-y-1">
-                                        <Label className="cursor-pointer">daily wisdom</Label>
-                                        <p className="text-xs text-muted-foreground">receive a thoughtfully curated verse every morning.</p>
+                            {/* Email Preview Mockup */}
+                            <div className="rounded-xl border border-border/60 bg-card overflow-hidden shadow-sm">
+                                <div className="px-4 py-3 border-b border-border/40 bg-secondary/5">
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <Mail className="w-3.5 h-3.5" />
+                                        <span>Daily Wisdom from OpenWrit</span>
                                     </div>
                                 </div>
-
-                                <div className="flex items-start space-x-3 p-4 bg-secondary/5 border border-border/40 rounded-lg hover:border-primary/40 transition-colors cursor-pointer" onClick={() => setUpdates(!updates)}>
-                                    <Checkbox checked={updates} onCheckedChange={(c) => setUpdates(!!c)} />
-                                    <div className="space-y-1">
-                                        <Label className="cursor-pointer">product updates</Label>
-                                        <p className="text-xs text-muted-foreground">occasional emails about new features and improvements.</p>
+                                <div className="p-5 space-y-4">
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <Sparkles className="w-3.5 h-3.5 text-primary" />
+                                        <span>Your verse for today</span>
+                                    </div>
+                                    <blockquote className="text-sm leading-relaxed border-l-2 border-primary/40 pl-4 italic">
+                                        "For I know the plans I have for you," declares the Lord, "plans to prosper you and not to harm you, plans to give you hope and a future."
+                                    </blockquote>
+                                    <p className="text-xs text-muted-foreground">— Jeremiah 29:11</p>
+                                    <div className="pt-2 border-t border-border/30">
+                                        <p className="text-xs text-muted-foreground/70">
+                                            Take a moment to reflect on these words as you begin your day.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex justify-between pt-4">
+                            {/* Opt-in */}
+                            <div
+                                className="flex items-start space-x-3 p-4 bg-secondary/5 border border-border/40 rounded-lg hover:border-primary/40 transition-colors cursor-pointer"
+                                onClick={() => setDailyWisdom(!dailyWisdom)}
+                            >
+                                <Checkbox checked={dailyWisdom} onCheckedChange={(c) => setDailyWisdom(!!c)} />
+                                <div className="space-y-1">
+                                    <Label className="cursor-pointer">receive daily wisdom emails</Label>
+                                    <p className="text-xs text-muted-foreground">a thoughtfully curated verse delivered to your inbox each morning.</p>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-between pt-2">
                                 <Button variant="ghost" onClick={handleBack} className="text-muted-foreground hover:text-foreground">back</Button>
-                                <Button onClick={handleComplete} disabled={loading} className="w-32">
+                                <Button onClick={handleComplete} disabled={loading} className="w-28">
                                     {loading ? "saving..." : "finish"}
                                 </Button>
                             </div>
                         </motion.div>
                     )}
 
+                    {/* COMPLETE */}
                     {step === 'complete' && (
                         <motion.div
                             key="complete"
-                            variants={variants}
-                            initial="enter"
-                            animate="center"
-                            className="space-y-8 text-center py-12"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 1 }}
+                            className="space-y-8 text-center py-20"
                         >
                             <motion.div
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ delay: 0.2 }}
-                                className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto text-primary"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3, duration: 0.8 }}
+                                className="space-y-4"
                             >
-                                <Check className="w-10 h-10" />
+                                <h1 className="text-4xl font-bold tracking-tight text-primary">
+                                    welcome to OpenWrit
+                                </h1>
+                                <p className="text-lg text-muted-foreground">
+                                    {username}
+                                </p>
                             </motion.div>
-                            <div className="space-y-2">
-                                <h2 className="text-3xl font-bold text-primary">all set.</h2>
-                                <p className="text-muted-foreground">redirecting you to the library...</p>
-                            </div>
+
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 1.5, duration: 1 }}
+                                className="text-xs text-muted-foreground/50"
+                            >
+                                preparing your library...
+                            </motion.div>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </main>
 
-            {/* Background Decorations */}
-            <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background pointer-events-none" />
+            {/* Background gradient */}
+            <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background pointer-events-none" />
         </div>
     );
 }

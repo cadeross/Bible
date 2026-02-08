@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { isRedLetterVerse } from "@/lib/red-letter-data"
 import { Highlight } from "@/lib/persistence"
 import { Trash2, StickyNote, Share2 } from "lucide-react"
-import { Sheet, SheetContent, SheetClose } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetClose, SheetTitle } from "@/components/ui/sheet"
 
 interface ReadingContentProps {
     chapter: BibleChapter
@@ -445,6 +445,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 }}
             >
                 <SheetContent side="right" className="sm:max-w-md space-y-6">
+                    <SheetTitle className="sr-only">Note for {verseLabel}</SheetTitle>
                     <div className="space-y-2">
                         <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
                             Note
@@ -467,7 +468,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                 setNoteTouched(true)
                             }}
                             placeholder="Write a note…"
-                            className="w-full h-48 bg-transparent border-0 resize-none focus:ring-0 p-0 text-sm text-foreground placeholder:text-muted-foreground/50 font-sans leading-relaxed"
+                            className="w-full h-48 bg-transparent border-0 resize-none focus:ring-0 focus:outline-none p-0 text-sm text-foreground placeholder:text-muted-foreground/50 font-sans leading-relaxed"
                             spellCheck={false}
                         />
                     </div>
@@ -476,16 +477,16 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                         <span>
                             {noteStatus === "saving" ? "saving…" : noteStatus === "saved" ? "saved" : " "}
                         </span>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                             {noteContent.trim().length > 0 && (
                                 <button
                                     onClick={handleDeleteNote}
-                                    className="text-muted-foreground hover:text-destructive transition-colors"
+                                    className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                                 >
                                     delete
                                 </button>
                             )}
-                            <SheetClose className="text-muted-foreground hover:text-foreground transition-colors">
+                            <SheetClose className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                                 done
                             </SheetClose>
                         </div>

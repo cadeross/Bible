@@ -61,6 +61,193 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   SHEET/DIALOG ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToLeft {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    transform: translateY(-100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideOutToTop {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideOutToBottom {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* Sheet/Dialog slide animations - explicit CSS for Radix */
+[role="dialog"][data-side="right"] {
+  transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+[role="dialog"][data-side="right"][data-state="open"] {
+  transform: translateX(0);
+}
+
+[role="dialog"][data-side="right"][data-state="closed"] {
+  transform: translateX(100%);
+}
+
+[role="dialog"][data-side="left"] {
+  transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+[role="dialog"][data-side="left"][data-state="open"] {
+  transform: translateX(0);
+}
+
+[role="dialog"][data-side="left"][data-state="closed"] {
+  transform: translateX(-100%);
+}
+
+/* Overlay fade animation */
+[data-radix-dialog-overlay][data-state="open"] {
+  animation: fadeIn 200ms ease-out;
+}
+
+[data-radix-dialog-overlay][data-state="closed"] {
+  animation: fadeOut 150ms ease-in;
+}
+
+/* Animation utility classes */
+[data-state="open"].animate-in {
+  animation: fadeIn 300ms ease-out;
+}
+
+[data-state="closed"].animate-out {
+  animation: fadeOut 200ms ease-in;
+}
+
+[data-state="open"].slide-in-from-right {
+  animation: slideInFromRight 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-state="closed"].slide-out-to-right {
+  animation: slideOutToRight 200ms ease-in;
+}
+
+[data-state="open"].slide-in-from-left {
+  animation: slideInFromLeft 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-state="closed"].slide-out-to-left {
+  animation: slideOutToLeft 200ms ease-in;
+}
+
+[data-state="open"].slide-in-from-top {
+  animation: slideInFromTop 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-state="closed"].slide-out-to-top {
+  animation: slideOutToTop 200ms ease-in;
+}
+
+[data-state="open"].slide-in-from-bottom {
+  animation: slideInFromBottom 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-state="closed"].slide-out-to-bottom {
+  animation: slideOutToBottom 200ms ease-in;
+}
+
+[data-state="open"].fade-in-0 {
+  animation: fadeIn 300ms ease-out;
+}
+
+[data-state="closed"].fade-out-0 {
+  animation: fadeOut 200ms ease-in;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    THEME SYSTEM - 4 Palettes with automatic Light/Dark via OS preference
    ═══════════════════════════════════════════════════════════════════════════ */
 
