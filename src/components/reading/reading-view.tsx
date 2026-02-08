@@ -54,10 +54,16 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra", sh
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "ArrowRight") handleNext()
             if (e.key === "ArrowLeft") handlePrev()
+            // Toggle focus mode with Option+F (Alt+F)
+            // Use e.code === "KeyF" because on Mac Option+F produces "ƒ" so e.key would be "ƒ"
+            if (e.altKey && e.code === "KeyF") {
+                e.preventDefault()
+                toggleFocusMode()
+            }
         }
         window.addEventListener("keydown", handleKeyDown)
         return () => window.removeEventListener("keydown", handleKeyDown)
-    }, [book, chapterNum, handleNext, handlePrev])
+    }, [book, chapterNum, handleNext, handlePrev, toggleFocusMode])
 
     return (
         <div className="min-h-screen bg-background flex flex-col items-center py-8">
