@@ -15,7 +15,7 @@
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-serif), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-pixel: var(--font-geist-pixel-line), "Courier New", monospace;
+  --font-pixel: var(--font-nunito), system-ui, sans-serif;
 }
 
 /* Base utilities */
@@ -39,6 +39,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    font-weight: 300;
     font-feature-settings: "rlig" 1, "calt" 1;
     overscroll-behavior-y: none;
     transition: background-color 0.4s ease, color 0.4s ease;
@@ -55,9 +56,9 @@
   }
 }
 
-/* Explicit font-pixel utility class */
+/* Explicit font-pixel utility class (now using Nunito) */
 .font-pixel {
-  font-family: var(--font-geist-pixel-line), "Courier New", monospace !important;
+  font-family: var(--font-nunito), system-ui, sans-serif !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

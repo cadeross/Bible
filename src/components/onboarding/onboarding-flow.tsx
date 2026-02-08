@@ -440,13 +440,13 @@ export function OnboardingFlow() {
 
                                     {/* Typography */}
                                     <div className="space-y-2">
-                                        <Label className="text-xs">typography</Label>
+                                        <Label className="text-xs">typeface</Label>
                                         <div className="grid grid-cols-4 gap-2">
                                             {[
                                                 { value: 'sans', label: 'Sans', className: 'font-sans' },
                                                 { value: 'serif', label: 'Serif', className: 'font-serif' },
                                                 { value: 'mono', label: 'Mono', className: 'font-mono' },
-                                                { value: 'pixel', label: 'Pixel', className: 'font-pixel' },
+                                                { value: 'pixel', label: 'Round', className: 'font-pixel' },
                                             ].map(opt => (
                                                 <button
                                                     key={opt.value}
@@ -468,13 +468,16 @@ export function OnboardingFlow() {
                                 </div>
 
                                 {/* Right Column - Preview */}
-                                <div className="space-y-2">
+                                <div className="flex-1 flex flex-col space-y-2">
                                     <Label className="text-xs flex items-center gap-2">
                                         preview
                                         <span className="text-muted-foreground/50">• {currentPassage.reference}</span>
                                     </Label>
-                                    <div className="p-5 rounded-lg border border-border/50 bg-card/50 h-[280px] overflow-y-auto">
-                                        <div className={cn("text-sm leading-relaxed", getFontClass(fontFamily))}>
+                                    <div className="p-5 rounded-lg border border-border/50 bg-card/50 h-[340px] overflow-y-auto">
+                                        <div
+                                            className={cn("text-sm leading-relaxed", getFontClass(fontFamily))}
+                                            style={{ fontFamily: fontFamily === 'sans' ? 'var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif' : undefined }}
+                                        >
                                             {currentPassage.verses.map(v => (
                                                 <span key={v.num}>
                                                     <sup className="text-primary/60 text-[10px] mr-0.5">{v.num}</sup>
@@ -679,6 +682,6 @@ export function OnboardingFlow() {
 
             {/* Background gradient */}
             <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background pointer-events-none" />
-        </div>
+        </div >
     );
 }

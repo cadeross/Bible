@@ -346,15 +346,15 @@ export async function updateLastRead(book: string, chapter: number): Promise<voi
 
     const { error } = await supabase
         .from('profiles')
-        .upsert({
-            id: session.user.id,
+        .update({
             last_read_book: book,
             last_read_chapter: chapter,
             updated_at: new Date().toISOString()
-        }, { onConflict: 'id' });
+        })
+        .eq('id', session.user.id);
 
     if (error) {
-        console.error("Error updating last read position", error);
+        console.error("Error updating last read position:", error.message || error.code || JSON.stringify(error));
     }
 }
 

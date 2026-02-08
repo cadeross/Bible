@@ -319,7 +319,7 @@ export default function SettingsPage() {
                             <Toggle
                                 active={fontFamily === 'pixel'}
                                 onClick={() => setFontFamily('pixel')}
-                                label="pixel"
+                                label="round"
                                 icon={Type}
                             />
                         </ButtonGroup>

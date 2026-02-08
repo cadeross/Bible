@@ -163,7 +163,7 @@ export function CalHeatmapWrapper({ data }: CalHeatmapWrapperProps) {
 
         // Dynamic import to avoid SSR issues
         import('cal-heatmap').then((CalHeatmapModule) => {
-            import('cal-heatmap/cal-heatmap.css');
+            // Note: cal-heatmap CSS is included via custom styles below
 
             const CalHeatmap = CalHeatmapModule.default;
 

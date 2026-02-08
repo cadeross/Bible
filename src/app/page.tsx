@@ -7,6 +7,8 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { getDailyContent, parseVerseRef, getLiturgicalColorClass, DailyContent, FALLBACK_CONTENT } from "@/lib/daily-content"
+import { useReadingPreferences } from "@/contexts/reading-preferences"
+import { cn } from "@/lib/utils"
 
 // Animation variants for staggered entrance
 const containerVariants = {
@@ -54,6 +56,16 @@ function getGreeting(): string {
   return "good night"
 }
 
+const getFontClass = (font: string) => {
+  switch (font) {
+    case "sans": return "font-sans";
+    case "mono": return "font-mono";
+    case "pixel": return "font-pixel";
+    case "serif":
+    default: return "font-serif";
+  }
+};
+
 export default function Home() {
   const [username, setUsername] = useState<string>("")
   const [greeting, setGreeting] = useState<string>("")
@@ -63,6 +75,7 @@ export default function Home() {
   const [mounted, setMounted] = useState(false)
   const [dailyContent, setDailyContent] = useState<DailyContent>(FALLBACK_CONTENT)
   const [isLoading, setIsLoading] = useState(true)
+  const { fontFamily } = useReadingPreferences()
 
   useEffect(() => {
     setMounted(true)
@@ -185,55 +198,35 @@ export default function Home() {
     }
   }
 
-  const handleSaveWisdom = async () => {
-    try {
-      const { saveWisdom } = await import("@/lib/persistence")
-      await saveWisdom({
-        content: dailyContent.wisdom_text,
-        source: dailyContent.wisdom_author,
-        created_at: new Date().toISOString()
-      })
 
-      if (username) {
-        toast.success("wisdom saved", {
-          description: "added to your collection"
-        })
-      } else {
-        toast.success("saved to device", {
-          description: "sign in to sync your collection",
-          action: {
-            label: "sign in",
-            onClick: () => window.location.href = "/profile"
-          }
-        })
-      }
-    } catch (error) {
-      toast.error("failed to save")
-    }
-  }
 
-  const handleShare = async (text: string, title: string) => {
+  const handleShare = async (text: string, title: string, url?: string) => {
     try {
       if (navigator.share) {
-        await navigator.share({ title, text })
+        await navigator.share({ title, text, url })
         return
       }
-      await navigator.clipboard.writeText(text)
-      toast.success("copied")
+      await navigator.clipboard.writeText(url || text)
+      toast.success(url ? "link copied" : "copied")
     } catch (error) {
-      toast.error("couldn't share")
+      if (error instanceof Error && error.name !== 'AbortError') {
+        toast.error("couldn't share")
+      }
     }
   }
 
   const handleShareVerse = () => {
     const text = `"${dailyContent.verse_text}" — ${dailyContent.verse_ref}`
-    handleShare(text, "Verse of the day")
+
+    if (parsedVerse) {
+      const url = `${window.location.origin}/read/${encodeURIComponent(parsedVerse.book)}/${parsedVerse.chapter}?v=${parsedVerse.verse}`
+      handleShare(text, "Daily wisdom", url)
+    } else {
+      handleShare(text, "Daily wisdom")
+    }
   }
 
-  const handleShareWisdom = () => {
-    const text = `"${dailyContent.wisdom_text}" — ${dailyContent.wisdom_author}`
-    handleShare(text, "Daily wisdom")
-  }
+
 
   if (!mounted) {
     return (
@@ -256,12 +249,6 @@ export default function Home() {
           <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60 w-full">
             <span className="h-px w-8 bg-border" />
             openwrit
-            {streakDays !== null && (
-              <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-border/50 bg-secondary/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground/70">
-                <span className="h-1 w-1 rounded-full bg-primary/40" />
-                streak {streakDays} day{streakDays === 1 ? "" : "s"}
-              </span>
-            )}
           </div>
 
           <div className="space-y-4">
@@ -284,8 +271,8 @@ export default function Home() {
               <>
                 <span className="text-muted-foreground/30">·</span>
                 <span className="flex items-center gap-2">
-                  <Church className={`h-3 w-3 ${liturgyColorClass}`} />
-                  <span className={`${liturgyColorClass}`}>
+                  <Church className="h-3 w-3" />
+                  <span>
                     {liturgyLabel}
                     {liturgyRank ? ` · ${liturgyRank}` : ""}
                   </span>
@@ -294,98 +281,138 @@ export default function Home() {
             )}
           </div>
 
-          {continueReading && (
-            <div className="space-y-1 text-xs font-mono text-muted-foreground/60">
-              <Link
-                href={`/read/${encodeURIComponent(continueReading.book)}/${continueReading.chapter}`}
-                className="inline-flex items-center gap-2 hover:text-primary transition-colors"
-              >
-                <BookOpen className="h-3 w-3" />
-                continue reading · {continueReading.book} {continueReading.chapter}
-              </Link>
-            </div>
-          )}
+
 
         </div>
       </motion.div>
 
       {/* Daily Focus */}
       <motion.div variants={itemVariants}>
-        <div className="space-y-10">
-          <Section title="Verse of the day">
-            <div className="group space-y-3">
-              <blockquote className="max-w-[760px]">
-                <p className={`text-sm md:text-base font-mono leading-relaxed text-foreground/80 ${isLoading ? "animate-pulse" : ""}`}>
-                  "{dailyContent.verse_text}"
-                </p>
-              </blockquote>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          {/* Main Column - Verse of the Day (2/3) */}
+          <div className="lg:col-span-2">
+            <Section title="Daily wisdom">
+              <div className="group space-y-3">
+                <blockquote className="max-w-[760px]">
+                  <p className={cn(
+                    "text-sm md:text-base leading-relaxed text-foreground/80",
+                    getFontClass(fontFamily),
+                    isLoading && "animate-pulse"
+                  )}>
+                    "{dailyContent.verse_text}"
+                  </p>
+                </blockquote>
 
-              <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted-foreground/60">
-                {parsedVerse ? (
-                  <Link
-                    href={`/read/${parsedVerse.book}/${parsedVerse.chapter}`}
-                    className="text-primary transition-colors hover:underline underline-offset-4 decoration-primary/40"
-                  >
-                    {dailyContent.verse_ref}
-                  </Link>
-                ) : (
-                  <span className="text-primary">
-                    {dailyContent.verse_ref}
+                <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted-foreground/60">
+                  {parsedVerse ? (
+                    <Link
+                      href={`/read/${parsedVerse.book}/${parsedVerse.chapter}`}
+                      className="text-primary transition-colors hover:underline underline-offset-4 decoration-primary/40"
+                    >
+                      {dailyContent.verse_ref}
+                    </Link>
+                  ) : (
+                    <span className="text-primary">
+                      {dailyContent.verse_ref}
+                    </span>
+                  )}
+                  <span className="text-muted-foreground/30">·</span>
+                  <span className={isLoading ? "animate-pulse" : ""}>
+                    {dailyContent.verse_source}
                   </span>
-                )}
-                <span className="text-muted-foreground/30">·</span>
-                <span className={isLoading ? "animate-pulse" : ""}>
-                  {dailyContent.verse_source}
-                </span>
-                <span className="text-muted-foreground/30">·</span>
-                <button
-                  onClick={handleHighlight}
-                  className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
-                >
-                  <BookOpen className="h-3 w-3" />
-                  save
-                </button>
-                <button
-                  onClick={handleShareVerse}
-                  className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-all duration-300 flex items-center gap-2 opacity-0 group-hover:opacity-100"
-                >
-                  <Share2 className="h-3 w-3" />
-                  share verse
-                </button>
-              </div>
-            </div>
-          </Section>
 
-          <Section title="Daily wisdom">
-            <div className="group space-y-3">
-              <blockquote>
-                <p className={`text-sm md:text-base font-mono leading-relaxed text-foreground/70 ${isLoading ? "animate-pulse" : ""}`}>
-                  "{dailyContent.wisdom_text}"
-                </p>
-              </blockquote>
-
-              <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted-foreground/60">
-                <span>
-                  — {dailyContent.wisdom_author}
-                </span>
-                <span className="text-muted-foreground/30">·</span>
-                <button
-                  onClick={handleSaveWisdom}
-                  className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
-                >
-                  <Heart className="h-3 w-3" />
-                  save
-                </button>
-                <button
-                  onClick={handleShareWisdom}
-                  className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-all duration-300 flex items-center gap-2 opacity-0 group-hover:opacity-100"
-                >
-                  <Share2 className="h-3 w-3" />
-                  share quote
-                </button>
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <span className="text-muted-foreground/30 ml-1">·</span>
+                    <button
+                      onClick={handleHighlight}
+                      className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
+                    >
+                      <BookOpen className="h-3 w-3" />
+                      save
+                    </button>
+                    <span className="text-muted-foreground/30">·</span>
+                    <button
+                      onClick={handleShareVerse}
+                      className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-all duration-300 flex items-center gap-2"
+                    >
+                      <Share2 className="h-3 w-3" />
+                      share
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </Section>
+            </Section>
+          </div>
+
+          {/* Side Column - Info cards (1/3) */}
+          <div className="space-y-6">
+            {streakDays !== null && (
+              <Section title="Reading status">
+                <Link
+                  href="/profile"
+                  className="group block p-4 rounded-md border border-border/40 bg-secondary/5 hover:bg-secondary/10 hover:border-primary/20 transition-all duration-300 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-primary/10 text-primary">
+                        <Heart className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-foreground/90">
+                          {streakDays} day streak
+                        </div>
+                        <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-tight">
+                          reading daily
+                        </div>
+                      </div>
+                    </div>
+                    <div className="h-6 w-6 rounded-full border border-border/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-xs">→</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    {[...Array(7)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "h-1 flex-1 rounded-full",
+                          i < (streakDays % 7 || (streakDays > 0 ? 7 : 0)) ? 'bg-primary/60' : 'bg-border/30'
+                        )}
+                      />
+                    ))}
+                  </div>
+                </Link>
+              </Section>
+            )}
+
+            {continueReading && (
+              <Section title="Continue Reading">
+                <Link
+                  href={`/read/${encodeURIComponent(continueReading.book)}/${continueReading.chapter}`}
+                  className="group flex flex-col gap-2 p-4 rounded-md border border-border/40 bg-secondary/5 hover:bg-secondary/10 hover:border-primary/20 transition-all duration-300"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-primary/10 text-primary">
+                        <BookOpen className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-foreground/90">
+                          {continueReading.book} {continueReading.chapter}
+                        </div>
+                        <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-tight">
+                          resume reading
+                        </div>
+                      </div>
+                    </div>
+                    <div className="h-6 w-6 rounded-full border border-border/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-xs">→</span>
+                    </div>
+                  </div>
+                </Link>
+              </Section>
+            )}
+          </div>
         </div>
       </motion.div>
     </motion.div>

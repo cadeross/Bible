@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Merriweather } from "next/font/google"; // Added serif font
-import { GeistPixelLine } from "geist/font/pixel";
+import { Geist, Geist_Mono, Merriweather, Nunito } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MobileNav } from "@/components/mobile-nav";
@@ -28,6 +27,13 @@ const geistMono = Geist_Mono({
 const merriweather = Merriweather({
   variable: "--font-serif",
   weight: ["300", "400", "700", "900"],
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const nunito = Nunito({
+  variable: "--font-nunito",
+  weight: ["300", "400", "700"],
   subsets: ["latin"],
   display: "swap",
 });
@@ -70,7 +76,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${merriweather.variable} ${GeistPixelLine.variable} antialiased min-h-screen flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} ${merriweather.variable} ${nunito.variable} antialiased min-h-screen flex flex-col`}
       >
         <ThemeProvider
           attribute="data-theme"
