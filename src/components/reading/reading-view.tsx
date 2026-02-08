@@ -16,9 +16,10 @@ interface ReadingViewProps {
     book: string
     chapterNum: number
     translation?: string
+    sharedVerses?: number[]
 }
 
-export function ReadingView({ chapter, book, chapterNum, translation = "dra" }: ReadingViewProps) {
+export function ReadingView({ chapter, book, chapterNum, translation = "dra", sharedVerses = [] }: ReadingViewProps) {
     const router = useRouter()
     const { isFocusMode, toggleFocusMode } = useFocusMode()
 
@@ -75,7 +76,7 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra" }: 
                     </Button>
                 </div>
 
-                <ReadingContent chapter={chapter} bookName={book} chapterNum={chapterNum} />
+                <ReadingContent chapter={chapter} bookName={book} chapterNum={chapterNum} sharedVerses={sharedVerses} />
 
                 {/* Right Nav (Desktop) */}
                 <div className="hidden lg:flex fixed right-8 top-1/2 -translate-y-1/2 flex-col gap-2 opacity-20 hover:opacity-100 transition-opacity">

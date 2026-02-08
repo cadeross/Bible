@@ -9,8 +9,29 @@ type Props = {
     }>;
     searchParams: Promise<{
         translation?: string;
+        v?: string; // Verse parameter for shared links (e.g., "16" or "16-18")
     }>;
 };
+
+// Parse verse parameter into array of verse numbers
+function parseVerseParam(v?: string): number[] {
+    if (!v) return [];
+
+    // Single verse: "16" -> [16]
+    // Range: "16-18" -> [16, 17, 18]
+    if (v.includes('-')) {
+        const [start, end] = v.split('-').map(n => parseInt(n, 10));
+        if (isNaN(start) || isNaN(end)) return [];
+        const verses: number[] = [];
+        for (let i = start; i <= end; i++) {
+            verses.push(i);
+        }
+        return verses;
+    }
+
+    const num = parseInt(v, 10);
+    return isNaN(num) ? [] : [num];
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { book, chapter } = await params;
@@ -23,9 +44,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ChapterPage({ params, searchParams }: Props) {
     const { book, chapter } = await params;
-    const { translation = "dra" } = await searchParams;
+    const { translation = "dra", v } = await searchParams;
     const chapterNum = parseInt(chapter, 10);
     const bookName = decodeURIComponent(book);
+    const sharedVerses = parseVerseParam(v);
 
     try {
         const chapterData = await getChapter(bookName, chapterNum, translation);
@@ -36,6 +58,7 @@ export default async function ChapterPage({ params, searchParams }: Props) {
                 book={bookName}
                 chapterNum={chapterNum}
                 translation={translation}
+                sharedVerses={sharedVerses}
             />
         );
     } catch (error) {

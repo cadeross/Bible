@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Mail, Lock } from "lucide-react";
 
 export function AuthTabs({ onSuccess, showHomeLink = false }: { onSuccess?: () => void, showHomeLink?: boolean }) {
     const [loading, setLoading] = useState(false);
@@ -97,39 +97,54 @@ export function AuthTabs({ onSuccess, showHomeLink = false }: { onSuccess?: () =
     };
 
     return (
-        <div className="w-full max-w-[320px] mx-auto font-mono">
+        <div className="w-full max-w-[360px] mx-auto font-mono">
             <div className="space-y-6">
-                <div className="space-y-1">
-                    <h2 className="text-lg font-bold tracking-tight">welcome</h2>
-                    <p className="text-xs text-muted-foreground">enter your credentials to continue</p>
+                <div className="space-y-2">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                        account
+                    </div>
+                    <h2 className="text-lg font-bold tracking-tight">continue here</h2>
+                    <p className="text-xs text-muted-foreground">we’ll create an account if you’re new</p>
                 </div>
                 <form onSubmit={handleContinue} className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="email">email</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            placeholder="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="bg-muted/20 border-none focus-visible:ring-1 focus-visible:ring-primary/50"
-                        />
+                        <Label htmlFor="email" className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            email
+                        </Label>
+                        <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/60" />
+                            <Input
+                                id="email"
+                                type="email"
+                                placeholder="name@email.com"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="pl-9 bg-secondary/10 border border-border/60 focus-visible:ring-1 focus-visible:ring-primary/40 text-sm"
+                            />
+                        </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="password">password</Label>
-                        <Input
-                            id="password"
-                            type="password"
-                            placeholder="password"
-                            required
-                            minLength={6}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="bg-muted/20 border-none focus-visible:ring-1 focus-visible:ring-primary/50"
-                        />
+                        <Label htmlFor="password" className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            password
+                        </Label>
+                        <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/60" />
+                            <Input
+                                id="password"
+                                type="password"
+                                placeholder="••••••••"
+                                required
+                                minLength={6}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="pl-9 bg-secondary/10 border border-border/60 focus-visible:ring-1 focus-visible:ring-primary/40 text-sm"
+                            />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground/60">minimum 6 characters</p>
                     </div>
-                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2" type="submit" disabled={loading}>
+                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2 text-xs font-mono uppercase tracking-wider" type="submit" disabled={loading}>
                         {loading ? "checking..." : "continue"} <ArrowRight className="h-4 w-4" />
                     </Button>
                 </form>

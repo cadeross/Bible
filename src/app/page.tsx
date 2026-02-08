@@ -312,80 +312,80 @@ export default function Home() {
       {/* Daily Focus */}
       <motion.div variants={itemVariants}>
         <div className="space-y-10">
-            <Section title="Verse of the day">
-              <div className="group space-y-3">
-                <blockquote className="max-w-[760px]">
-                  <p className={`text-sm md:text-base font-mono leading-relaxed text-foreground/80 ${isLoading ? "animate-pulse" : ""}`}>
-                    "{dailyContent.verse_text}"
-                  </p>
-                </blockquote>
+          <Section title="Verse of the day">
+            <div className="group space-y-3">
+              <blockquote className="max-w-[760px]">
+                <p className={`text-sm md:text-base font-mono leading-relaxed text-foreground/80 ${isLoading ? "animate-pulse" : ""}`}>
+                  "{dailyContent.verse_text}"
+                </p>
+              </blockquote>
 
-                <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted-foreground/60">
-                  {parsedVerse ? (
-                    <Link
-                      href={`/read/${parsedVerse.book}/${parsedVerse.chapter}`}
-                      className="text-primary transition-colors hover:underline underline-offset-4 decoration-primary/40"
-                    >
-                      {dailyContent.verse_ref}
-                    </Link>
-                  ) : (
-                    <span className="text-primary">
-                      {dailyContent.verse_ref}
-                    </span>
-                  )}
-                  <span className="text-muted-foreground/30">·</span>
-                  <span className={isLoading ? "animate-pulse" : ""}>
-                    {dailyContent.verse_source}
+              <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted-foreground/60">
+                {parsedVerse ? (
+                  <Link
+                    href={`/read/${parsedVerse.book}/${parsedVerse.chapter}`}
+                    className="text-primary transition-colors hover:underline underline-offset-4 decoration-primary/40"
+                  >
+                    {dailyContent.verse_ref}
+                  </Link>
+                ) : (
+                  <span className="text-primary">
+                    {dailyContent.verse_ref}
                   </span>
-                  <span className="text-muted-foreground/30">·</span>
-                  <button
-                    onClick={handleHighlight}
-                    className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
-                  >
-                    <BookOpen className="h-3 w-3" />
-                    save
-                  </button>
-                  <button
-                    onClick={handleShareVerse}
-                    className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
-                  >
-                    <Share2 className="h-3 w-3" />
-                    share verse
-                  </button>
-                </div>
+                )}
+                <span className="text-muted-foreground/30">·</span>
+                <span className={isLoading ? "animate-pulse" : ""}>
+                  {dailyContent.verse_source}
+                </span>
+                <span className="text-muted-foreground/30">·</span>
+                <button
+                  onClick={handleHighlight}
+                  className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
+                >
+                  <BookOpen className="h-3 w-3" />
+                  save
+                </button>
+                <button
+                  onClick={handleShareVerse}
+                  className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-all duration-300 flex items-center gap-2 opacity-0 group-hover:opacity-100"
+                >
+                  <Share2 className="h-3 w-3" />
+                  share verse
+                </button>
               </div>
-            </Section>
+            </div>
+          </Section>
 
-            <Section title="Daily wisdom">
-              <div className="group space-y-3">
-                <blockquote>
-                  <p className={`text-sm md:text-base font-mono leading-relaxed text-foreground/70 ${isLoading ? "animate-pulse" : ""}`}>
-                    "{dailyContent.wisdom_text}"
-                  </p>
-                </blockquote>
+          <Section title="Daily wisdom">
+            <div className="group space-y-3">
+              <blockquote>
+                <p className={`text-sm md:text-base font-mono leading-relaxed text-foreground/70 ${isLoading ? "animate-pulse" : ""}`}>
+                  "{dailyContent.wisdom_text}"
+                </p>
+              </blockquote>
 
-                <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted-foreground/60">
-                  <span>
-                    — {dailyContent.wisdom_author}
-                  </span>
-                  <span className="text-muted-foreground/30">·</span>
-                  <button
-                    onClick={handleSaveWisdom}
-                    className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
-                  >
-                    <Heart className="h-3 w-3" />
-                    save
-                  </button>
-                  <button
-                    onClick={handleShareWisdom}
-                    className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
-                  >
-                    <Share2 className="h-3 w-3" />
-                    share quote
-                  </button>
-                </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted-foreground/60">
+                <span>
+                  — {dailyContent.wisdom_author}
+                </span>
+                <span className="text-muted-foreground/30">·</span>
+                <button
+                  onClick={handleSaveWisdom}
+                  className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
+                >
+                  <Heart className="h-3 w-3" />
+                  save
+                </button>
+                <button
+                  onClick={handleShareWisdom}
+                  className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-all duration-300 flex items-center gap-2 opacity-0 group-hover:opacity-100"
+                >
+                  <Share2 className="h-3 w-3" />
+                  share quote
+                </button>
               </div>
-            </Section>
+            </div>
+          </Section>
         </div>
       </motion.div>
     </motion.div>

@@ -308,3 +308,39 @@
   --card-foreground: #ffffff;
   --border: #27272a;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VERSE PULSE ANIMATION - For shared verse highlights
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes verse-pulse {
+  0% {
+    background-color: rgba(234, 179, 8, 0.3);
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.4), 0 0 40px rgba(234, 179, 8, 0.2);
+  }
+
+  25% {
+    background-color: rgba(234, 179, 8, 0.2);
+    box-shadow: 0 0 15px rgba(234, 179, 8, 0.3), 0 0 30px rgba(234, 179, 8, 0.15);
+  }
+
+  50% {
+    background-color: rgba(234, 179, 8, 0.3);
+    box-shadow: 0 0 25px rgba(234, 179, 8, 0.4), 0 0 50px rgba(234, 179, 8, 0.2);
+  }
+
+  75% {
+    background-color: rgba(234, 179, 8, 0.15);
+    box-shadow: 0 0 10px rgba(234, 179, 8, 0.2), 0 0 20px rgba(234, 179, 8, 0.1);
+  }
+
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+.animate-verse-pulse {
+  animation: verse-pulse 3s ease-out forwards;
+  border-radius: 4px;
+}

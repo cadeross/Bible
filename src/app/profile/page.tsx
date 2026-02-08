@@ -295,9 +295,9 @@ export default function ProfilePage() {
                     <div className="space-y-8 text-left order-2 md:order-1">
                         <div className="space-y-2">
                             <h1 className="text-4xl font-mono font-bold tracking-tight text-primary">account</h1>
-                            <p className="text-muted-foreground font-mono text-sm max-w-md leading-relaxed">
-                                sign in to access cloud features and track your spiritual journey.
-                            </p>
+                                <p className="text-muted-foreground font-mono text-sm max-w-md leading-relaxed">
+                                    sign in to access cloud features and save your reading progress.
+                                </p>
                         </div>
 
                         <div className="space-y-6">
@@ -307,7 +307,7 @@ export default function ProfilePage() {
                                 { icon: Palette, label: "customization", desc: "persist themes and reading preferences" }
                             ].map((item, i) => (
                                 <div key={i} className="flex gap-4 group">
-                                    <div className="h-10 w-10 shrink-0 rounded-lg bg-secondary/20 flex items-center justify-center border border-border/50 group-hover:border-primary/50 transition-colors">
+                                    <div className="h-10 w-10 shrink-0 rounded-md bg-secondary/20 flex items-center justify-center border border-border/50 group-hover:border-primary/50 transition-colors">
                                         <item.icon className="h-4 w-4 text-primary" />
                                     </div>
                                     <div className="space-y-1">
@@ -328,10 +328,7 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Auth Form Side */}
-                    <div className="order-1 md:order-2 bg-secondary/5 border border-border/50 rounded-2xl p-6 md:p-8 backdrop-blur-sm shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <User className="w-32 h-32 -mr-8 -mt-8 rotate-12" />
-                        </div>
+                    <div className="order-1 md:order-2 bg-secondary/5 border border-border/50 rounded-lg p-6 md:p-8 backdrop-blur-sm relative overflow-hidden">
                         <AuthTabs onSuccess={() => router.refresh()} />
                     </div>
 

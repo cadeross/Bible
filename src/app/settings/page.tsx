@@ -4,7 +4,7 @@ import { useTheme } from "next-themes"
 import { useReadingPreferences, FontType, PaletteType } from "@/contexts/reading-preferences"
 import { cn } from "@/lib/utils"
 // Settings page is preferences only for now.
-import { Monitor, Moon, Sun, Type, Hash, Palette, User, Settings as SettingsIcon, PenTool } from "lucide-react"
+import { Monitor, Moon, Sun, Type, Hash, Palette, User, Settings as SettingsIcon, PenTool, RotateCcw } from "lucide-react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -35,7 +35,8 @@ export default function SettingsPage() {
         defaultHighlightColor,
         setDefaultHighlightColor,
         palette,
-        setPalette
+        setPalette,
+        resetPreferences
     } = useReadingPreferences()
 
 
@@ -374,7 +375,21 @@ export default function SettingsPage() {
                     </SettingRow>
                 </Section>
 
-
+                {/* DANGER ZONE */}
+                <Section title="Reset">
+                    <SettingRow label="Reset to Defaults" description="restore all settings to their original values (RSVCE, serif font, etc.)">
+                        <button
+                            onClick={() => {
+                                resetPreferences()
+                                toast.success("Settings reset to defaults")
+                            }}
+                            className="flex items-center gap-2 text-xs font-mono text-destructive hover:text-destructive/80 transition-colors"
+                        >
+                            <RotateCcw className="h-3 w-3" />
+                            reset all
+                        </button>
+                    </SettingRow>
+                </Section>
 
             </div>
         </motion.div>

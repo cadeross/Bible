@@ -13,6 +13,7 @@ interface ReadingContentProps {
     bookName: string
     chapterNum: number
     nextChapterLink?: string
+    sharedVerses?: number[]
 }
 
 const HIGHLIGHT_COLORS = [
@@ -23,9 +24,12 @@ const HIGHLIGHT_COLORS = [
     { id: "purple", class: "bg-purple-500/30 dark:bg-purple-500/20", border: "border-purple-500/50" },
 ]
 
-export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContentProps) {
+export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [] }: ReadingContentProps) {
     const { fontSize, fontFamily, lineHeight, showVerseNumbers, redLetters, defaultHighlightColor } = useReadingPreferences()
     const [highlights, setHighlights] = React.useState<Highlight[]>([])
+
+    // Track which verses are being highlighted from share link (for pulse animation)
+    const [pulsingVerses, setPulsingVerses] = React.useState<number[]>([])
 
     // Floating Menu State
     const [menuOpen, setMenuOpen] = React.useState(false)
@@ -76,6 +80,32 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
             })
         })
     }, [bookName, chapterNum])
+
+    // Handle shared verses - pulse animation and scroll
+    React.useEffect(() => {
+        if (sharedVerses.length === 0) return
+
+        // Start pulse animation
+        setPulsingVerses(sharedVerses)
+
+        // Scroll to first shared verse after a short delay (to let content render)
+        const scrollTimeout = setTimeout(() => {
+            const firstVerseEl = containerRef.current?.querySelector(`[data-verse="${sharedVerses[0]}"]`)
+            if (firstVerseEl) {
+                firstVerseEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
+        }, 100)
+
+        // Stop pulse animation after 3 seconds
+        const pulseTimeout = setTimeout(() => {
+            setPulsingVerses([])
+        }, 3000)
+
+        return () => {
+            clearTimeout(scrollTimeout)
+            clearTimeout(pulseTimeout)
+        }
+    }, [sharedVerses])
 
     // --- Interaction Handlers ---
 
@@ -316,26 +346,29 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
         if (versesToShare.length === 0) return
 
         const textContent = versesToShare.map(v => v.text).join(' ')
-        // Check if there are notes attached to any of these
-        const relevantNotes = highlights
-            .filter(h => selectedVerses.includes(h.verse) && h.note)
-            .map(h => h.note)
-            .join('\n\n')
 
-        const ref = `${bookName} ${chapterNum}:${versesToShare[0].verse}${versesToShare.length > 1 ? `-${versesToShare[versesToShare.length - 1].verse}` : ''}`
+        // Build verse parameter (single: v=16, range: v=16-18)
+        const firstVerse = versesToShare[0].verse
+        const lastVerse = versesToShare[versesToShare.length - 1].verse
+        const verseParam = firstVerse === lastVerse ? `${firstVerse}` : `${firstVerse}-${lastVerse}`
 
-        const url = `${window.location.origin}/share?ref=${encodeURIComponent(ref)}&text=${encodeURIComponent(textContent)}&note=${encodeURIComponent(relevantNotes)}`
+        // Build reference for share title
+        const ref = `${bookName} ${chapterNum}:${verseParam}`
+
+        // Direct link to verse(s)
+        const url = `${window.location.origin}/read/${encodeURIComponent(bookName)}/${chapterNum}?v=${verseParam}`
 
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: `Quote from ${ref}`,
+                    title: ref,
+                    text: `"${textContent}" — ${ref}`,
                     url: url
                 })
             } catch (e) { console.error(e) }
         } else {
             navigator.clipboard.writeText(url)
-            alert("Deep link copied to clipboard!")
+            alert("Link copied to clipboard!")
         }
         setMenuOpen(false)
         window.getSelection()?.removeAllRanges()
@@ -567,11 +600,10 @@ export function ReadingContent({ chapter, bookName, chapterNum }: ReadingContent
                                         className={cn(
                                             "inline cursor-pointer transition-colors duration-200 rounded px-[2px] -mx-[2px] relative",
                                             bgClass || "hover:bg-primary/5",
-                                            // Show indicator if there's a note but no color? Or just highlight logic
-                                            // If highlight exists, we show color. Note is hidden metadata unless we add visual indicator.
-                                            // Plan didn't specify visual indicator for notes in text, just in library.
-                                            // But standard behavior: highlighted usually means note possibility.
-                                            highlight?.note && !bgClass && "underline decoration-dotted decoration-primary/50" // Fallback if no color? But logic enforces color.
+                                            // Pulse animation for shared verses
+                                            pulsingVerses.includes(verse.verse) && "animate-verse-pulse",
+                                            // Show indicator if there's a note but no color
+                                            highlight?.note && !bgClass && "underline decoration-dotted decoration-primary/50"
                                         )}
                                         // Click Handler (Default Highlight)
                                         onClick={() => handleVerseClick(verse.verse, verse.text)}
