@@ -93,6 +93,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
         setShowVerseNumbers,
         redLetters,
         setRedLetters,
+        setBibleVersion,
     } = useReadingPreferences()
 
     const [availableTranslations, setAvailableTranslations] = React.useState(TRANSLATIONS)
@@ -118,6 +119,10 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
     }
 
     const handleTranslationChange = (translationId: string) => {
+        // Save preference globally (persists to localStorage)
+        setBibleVersion(translationId)
+
+        // Update URL for current view
         const url = new URL(window.location.href)
         url.searchParams.set("translation", translationId)
         router.push(url.pathname + url.search)

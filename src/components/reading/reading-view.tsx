@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation"
 import { ChevronLeft, ChevronRight, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useFocusMode } from "@/contexts/focus-mode"
+import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { motion } from "framer-motion"
 
 interface ReadingViewProps {
@@ -17,11 +18,13 @@ interface ReadingViewProps {
     chapterNum: number
     translation?: string
     sharedVerses?: number[]
+    isExplicitTranslation?: boolean
 }
 
-export function ReadingView({ chapter, book, chapterNum, translation = "dra", sharedVerses = [] }: ReadingViewProps) {
+export function ReadingView({ chapter, book, chapterNum, translation = "dra", sharedVerses = [], isExplicitTranslation = false }: ReadingViewProps) {
     const router = useRouter()
     const { isFocusMode, toggleFocusMode } = useFocusMode()
+    const { bibleVersion } = useReadingPreferences()
 
     // Navigation Logic
     const handleNext = () => {
@@ -37,6 +40,15 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra", sh
         }
     }
 
+    // Sync with user's preferred translation if not explicitly set in URL
+    useEffect(() => {
+        if (!isExplicitTranslation && bibleVersion && bibleVersion !== translation) {
+            // Force a hard navigation to ensure server-side props update correctly
+            // router.replace() was causing an infinite loop due to soft navigation issues with searchParams
+            window.location.replace(`/read/${book}/${chapterNum}?translation=${bibleVersion}`)
+        }
+    }, [isExplicitTranslation, bibleVersion, translation, book, chapterNum])
+
     // Keyboard Navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -45,7 +57,7 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra", sh
         }
         window.addEventListener("keydown", handleKeyDown)
         return () => window.removeEventListener("keydown", handleKeyDown)
-    }, [book, chapterNum])
+    }, [book, chapterNum, handleNext, handlePrev])
 
     return (
         <div className="min-h-screen bg-background flex flex-col items-center py-8">

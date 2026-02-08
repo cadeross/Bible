@@ -4,8 +4,10 @@ import { useTheme } from "next-themes"
 import { useReadingPreferences, FontType, PaletteType } from "@/contexts/reading-preferences"
 import { cn } from "@/lib/utils"
 // Settings page is preferences only for now.
-import { Monitor, Moon, Sun, Type, Hash, Palette, User, Settings as SettingsIcon, PenTool, RotateCcw } from "lucide-react"
+import { Monitor, Moon, Sun, Type, Hash, Palette, User, Settings as SettingsIcon, PenTool, RotateCcw, Languages } from "lucide-react"
 import Link from "next/link"
+import { QuickSelector } from "@/components/reading/quick-selector"
+import { TRANSLATIONS } from "@/lib/bible-api"
 import { motion, AnimatePresence } from "framer-motion"
 
 const HIGHLIGHT_COLORS = [
@@ -36,6 +38,8 @@ export default function SettingsPage() {
         setDefaultHighlightColor,
         palette,
         setPalette,
+        bibleVersion,
+        setBibleVersion,
         resetPreferences
     } = useReadingPreferences()
 
@@ -296,6 +300,19 @@ export default function SettingsPage() {
 
                 {/* READING */}
                 <Section title="Reading">
+                    <SettingRow label="Default Version" description="preferred Bible translation">
+                        <QuickSelector
+                            value={bibleVersion}
+                            items={TRANSLATIONS}
+                            onSelect={setBibleVersion}
+                            icon={<Languages className="h-3 w-3" />}
+                            placeholder="Select version..."
+                            displayFormat="name"
+                            popoverWidth="w-[300px]"
+                            className="w-[200px]"
+                        />
+                    </SettingRow>
+
                     <SettingRow label="Font Family" description="typeface for reading view">
                         <ButtonGroup>
                             <Toggle

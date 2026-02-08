@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client"
 import { getDailyContent, parseVerseRef, getLiturgicalColorClass, DailyContent, FALLBACK_CONTENT } from "@/lib/daily-content"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { cn } from "@/lib/utils"
+import { getVerseText, getAllTranslations } from "@/lib/bible-api"
 
 // Animation variants for staggered entrance
 const containerVariants = {
@@ -75,7 +76,8 @@ export default function Home() {
   const [mounted, setMounted] = useState(false)
   const [dailyContent, setDailyContent] = useState<DailyContent>(FALLBACK_CONTENT)
   const [isLoading, setIsLoading] = useState(true)
-  const { fontFamily } = useReadingPreferences()
+  const [currentVerseSource, setCurrentVerseSource] = useState<string>("") // Track actual Bible version used
+  const { fontFamily, bibleVersion } = useReadingPreferences()
 
   useEffect(() => {
     setMounted(true)
@@ -105,7 +107,46 @@ export default function Home() {
       }
 
       setDailyContent(content)
+      setCurrentVerseSource(content.verse_source) // Initialize with database value
       setIsLoading(false)
+
+      // Feature flag: Set to false to disable dynamic verse fetching
+      const ENABLE_DYNAMIC_VERSE_FETCH = true
+
+      // Fetch dynamic verse text based on user's Bible version
+      const parsedVerse = parseVerseRef(content.verse_ref)
+      if (parsedVerse && ENABLE_DYNAMIC_VERSE_FETCH) {
+        try {
+          console.log(`Fetching verse: ${content.verse_ref} in version ${bibleVersion}`)
+          const dynamicVerseText = await getVerseText(
+            parsedVerse.book,
+            parsedVerse.chapter,
+            parsedVerse.verse,
+            bibleVersion
+          )
+          // Update content with dynamic verse text
+          console.log(`Successfully fetched dynamic verse text`)
+          setDailyContent(prev => ({
+            ...prev,
+            verse_text: dynamicVerseText
+          }))
+
+          // Get the abbreviation for the Bible version used
+          const allTranslations = await getAllTranslations()
+          const translation = allTranslations.find(t => t.id === bibleVersion)
+          if (translation) {
+            const abbrev = (translation as any).abbreviation || translation.id.toUpperCase()
+            setCurrentVerseSource(abbrev)
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch dynamic verse text for ${content.verse_ref}:`, error)
+          console.log(`Falling back to database verse_text: "${content.verse_text}"`)
+          // Fall back to static verse_text from database (already set above)
+          // Keep the database verse_source as well
+        }
+      } else {
+        console.log(`Dynamic verse fetching disabled or could not parse reference`)
+      }
 
       if (profile?.last_read_book && profile?.last_read_chapter) {
         setContinueReading({
@@ -306,7 +347,7 @@ export default function Home() {
                 <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted-foreground/60">
                   {parsedVerse ? (
                     <Link
-                      href={`/read/${parsedVerse.book}/${parsedVerse.chapter}`}
+                      href={`/read/${parsedVerse.book}/${parsedVerse.chapter}?translation=${bibleVersion}`}
                       className="text-primary transition-colors hover:underline underline-offset-4 decoration-primary/40"
                     >
                       {dailyContent.verse_ref}
@@ -318,7 +359,7 @@ export default function Home() {
                   )}
                   <span className="text-muted-foreground/30">·</span>
                   <span className={isLoading ? "animate-pulse" : ""}>
-                    {dailyContent.verse_source}
+                    {(currentVerseSource || dailyContent.verse_source).toUpperCase()}
                   </span>
 
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">

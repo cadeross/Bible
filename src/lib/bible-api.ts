@@ -111,8 +111,25 @@ export async function getChapter(book: string, chapter: number, translation: str
         const bookId = getBookId(book);
         const chapterId = `${bookId}.${chapter}`;
 
-        const data = await getApiBibleChapter(translation, chapterId);
-        if (!data) throw new Error('Failed to fetch chapter from API.bible');
+        let data;
+        try {
+            data = await getApiBibleChapter(translation, chapterId);
+            if (!data) throw new Error('Failed to fetch chapter from API.bible');
+        } catch (e) {
+            console.warn(`Failed to fetch ${translation}, falling back to WEB`, e);
+            // Fallback to WEB if the specific translation fails (e.g. 403 Forbidden)
+            const fallbackId = 'web'; // World English Bible
+            try {
+                // Determine if fallback is legacy or API
+                // WEB is in our legacy list but also available via API.
+                // Our system treats 'web' as legacy ID.
+                // But wait, getChapter is recursive-ish if we just call getChapter('web')?
+                // No, 'web' hits the `isLegacy` block at the top of this function.
+                return getChapter(book, chapter, 'web');
+            } catch (fallbackError) {
+                throw new Error(`Failed to fetch chapter from fallback (WEB): ${fallbackError}`);
+            }
+        }
 
         const verses: BibleVerse[] = [];
         let cleanText = "";
@@ -199,6 +216,41 @@ export async function getChapter(book: string, chapter: number, translation: str
         };
     }
 }
+
+/**
+ * Fetch a single verse text from a specific Bible version
+ * @param book - Book name (e.g., "Genesis")
+ * @param chapter - Chapter number
+ * @param verse - Verse number
+ * @param translation - Bible version ID (e.g., "web", "40adb70626acff3f-01")
+ * @returns The verse text string
+ */
+export async function getVerseText(
+    book: string,
+    chapter: number,
+    verse: number,
+    translation: string = 'web'
+): Promise<string> {
+    try {
+        // Fetch the full chapter
+        const chapterData = await getChapter(book, chapter, translation);
+
+        // Find the specific verse
+        const verseData = chapterData.verses.find(v => v.verse === verse);
+
+        if (!verseData) {
+            throw new Error(`Verse ${verse} not found in ${book} ${chapter} (translation: ${translation})`);
+        }
+
+        return verseData.text;
+    } catch (error) {
+        // Re-throw with more context
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to fetch ${book} ${chapter}:${verse} in ${translation}: ${errorMessage}`);
+    }
+}
+
+
 
 // Helper to map Book Name to USFM/API.bible ID (e.g. "Genesis" -> "GEN")
 function getBookId(bookName: string): string {

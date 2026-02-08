@@ -59,6 +59,7 @@ export default async function ChapterPage({ params, searchParams }: Props) {
                 chapterNum={chapterNum}
                 translation={translation}
                 sharedVerses={sharedVerses}
+                isExplicitTranslation={!!(await searchParams).translation}
             />
         );
     } catch (error) {
