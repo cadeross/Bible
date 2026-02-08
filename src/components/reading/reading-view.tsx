@@ -83,18 +83,22 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra", sh
 
                 {/* Left Nav (Desktop) */}
                 <div className="hidden lg:flex fixed left-8 top-1/2 -translate-y-1/2 flex-col gap-2 opacity-20 hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" onClick={handlePrev} disabled={chapterNum <= 1}>
-                        <ChevronLeft className="h-8 w-8" />
-                    </Button>
+                    <button
+                        onClick={handlePrev}
+                        disabled={chapterNum <= 1}
+                        className="p-2 text-muted-foreground/50 hover:text-primary transition-colors disabled:opacity-0 cursor-pointer"
+                    >
+                        <ChevronLeft className="h-10 w-10" strokeWidth={1.5} />
+                    </button>
                 </div>
 
                 <ReadingContent chapter={chapter} bookName={book} chapterNum={chapterNum} sharedVerses={sharedVerses} />
 
                 {/* Right Nav (Desktop) */}
                 <div className="hidden lg:flex fixed right-8 top-1/2 -translate-y-1/2 flex-col gap-2 opacity-20 hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" onClick={handleNext}>
-                        <ChevronRight className="h-8 w-8" />
-                    </Button>
+                    <button onClick={handleNext} className="p-2 text-muted-foreground/50 hover:text-primary transition-colors cursor-pointer">
+                        <ChevronRight className="h-10 w-10" strokeWidth={1.5} />
+                    </button>
                 </div>
             </main>
 

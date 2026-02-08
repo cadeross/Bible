@@ -22,17 +22,8 @@ export const TRANSLATIONS = [
     { id: 'bbe', name: 'Bible in Basic English' },
     { id: 'darby', name: 'Darby Bible' },
     { id: 'dra', name: 'Douay-Rheims 1899 American Edition' },
-    { id: 'ylt', name: 'Young\'s Literal Translation' },
-    { id: 'oeb-cw', name: 'Open English Bible (Commonwealth)' },
-    { id: 'webbe', name: 'World English Bible (British)' },
-    { id: 'oeb-us', name: 'Open English Bible (US)' },
-    { id: 'clementine', name: 'Clementine Latin Vulgate' },
+    { id: 'nrsvce', name: 'New Revised Standard Version Catholic Edition' },
     { id: 'almeida', name: 'João Ferreira de Almeida' },
-    { id: 'rccv', name: 'Romanian Corrected Cornilescu' },
-    { id: 'synodal', name: 'Russian Synodal Translation' },
-    { id: 'cherokee', name: 'Cherokee New Testament' },
-    { id: 'cuv', name: 'Chinese Union Version' },
-    { id: 'bkr', name: 'Bible kralická' },
 ];
 
 export async function getAllTranslations() {
@@ -49,7 +40,6 @@ export async function getAllTranslations() {
             abbreviation: t.id
         }));
 
-        // Deduplicate: Filter out API translations that match legacy IDs
         // Deduplicate: Filter out API translations that match legacy IDs or Abbreviations
         const legacyIds = new Set(legacyTranslations.map(t => t.id.toLowerCase()));
         const legacyAbbrevs = new Set(legacyTranslations.map(t => (t.abbreviation || t.id).toLowerCase()));
@@ -63,12 +53,9 @@ export async function getAllTranslations() {
             if (abbrev === 'msg' || name.includes("the message")) return false;
 
             // Aggressive deduplication for World English Bible
-            // API.bible has many variants (UK, Catholic, etc) that clutter the list
-            // We force use of our specific defined WEB versions in the legacy list
             if (name.includes("world english bible")) return false;
 
-            // Same for KJV - if the name is just "King James Version" (or close), skip it
-            // We have our own KJV entry.
+            // Same for KJV
             if (name === "king james version" || name === "king james version (1769)" || id === 'kjv') return false;
 
             // General Checks against legacy list
@@ -79,18 +66,30 @@ export async function getAllTranslations() {
             return !isLegacyId && !isLegacyAbbrev && !isLegacyName;
         });
 
-        return [...legacyTranslations, ...uniqueApiTranslations];
+        return [...legacyTranslations, ...uniqueApiTranslations].sort((a, b) =>
+            a.name.localeCompare(b.name)
+        );
     } catch (e) {
         console.error("Failed to load API translations", e);
-        return TRANSLATIONS;
+        // If API fails, return sorted legacy translations
+        return [...TRANSLATIONS].sort((a, b) =>
+            a.name.localeCompare(b.name)
+        );
     }
 }
 
 const BASE_URL = 'https://bible-api.com';
 
 import { getChapterText as getApiBibleChapter, getAvailableBibles } from './api-bible';
+import { getBollsChapter } from './bolls-api';
 
 export async function getChapter(book: string, chapter: number, translation: string = 'web'): Promise<BibleChapter> {
+
+    // Bolls Life Integrations
+    if (translation === 'nrsvce') {
+        return getBollsChapter('NRSVCE', book, chapter);
+    }
+
     const isLegacy = TRANSLATIONS.some(t => t.id === translation);
 
     if (isLegacy) {

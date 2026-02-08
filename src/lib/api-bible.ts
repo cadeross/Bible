@@ -45,10 +45,40 @@ export async function getAvailableBibles(): Promise<BibleVersion[]> {
         }
 
         const data = await res.json();
-        // Manual filtering for English (eng) bibles to keep list relevant
-        // API returns .data array
+
+        // Whitelist of allowed versions as per user request
+        // "CSB, CNT, NIV, NKJV, New Living Translation, and RV"
+        // Note: Assuming "CNT" might be "GNT" (Good News Translation) or "CEV", but stick to likely matches.
+        // We match liberally against name or abbreviation.
+        const validVersions = [
+            'CSB', 'Christian Standard Bible',
+            'NIV', 'New International Version',
+            'NKJV', 'New King James Version',
+            'NLT', 'New Living Translation',
+            'RV', 'Revised Version',
+            'GNT', 'Good News Translation', // Providing GNT for "CNT" typo
+            'CNT' // Just in case it exists and I missed it
+        ];
+
+        // Explicit exclusions requested by user
+        const excludedAbbrs = ['GNTD', 'GNTDSIR', 'NIVUK11', 'NLTUK', 'WEBBE'];
+
         return data.data
             .filter((b: any) => b.language.id === 'eng')
+            .filter((b: any) => {
+                // Check if abbreviation or name contains any of the valid strings
+                const abbr = b.abbreviation.toUpperCase();
+
+                if (excludedAbbrs.includes(abbr)) return false;
+
+                const name = b.name;
+                return validVersions.some(v =>
+                    abbr === v || // strict abbr match
+                    (v.length > 3 && name.includes(v)) || // name match
+                    (v === 'RV' && abbr === 'engRV') || // RV mapping
+                    (v === 'NIV' && abbr.startsWith('NIV')) // Allow NIV variants
+                );
+            })
             .map((b: any) => ({
                 id: b.id,
                 name: b.name,
