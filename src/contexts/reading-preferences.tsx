@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react"
 
-export type FontType = "sans" | "serif" | "mono"
+export type FontType = "sans" | "serif" | "mono" | "pixel"
 export type PaletteType = "standard" | "terminal" | "solarized" | "sepia" | "midnight" | "lavender" | "rose" | "oled"
 
 export interface ReadingPreferences {

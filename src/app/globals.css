@@ -15,6 +15,7 @@
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-serif), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-pixel: var(--font-geist-pixel-line), "Courier New", monospace;
 }
 
 /* Base utilities */
@@ -52,6 +53,11 @@
   #nprogress {
     display: none !important;
   }
+}
+
+/* Explicit font-pixel utility class */
+.font-pixel {
+  font-family: var(--font-geist-pixel-line), "Courier New", monospace !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

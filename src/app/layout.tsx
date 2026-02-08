@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Merriweather } from "next/font/google"; // Added serif font
+import { GeistPixelLine } from "geist/font/pixel";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MobileNav } from "@/components/mobile-nav";
@@ -69,7 +70,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${merriweather.variable} antialiased min-h-screen flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} ${merriweather.variable} ${GeistPixelLine.variable} antialiased min-h-screen flex flex-col`}
       >
         <ThemeProvider
           attribute="data-theme"

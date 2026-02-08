@@ -316,6 +316,12 @@ export default function SettingsPage() {
                                 label="mono"
                                 icon={Type}
                             />
+                            <Toggle
+                                active={fontFamily === 'pixel'}
+                                onClick={() => setFontFamily('pixel')}
+                                label="pixel"
+                                icon={Type}
+                            />
                         </ButtonGroup>
                     </SettingRow>
 

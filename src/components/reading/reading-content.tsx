@@ -420,6 +420,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
         switch (fontFamily) {
             case "sans": return "font-sans"
             case "mono": return "font-mono"
+            case "pixel": return "font-pixel"
             case "serif":
             default: return "font-serif"
         }

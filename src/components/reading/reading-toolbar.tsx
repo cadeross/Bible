@@ -206,6 +206,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                     <FontButton font="sans" label="sans" />
                     <FontButton font="serif" label="serif" />
                     <FontButton font="mono" label="mono" />
+                    <FontButton font="pixel" label="pixel" />
                 </div>
 
                 {/* View toggles */}
