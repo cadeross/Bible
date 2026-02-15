@@ -10,6 +10,8 @@ import { getDailyContent, parseVerseRef, getLiturgicalColorClass, DailyContent, 
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { cn } from "@/lib/utils"
 import { getVerseText, getAllTranslations } from "@/lib/bible-api"
+import { DailyReadings } from "@/components/daily-readings"
+import { DailyReadingsData } from "@/lib/daily-readings"
 
 // Animation variants for staggered entrance
 const containerVariants = {
@@ -75,6 +77,7 @@ export default function Home() {
   const [streakDays, setStreakDays] = useState<number | null>(null)
   const [mounted, setMounted] = useState(false)
   const [dailyContent, setDailyContent] = useState<DailyContent>(FALLBACK_CONTENT)
+  const [dailyReadings, setDailyReadings] = useState<DailyReadingsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [currentVerseSource, setCurrentVerseSource] = useState<string>("") // Track actual Bible version used
   const { fontFamily, bibleVersion } = useReadingPreferences()
@@ -95,15 +98,28 @@ export default function Home() {
       const { getProfile, getHistory } = await import("@/lib/persistence")
 
       // Fetch user, content, and reading context in parallel
-      const [userResult, content, profile, history] = await Promise.all([
+      const [userResult, content, profile, history, readingsRes] = await Promise.all([
         supabase.auth.getUser(),
         getDailyContent(),
         getProfile(),
-        getHistory()
+        getHistory(),
+        fetch("/api/readings/daily").catch(err => {
+          console.error("Failed to fetch daily readings", err);
+          return null;
+        })
       ])
 
       if (userResult.data.user?.user_metadata?.username) {
         setUsername(userResult.data.user.user_metadata.username)
+      }
+
+      if (readingsRes && readingsRes.ok) {
+        try {
+          const readingsData = await readingsRes.json();
+          setDailyReadings(readingsData);
+        } catch (e) {
+          console.error("Failed to parse daily readings json", e);
+        }
       }
 
       setDailyContent(content)
@@ -196,7 +212,7 @@ export default function Home() {
     loadData()
   }, [])
 
-  const liturgyLabel = dailyContent.feast_name || dailyContent.liturgical_season
+  const liturgyLabel = dailyReadings?.title || dailyContent.feast_name || dailyContent.liturgical_season
   const liturgyRank = dailyContent.rank && dailyContent.rank !== "Weekday" ? dailyContent.rank : ""
   const liturgyColorClass = getLiturgicalColorClass(dailyContent.liturgical_color)
 
@@ -303,7 +319,7 @@ export default function Home() {
 
           <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-muted-foreground/60">
             {todayLabel && (
-              <span className={`flex items-center gap-2 ${isLoading ? "animate-pulse" : ""}`}>
+              <span className={`hidden items-center gap-2 ${isLoading ? "animate-pulse" : ""}`}>
                 <Clock className="h-3 w-3" />
                 {todayLabel}
               </span>
@@ -314,8 +330,10 @@ export default function Home() {
                 <span className="flex items-center gap-2">
                   <Church className="h-3 w-3" />
                   <span>
-                    {liturgyLabel}
-                    {liturgyRank ? ` · ${liturgyRank}` : ""}
+                    <span className="truncate max-w-[300px] md:max-w-[500px] block">
+                      {liturgyLabel}
+                      {liturgyRank ? ` · ${liturgyRank}` : ""}
+                    </span>
                   </span>
                 </span>
               </>
@@ -331,7 +349,9 @@ export default function Home() {
       <motion.div variants={itemVariants}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Main Column - Verse of the Day (2/3) */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-10">
+            {/* Daily Wisdom Section - Hidden for now */}
+            {/* 
             <Section title="Daily wisdom">
               <div className="group space-y-3">
                 <blockquote className="max-w-[760px]">
@@ -383,6 +403,12 @@ export default function Home() {
                 </div>
               </div>
             </Section>
+            */}
+
+            {/* Daily Readings - Moved here */}
+            {dailyReadings && (
+              <DailyReadings data={dailyReadings} />
+            )}
           </div>
 
           {/* Side Column - Info cards (1/3) */}
@@ -456,6 +482,10 @@ export default function Home() {
           </div>
         </div>
       </motion.div>
+
+      {/* USCCB Daily Readings - Moved above */}
+
+
     </motion.div>
   )
 }

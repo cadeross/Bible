@@ -14,6 +14,7 @@ interface ReadingContentProps {
     chapterNum: number
     nextChapterLink?: string
     sharedVerses?: number[]
+    mode?: 'default' | 'minimal'
 }
 
 const HIGHLIGHT_COLORS = [
@@ -24,7 +25,7 @@ const HIGHLIGHT_COLORS = [
     { id: "purple", class: "bg-purple-500/30 dark:bg-purple-500/20", border: "border-purple-500/50" },
 ]
 
-export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [] }: ReadingContentProps) {
+export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [], mode = 'default' }: ReadingContentProps) {
     const { fontSize, fontFamily, lineHeight, showVerseNumbers, redLetters, defaultHighlightColor } = useReadingPreferences()
     const [highlights, setHighlights] = React.useState<Highlight[]>([])
 
@@ -44,6 +45,8 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
     const startTimeRef = React.useRef(Date.now());
 
     React.useEffect(() => {
+        if (mode === 'minimal') return
+
         startTimeRef.current = Date.now();
 
         // Save last read position
@@ -70,7 +73,9 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 saveHistory(historyEntry);
             });
         };
-    }, [bookName, chapterNum, chapter]);
+    }, [bookName, chapterNum, chapter, mode]);
+
+    // ... (rest of imports/logic same until render) ...
 
     // Load highlights on mount
     React.useEffect(() => {
@@ -430,7 +435,8 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
         <div
             ref={containerRef}
             className={cn(
-                "w-full max-w-[720px] mx-auto px-6 py-8 transition-all duration-300 ease-in-out relative",
+                "w-full transition-all duration-300 ease-in-out relative",
+                mode === 'default' ? "max-w-[720px] mx-auto px-6 py-8" : "px-0 py-2",
                 getFontClass()
             )}
             style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight }}
@@ -570,12 +576,15 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
             )}
 
             {/* Chapter Header - Static, not animated */}
-            <div className="text-center mb-12 opacity-50 hover:opacity-100 transition-opacity">
-                <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                    {chapter.reference}
-                </h1>
-                <p className="text-xs text-muted-foreground mt-1">{chapter.translation_name}</p>
-            </div>
+            {/* Chapter Header - Static, not animated */}
+            {mode === 'default' && (
+                <div className="text-center mb-12 opacity-50 hover:opacity-100 transition-opacity">
+                    <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                        {chapter.reference}
+                    </h1>
+                    <p className="text-xs text-muted-foreground mt-1">{chapter.translation_name}</p>
+                </div>
+            )}
 
             <AnimatePresence mode="wait">
                 <motion.div
@@ -640,7 +649,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                     </div>
 
                     {/* Citation / Copyright */}
-                    {chapter.translation_note && (
+                    {mode === 'default' && chapter.translation_note && (
                         <div className="mt-12 text-center opacity-40 hover:opacity-80 transition-opacity">
                             <p className="text-[10px] font-mono leading-relaxed max-w-lg mx-auto">
                                 {chapter.translation_note}
