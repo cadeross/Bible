@@ -4,14 +4,16 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { BOOK_LIST } from "@/lib/bible-api"
-import { Search, CornerDownLeft } from "lucide-react"
+import { Search, CornerDownLeft, PanelTop } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useNavMode } from "@/contexts/nav-mode"
 
 export function CommandMenu() {
     const [open, setOpen] = React.useState(false)
     const [input, setInput] = React.useState("")
     const [selectedIndex, setSelectedIndex] = React.useState(0)
     const router = useRouter()
+    const { navMode, toggleNavMode } = useNavMode()
 
     React.useEffect(() => {
         const handleOpen = () => {
@@ -105,22 +107,42 @@ export function CommandMenu() {
         return list
     }, [input, router])
 
+    // System commands (always available, filtered by input)
+    const systemCommands = React.useMemo(() => {
+        const commands = [
+            {
+                id: "toggle-nav",
+                label: navMode === "classic" ? "Switch to inline navigation" : "Switch to classic navigation",
+                action: () => {
+                    toggleNavMode()
+                    setOpen(false)
+                }
+            }
+        ]
+        if (!input) return commands
+        return commands.filter(c => c.label.toLowerCase().includes(input.toLowerCase()))
+    }, [input, navMode, toggleNavMode])
+
+    const allSuggestions = React.useMemo(() => {
+        return [...suggestions, ...systemCommands]
+    }, [suggestions, systemCommands])
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "ArrowDown") {
             e.preventDefault()
-            setSelectedIndex(i => Math.min(suggestions.length - 1, i + 1))
+            setSelectedIndex(i => Math.min(allSuggestions.length - 1, i + 1))
         } else if (e.key === "ArrowUp") {
             e.preventDefault()
             setSelectedIndex(i => Math.max(0, i - 1))
         } else if (e.key === "Tab") {
             e.preventDefault()
-            const item = suggestions[selectedIndex]
+            const item = allSuggestions[selectedIndex]
             if (item && item.id !== "jump") {
                 setInput(item.label + " ")
             }
         } else if (e.key === "Enter") {
             e.preventDefault()
-            const item = suggestions[selectedIndex]
+            const item = allSuggestions[selectedIndex]
             if (item) {
                 item.action()
             }
@@ -169,9 +191,9 @@ export function CommandMenu() {
                             </div>
                         </div>
 
-                        {suggestions.length > 0 && (
+                        {allSuggestions.length > 0 && (
                             <div className="max-h-[300px] overflow-y-auto border-t border-primary/5">
-                                {suggestions.map((item, index) => (
+                                {allSuggestions.map((item, index) => (
                                     <button
                                         key={item.id}
                                         onClick={() => item.action()}
@@ -194,7 +216,7 @@ export function CommandMenu() {
                             </div>
                         )}
 
-                        {suggestions.length === 0 && input && (
+                        {allSuggestions.length === 0 && input && (
                             <div className="p-4 text-center text-xs font-mono text-muted-foreground/60">
                                 No results.
                             </div>

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { DailyReadingsData } from "@/lib/daily-readings"
-import { BookOpen, ChevronRight, Check, Loader2, ExternalLink } from "lucide-react"
+import { BookOpen, ChevronRight, Check, Loader2, ExternalLink, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { ReadingContent } from "@/components/reading/reading-content"
@@ -33,6 +33,7 @@ export function DailyReadings({ data }: DailyReadingsProps) {
     const [chapterCache, setChapterCache] = useState<Record<string, BibleChapter>>({})
     const [loading, setLoading] = useState(false)
     const [fetchError, setFetchError] = useState(false)
+    const [retryKey, setRetryKey] = useState(0)
 
     const handleNext = () => {
         if (currentIndex < sections.length - 1) {
@@ -68,13 +69,15 @@ export function DailyReadings({ data }: DailyReadingsProps) {
             return;
         }
 
-        let cancelled = false;
+        const controller = new AbortController()
+        const signal = controller.signal
+
         setLoading(true)
         setFetchError(false)
 
-        getChapter(parsed.book, parsed.chapter, bibleVersion)
+        getChapter(parsed.book, parsed.chapter, bibleVersion, signal)
             .then(fullChapter => {
-                if (cancelled) return;
+                if (signal.aborted) return
 
                 const filteredVerses = fullChapter.verses.filter(v =>
                     parsed.verses.includes(v.verse)
@@ -94,14 +97,16 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                 setLoading(false)
             })
             .catch(err => {
-                if (cancelled) return;
-                console.error(`Failed to fetch chapter for ${activeSection.data!.reference}:`, err)
+                if (signal.aborted) return
+                console.warn(`Failed to fetch chapter for ${activeSection.data!.reference}:`, err)
                 setLoading(false)
                 setFetchError(true)
             })
 
-        return () => { cancelled = true }
-    }, [activeSection, bibleVersion, chapterCache, getCacheKey])
+        return () => {
+            controller.abort()
+        }
+    }, [activeSection, bibleVersion, chapterCache, getCacheKey, retryKey])
 
     // Get the chapter data for the current section (cached or fallback)
     const cacheKey = activeSection ? getCacheKey(activeSection.id) : ''
@@ -186,6 +191,23 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                 {loading && !activeChapter && (
                     <div className="flex items-center justify-center min-h-[200px]">
                         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/40" />
+                    </div>
+                )}
+
+                {fetchError && !activeChapter && !loading && (
+                    <div className="flex flex-col items-center justify-center min-h-[200px] gap-2 text-muted-foreground/60">
+                        <AlertTriangle className="h-5 w-5 opacity-50" />
+                        <span className="text-xs">Failed to load reading</span>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={() => setRetryKey(k => k + 1)}
+                            >
+                                Retry
+                            </Button>
+                        </div>
                     </div>
                 )}
 

@@ -26,7 +26,7 @@ const HIGHLIGHT_COLORS = [
 ]
 
 export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [], mode = 'default' }: ReadingContentProps) {
-    const { fontSize, fontFamily, lineHeight, showVerseNumbers, redLetters, defaultHighlightColor } = useReadingPreferences()
+    const { isLoaded, fontSize, fontFamily, lineHeight, showVerseNumbers, redLetters, defaultHighlightColor } = useReadingPreferences()
     const [highlights, setHighlights] = React.useState<Highlight[]>([])
 
     // Track which verses are being highlighted from share link (for pulse animation)
@@ -422,6 +422,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
     }, [noteContent, noteOpen, noteTouched, selectedVerses])
 
     const getFontClass = () => {
+        if (!isLoaded) return "font-serif"
         switch (fontFamily) {
             case "sans": return "font-sans"
             case "mono": return "font-mono"
@@ -433,13 +434,17 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
     return (
         <div
+            suppressHydrationWarning
             ref={containerRef}
             className={cn(
                 "w-full transition-all duration-300 ease-in-out relative",
                 mode === 'default' ? "max-w-[720px] mx-auto px-6 py-8" : "px-0 py-2",
                 getFontClass()
             )}
-            style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight }}
+            style={{
+                fontSize: `${isLoaded ? fontSize : 18}px`,
+                lineHeight: isLoaded ? lineHeight : 1.6
+            }}
         >
             <Sheet
                 open={noteOpen}
@@ -632,7 +637,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                             onTouchStart={(e) => handleTouchStart(verse.verse, e)}
                                             onTouchEnd={handleTouchEnd}
                                         >
-                                            {showVerseNumbers && (
+                                            {(isLoaded ? showVerseNumbers : true) && (
                                                 <sup className="mr-1 text-[0.6em] text-muted-foreground/50 select-none font-mono flex items-center gap-0.5 inline-flex">
                                                     <span>{verse.verse}</span>
                                                     {highlight?.note && (
@@ -642,7 +647,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                             )}
                                             <span className={cn(
                                                 "transition-colors duration-200",
-                                                redLetters && isRedLetterVerse(bookName, chapterNum, verse.verse) && "text-red-700 dark:text-red-400"
+                                                (isLoaded ? redLetters : true) && isRedLetterVerse(bookName, chapterNum, verse.verse) && "text-red-700 dark:text-red-400"
                                             )}>
                                                 {verse.text}
                                             </span>

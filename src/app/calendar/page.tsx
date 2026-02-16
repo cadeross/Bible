@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { ChevronLeft, ChevronRight, Church, Calendar, X } from "lucide-react"
 import Link from "next/link"
+import { useNavMode } from "@/contexts/nav-mode"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -409,6 +410,7 @@ function MobileListItem({
 export default function CalendarPage() {
     const today = new Date()
     const todayStr = getTodayStr()
+    const { navMode } = useNavMode()
 
     const [currentYear, setCurrentYear] = useState(today.getFullYear())
     const [currentMonth, setCurrentMonth] = useState(today.getMonth() + 1)
@@ -498,12 +500,14 @@ export default function CalendarPage() {
         >
             {/* Header */}
             <motion.div variants={sectionVariants} className="space-y-5 border-b border-border/50 pb-8">
-                <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60">
-                    <span className="h-px w-8 bg-border" />
-                    <Link href="/" className="hover:text-primary transition-colors">openwrit</Link>
-                    <span className="text-muted-foreground/30">/</span>
-                    <span>liturgical calendar</span>
-                </div>
+                {navMode === 'classic' && (
+                    <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60">
+                        <span className="h-px w-8 bg-border" />
+                        <Link href="/" className="hover:text-primary transition-colors">openwrit</Link>
+                        <span className="text-muted-foreground/30">/</span>
+                        <span>liturgical calendar</span>
+                    </div>
+                )}
 
                 {/* Month Navigation */}
                 <div className="flex items-center justify-between">

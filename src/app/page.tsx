@@ -8,6 +8,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { getDailyContent, parseVerseRef, getLiturgicalColorClass, DailyContent, FALLBACK_CONTENT } from "@/lib/daily-content"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
+import { useNavMode } from "@/contexts/nav-mode"
 import { cn } from "@/lib/utils"
 import { getVerseText, getAllTranslations } from "@/lib/bible-api"
 import { DailyReadings } from "@/components/daily-readings"
@@ -81,6 +82,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
   const [currentVerseSource, setCurrentVerseSource] = useState<string>("") // Track actual Bible version used
   const { fontFamily, bibleVersion } = useReadingPreferences()
+  const { navMode } = useNavMode()
 
   useEffect(() => {
     setMounted(true)
@@ -303,10 +305,12 @@ export default function Home() {
       {/* Header */}
       <motion.div variants={itemVariants} className="space-y-5 border-b border-border/50 pb-8">
         <div className="space-y-5">
-          <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60 w-full">
-            <span className="h-px w-8 bg-border" />
-            openwrit
-          </div>
+          {navMode === 'classic' && (
+            <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60 w-full">
+              <span className="h-px w-8 bg-border" />
+              openwrit
+            </div>
+          )}
 
           <div className="space-y-4">
             <h1 className="text-4xl md:text-6xl font-mono font-bold text-primary tracking-tight leading-tight">

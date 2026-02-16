@@ -83,11 +83,11 @@ const BASE_URL = 'https://bible-api.com';
 import { getChapterText as getApiBibleChapter, getAvailableBibles } from './api-bible';
 import { getBollsChapter } from './bolls-api';
 
-export async function getChapter(book: string, chapter: number, translation: string = 'web'): Promise<BibleChapter> {
+export async function getChapter(book: string, chapter: number, translation: string = 'web', signal?: AbortSignal): Promise<BibleChapter> {
 
     // Bolls Life Integrations
     if (translation === 'nrsvce') {
-        return getBollsChapter('NRSVCE', book, chapter);
+        return getBollsChapter('NRSVCE', book, chapter); // TODO: Pass signal to bolls-api?
     }
     if (translation === 'cnbb') {
         return getBollsChapter('CNBB', book, chapter);
@@ -102,7 +102,7 @@ export async function getChapter(book: string, chapter: number, translation: str
         }
 
         const bookId = getBookId(book);
-        const res = await fetch(`${BASE_URL}/${bookId}+${chapter}?translation=${translation}`);
+        const res = await fetch(`${BASE_URL}/${bookId}+${chapter}?translation=${translation}`, { signal });
         if (!res.ok) throw new Error('Failed to fetch chapter');
         const data = await res.json();
         return {

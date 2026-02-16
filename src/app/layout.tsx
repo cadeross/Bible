@@ -10,10 +10,13 @@ import { Footer } from "@/components/footer";
 import { Toaster } from "sonner";
 import { MainLayout } from "@/components/main-layout";
 import { FocusProvider } from "@/contexts/focus-mode";
+import { NavModeProvider } from "@/contexts/nav-mode";
+import { NavModeGate } from "@/components/nav-mode-gate";
 import { Agentation } from "agentation";
 import { Suspense } from "react";
 import Loading from "./loading";
 import { PageGradients } from "@/components/ui/page-gradients";
+import { ThemeFavicon } from "@/components/theme-favicon";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -86,52 +89,60 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ReadingPreferencesProvider>
-            <FocusProvider>
-              {/* <MobileHeader /> Removed global header */}
-              <Header />
-              <CommandMenu />
-              <MainLayout>
-                <Suspense fallback={<Loading />}>
-                  {children}
-                </Suspense>
-              </MainLayout>
+            <NavModeProvider>
+              <ThemeFavicon />
+              <FocusProvider>
+                <NavModeGate mode="classic">
+                  <Header />
+                </NavModeGate>
+                <CommandMenu />
+                <MainLayout>
+                  <Suspense fallback={<Loading />}>
+                    {children}
+                  </Suspense>
+                </MainLayout>
 
-              <Footer />
-              <PageGradients />
-              <MobileNav />
-              <Toaster
-                position="bottom-right"
-                style={{ zIndex: 9999 }}
-                toastOptions={{
-                  className: "font-mono text-xs !bg-background text-foreground border-border/60 border shadow-none rounded-lg px-6 py-4 gap-4 opacity-100",
-                  descriptionClassName: "text-muted-foreground",
-                  actionButtonStyle: {
-                    backgroundColor: "hsl(var(--primary))",
-                    color: "hsl(var(--primary-foreground))",
-                    fontFamily: "var(--font-geist-mono)",
-                    fontSize: "0.75rem",
-                    borderRadius: "0.25rem",
-                  },
-                  cancelButtonStyle: {
-                    backgroundColor: "hsl(var(--muted))",
-                    color: "hsl(var(--muted-foreground))",
-                    fontFamily: "var(--font-geist-mono)",
-                    fontSize: "0.75rem",
-                    borderRadius: "0.25rem",
-                  },
-                  style: {
-                    backgroundColor: 'var(--background)',
-                    border: '1px solid hsl(var(--border), 0.6)',
-                    color: 'hsl(var(--foreground))',
-                    borderRadius: '0.5rem',
-                  },
-                }}
-              />
-              <Analytics />
-              <SpeedInsights />
-              {/* {process.env.NODE_ENV === "development" && <Agentation />} */}
-              <Agentation />
-            </FocusProvider>
+                <NavModeGate mode="classic">
+                  <Footer />
+                </NavModeGate>
+                <PageGradients />
+                <NavModeGate mode="classic">
+                  <MobileNav />
+                </NavModeGate>
+                <Toaster
+                  position="bottom-right"
+                  style={{ zIndex: 9999 }}
+                  toastOptions={{
+                    className: "font-mono text-xs !bg-background text-foreground border-border/60 border shadow-none rounded-lg px-6 py-4 gap-4 opacity-100",
+                    descriptionClassName: "text-muted-foreground",
+                    actionButtonStyle: {
+                      backgroundColor: "hsl(var(--primary))",
+                      color: "hsl(var(--primary-foreground))",
+                      fontFamily: "var(--font-geist-mono)",
+                      fontSize: "0.75rem",
+                      borderRadius: "0.25rem",
+                    },
+                    cancelButtonStyle: {
+                      backgroundColor: "hsl(var(--muted))",
+                      color: "hsl(var(--muted-foreground))",
+                      fontFamily: "var(--font-geist-mono)",
+                      fontSize: "0.75rem",
+                      borderRadius: "0.25rem",
+                    },
+                    style: {
+                      backgroundColor: 'var(--background)',
+                      border: '1px solid hsl(var(--border), 0.6)',
+                      color: 'hsl(var(--foreground))',
+                      borderRadius: '0.5rem',
+                    },
+                  }}
+                />
+                <Analytics />
+                <SpeedInsights />
+                {/* {process.env.NODE_ENV === "development" && <Agentation />} */}
+                <Agentation />
+              </FocusProvider>
+            </NavModeProvider>
           </ReadingPreferencesProvider>
         </ThemeProvider>
       </body>

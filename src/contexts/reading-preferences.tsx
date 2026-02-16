@@ -17,6 +17,7 @@ export interface ReadingPreferences {
 }
 
 interface ReadingPreferencesContextType extends ReadingPreferences {
+    isLoaded: boolean
     setFontSize: (size: number) => void
     setFontFamily: (font: FontType) => void
     setLineHeight: (height: number) => void
@@ -95,6 +96,7 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
 
     const value = {
         ...preferences,
+        isLoaded,
         setFontSize,
         setFontFamily,
         setLineHeight,

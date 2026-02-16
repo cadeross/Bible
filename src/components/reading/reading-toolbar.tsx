@@ -83,8 +83,8 @@ interface ReadingToolbarProps {
 
 export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, currentTranslation = "dra" }: ReadingToolbarProps) {
     const router = useRouter()
-    // ... prefs ...
     const {
+        isLoaded,
         fontFamily,
         setFontFamily,
         fontSize,
@@ -131,10 +131,11 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
     // ... FontButton helper ...
     const FontButton = ({ font, label }: { font: FontType; label: string }) => (
         <button
+            suppressHydrationWarning
             onClick={() => setFontFamily(font)}
             className={cn(
                 "px-3 py-1 text-xs transition-colors hover:text-foreground/80 cursor-pointer",
-                fontFamily === font ? "text-primary font-bold" : "text-muted-foreground"
+                isLoaded && fontFamily === font ? "text-primary font-bold" : "text-muted-foreground"
             )}
         >
             {label}
@@ -217,10 +218,11 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                 {/* View toggles */}
                 <div className="flex items-center gap-4 text-xs">
                     <button
+                        suppressHydrationWarning
                         onClick={() => setShowVerseNumbers(!showVerseNumbers)}
                         className={cn(
                             "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer",
-                            showVerseNumbers ? "text-primary" : "text-muted-foreground/50"
+                            showVerseNumbers && isLoaded ? "text-primary" : "text-muted-foreground/50"
                         )}
                     >
                         <Hash className="h-3 w-3" />
@@ -228,10 +230,11 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                     </button>
 
                     <button
+                        suppressHydrationWarning
                         onClick={() => setRedLetters(!redLetters)}
                         className={cn(
                             "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer",
-                            redLetters ? "text-red-500" : "text-muted-foreground/50"
+                            redLetters && isLoaded ? "text-red-500" : "text-muted-foreground/50"
                         )}
                     >
                         <Palette className="h-3 w-3" />
@@ -247,7 +250,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                     >
                         -
                     </button>
-                    <span className="text-xs w-8 text-center text-muted-foreground">{fontSize}px</span>
+                    <span suppressHydrationWarning className="text-xs w-8 text-center text-muted-foreground">{isLoaded ? fontSize : 18}px</span>
                     <button
                         onClick={() => setFontSize(Math.min(32, fontSize + 2))}
                         className="text-muted-foreground hover:text-foreground cursor-pointer"
