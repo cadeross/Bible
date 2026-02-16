@@ -55,8 +55,17 @@ export async function getBollsChapter(translation: string, book: string, chapter
         const data: BollsVerse[] = await res.json();
 
         // Sometimes Bolls returns empty list for non-existent chapters
+        // Sometimes Bolls returns empty list for non-existent chapters (e.g. Deuterocanon in CNBB)
         if (!Array.isArray(data) || data.length === 0) {
-            throw new Error("Chapter not found or empty.");
+            console.warn(`Chapter ${book} ${chapter} not found in ${translation}`);
+            return {
+                reference: `${book} ${chapter}`,
+                verses: [],
+                text: "This chapter is not available in the selected translation.",
+                translation_id: translation.toLowerCase(),
+                translation_name: translation, // Will be updated by caller logic ideally, or keep simple here
+                translation_note: "Content not available"
+            };
         }
 
         const verses: BibleVerse[] = data.map(v => ({
@@ -76,6 +85,7 @@ export async function getBollsChapter(translation: string, book: string, chapter
         let translationName = translation;
         if (translation === 'NRSVCE') translationName = "New Revised Standard Version Catholic Edition";
         if (translation === 'RSV') translationName = "Revised Standard Version";
+        if (translation === 'CNBB') translationName = "Bíblia da CNBB";
 
         return {
             reference: `${book} ${chapter}`,

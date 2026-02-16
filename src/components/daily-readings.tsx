@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { DailyReadingsData } from "@/lib/daily-readings"
-import { BookOpen, ChevronRight, Check, Loader2 } from "lucide-react"
+import { BookOpen, ChevronRight, Check, Loader2, ExternalLink } from "lucide-react"
+import Link from "next/link"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { ReadingContent } from "@/components/reading/reading-content"
 import { Button } from "@/components/ui/button"
@@ -227,20 +228,24 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                                     </Button>
                                 </div>
 
-                                {/* Reference (Center) */}
+                                {/* Reference (Center) - links to Read page */}
                                 <div className="justify-self-center text-center">
-                                    {activeSection.data?.reference && (
-                                        <div className="flex flex-col items-center gap-0.5">
-                                            <div className="flex items-center gap-1.5 text-xs font-mono text-primary/80">
+                                    {activeSection.data?.reference && parsed && (
+                                        <Link
+                                            href={`/read/${encodeURIComponent(parsed.book)}/${parsed.chapter}`}
+                                            className="group/ref flex flex-col items-center gap-0.5 hover:opacity-100 transition-opacity"
+                                        >
+                                            <div className="flex items-center gap-1.5 text-xs font-mono text-primary/80 group-hover/ref:text-primary transition-colors">
                                                 <BookOpen className="h-3 w-3 opacity-70" />
                                                 <span>{activeSection.data.reference}</span>
+                                                <ExternalLink className="h-2.5 w-2.5 opacity-0 group-hover/ref:opacity-60 transition-opacity" />
                                             </div>
                                             {cachedChapter && (
                                                 <span className="text-[9px] font-mono text-muted-foreground/40 uppercase">
                                                     {cachedChapter.translation_name}
                                                 </span>
                                             )}
-                                        </div>
+                                        </Link>
                                     )}
                                 </div>
 

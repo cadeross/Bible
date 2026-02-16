@@ -23,7 +23,7 @@ export const TRANSLATIONS = [
     { id: 'darby', name: 'Darby Bible' },
     { id: 'dra', name: 'Douay-Rheims 1899 American Edition' },
     { id: 'nrsvce', name: 'New Revised Standard Version Catholic Edition' },
-    { id: 'almeida', name: 'João Ferreira de Almeida' },
+    { id: 'cnbb', name: 'Bíblia da CNBB' },
 ];
 
 export async function getAllTranslations() {
@@ -89,6 +89,9 @@ export async function getChapter(book: string, chapter: number, translation: str
     if (translation === 'nrsvce') {
         return getBollsChapter('NRSVCE', book, chapter);
     }
+    if (translation === 'cnbb') {
+        return getBollsChapter('CNBB', book, chapter);
+    }
 
     const isLegacy = TRANSLATIONS.some(t => t.id === translation);
 
@@ -98,8 +101,8 @@ export async function getChapter(book: string, chapter: number, translation: str
             return getLocalChapter(book, chapter);
         }
 
-        const cleanBook = book.toLowerCase().replace(/\s/g, '');
-        const res = await fetch(`${BASE_URL}/${cleanBook}+${chapter}?translation=${translation}`);
+        const bookId = getBookId(book);
+        const res = await fetch(`${BASE_URL}/${bookId}+${chapter}?translation=${translation}`);
         if (!res.ok) throw new Error('Failed to fetch chapter');
         const data = await res.json();
         return {

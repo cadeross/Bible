@@ -327,15 +327,18 @@ export default function Home() {
             {liturgyLabel && (
               <>
                 <span className="text-muted-foreground/30">·</span>
-                <span className="flex items-center gap-2">
-                  <Church className="h-3 w-3" />
+                <Link
+                  href="/calendar"
+                  className="flex items-center gap-2 hover:text-primary transition-colors group"
+                >
+                  <Church className="h-3 w-3 group-hover:scale-110 transition-transform" />
                   <span>
                     <span className="truncate max-w-[300px] md:max-w-[500px] block">
                       {liturgyLabel}
                       {liturgyRank ? ` · ${liturgyRank}` : ""}
                     </span>
                   </span>
-                </span>
+                </Link>
               </>
             )}
           </div>

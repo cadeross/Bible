@@ -596,56 +596,62 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 >
                     {/* Verses */}
                     <div className="prose dark:prose-invert max-w-none">
-                        {chapter.verses.map((verse, i) => {
-                            const highlight = highlights.find(h => h.verse === verse.verse)
-                            const colorConfig = highlight ? HIGHLIGHT_COLORS.find(c => c.id === highlight.color) : null
-                            const bgClass = colorConfig ? colorConfig.class : ""
+                        {chapter.verses.length === 0 ? (
+                            <div className="text-center text-muted-foreground italic my-12">
+                                {chapter.text}
+                            </div>
+                        ) : (
+                            chapter.verses.map((verse, i) => {
+                                const highlight = highlights.find(h => h.verse === verse.verse)
+                                const colorConfig = highlight ? HIGHLIGHT_COLORS.find(c => c.id === highlight.color) : null
+                                const bgClass = colorConfig ? colorConfig.class : ""
 
-                            return (
-                                <React.Fragment key={verse.verse}>
-                                    <motion.span
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: i * 0.002, duration: 0.2 }}
-                                        data-verse={verse.verse}
-                                        className={cn(
-                                            "inline cursor-pointer transition-colors duration-200 rounded px-[2px] -mx-[2px] relative",
-                                            bgClass || "hover:bg-primary/5",
-                                            // Pulse animation for shared verses
-                                            pulsingVerses.includes(verse.verse) && "animate-verse-pulse",
-                                            // Show indicator if there's a note but no color
-                                            highlight?.note && !bgClass && "underline decoration-dotted decoration-primary/50"
-                                        )}
-                                        // Click Handler (Default Highlight)
-                                        onClick={() => handleVerseClick(verse.verse, verse.text)}
-                                        // Right Click (Context Menu)
-                                        onContextMenu={(e) => handleContextMenu(e, verse.verse)}
-                                        // Long Press Handlers (Menu)
-                                        onMouseDown={(e) => handleTouchStart(verse.verse, e)}
-                                        onMouseUp={handleTouchEnd}
-                                        onMouseLeave={handleTouchEnd}
-                                        onTouchStart={(e) => handleTouchStart(verse.verse, e)}
-                                        onTouchEnd={handleTouchEnd}
-                                    >
-                                        {showVerseNumbers && (
-                                            <sup className="mr-1 text-[0.6em] text-muted-foreground/50 select-none font-mono flex items-center gap-0.5 inline-flex">
-                                                <span>{verse.verse}</span>
-                                                {highlight?.note && (
-                                                    <StickyNote className="h-2 w-2 text-primary/70" />
-                                                )}
-                                            </sup>
-                                        )}
-                                        <span className={cn(
-                                            "transition-colors duration-200",
-                                            redLetters && isRedLetterVerse(bookName, chapterNum, verse.verse) && "text-red-700 dark:text-red-400"
-                                        )}>
-                                            {verse.text}
-                                        </span>
-                                    </motion.span>
-                                    {" "}
-                                </React.Fragment>
-                            )
-                        })}
+                                return (
+                                    <React.Fragment key={verse.verse}>
+                                        <motion.span
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: i * 0.002, duration: 0.2 }}
+                                            data-verse={verse.verse}
+                                            className={cn(
+                                                "inline cursor-pointer transition-colors duration-200 rounded px-[2px] -mx-[2px] relative",
+                                                bgClass || "hover:bg-primary/5",
+                                                // Pulse animation for shared verses
+                                                pulsingVerses.includes(verse.verse) && "animate-verse-pulse",
+                                                // Show indicator if there's a note but no color
+                                                highlight?.note && !bgClass && "underline decoration-dotted decoration-primary/50"
+                                            )}
+                                            // Click Handler (Default Highlight)
+                                            onClick={() => handleVerseClick(verse.verse, verse.text)}
+                                            // Right Click (Context Menu)
+                                            onContextMenu={(e) => handleContextMenu(e, verse.verse)}
+                                            // Long Press Handlers (Menu)
+                                            onMouseDown={(e) => handleTouchStart(verse.verse, e)}
+                                            onMouseUp={handleTouchEnd}
+                                            onMouseLeave={handleTouchEnd}
+                                            onTouchStart={(e) => handleTouchStart(verse.verse, e)}
+                                            onTouchEnd={handleTouchEnd}
+                                        >
+                                            {showVerseNumbers && (
+                                                <sup className="mr-1 text-[0.6em] text-muted-foreground/50 select-none font-mono flex items-center gap-0.5 inline-flex">
+                                                    <span>{verse.verse}</span>
+                                                    {highlight?.note && (
+                                                        <StickyNote className="h-2 w-2 text-primary/70" />
+                                                    )}
+                                                </sup>
+                                            )}
+                                            <span className={cn(
+                                                "transition-colors duration-200",
+                                                redLetters && isRedLetterVerse(bookName, chapterNum, verse.verse) && "text-red-700 dark:text-red-400"
+                                            )}>
+                                                {verse.text}
+                                            </span>
+                                        </motion.span>
+                                        {" "}
+                                    </React.Fragment>
+                                )
+                            })
+                        )}
                     </div>
 
                     {/* Citation / Copyright */}
