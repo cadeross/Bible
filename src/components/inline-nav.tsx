@@ -88,7 +88,7 @@ export function InlineNav() {
                 <div className="flex items-center justify-between">
                     {/* Left: OPENWRIT + animated nav links */}
                     <div
-                        className="flex items-center gap-3 md:gap-5 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground/50"
+                        className="flex items-center gap-3 md:gap-5 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground/50 pr-24"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                     >
@@ -100,11 +100,24 @@ export function InlineNav() {
                             )}
                         >
                             <span className="h-px w-8 bg-border" />
-                            openwrit
+                            <span>openwrit</span>
+                            <AnimatePresence>
+                                {pathname !== "/" && (
+                                    <motion.span
+                                        initial={{ opacity: 0, width: 0, x: -8 }}
+                                        animate={{ opacity: 1, width: "auto", x: 0 }}
+                                        exit={{ opacity: 0, width: 0, x: -8 }}
+                                        transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                                        className="text-muted-foreground/40 overflow-hidden whitespace-nowrap"
+                                    >
+                                        &nbsp;/ {breadcrumb}
+                                    </motion.span>
+                                )}
+                            </AnimatePresence>
                         </Link>
 
                         <AnimatePresence>
-                            {isHovered && navLinks.map((link, i) => (
+                            {isHovered && navLinks.filter(link => !isActive(link.href)).map((link, i, arr) => (
                                 <motion.span
                                     key={link.name}
                                     className="flex items-center gap-3 md:gap-5 overflow-hidden"
@@ -125,7 +138,7 @@ export function InlineNav() {
                                         x: -8,
                                         transition: {
                                             duration: 0.2,
-                                            delay: (navLinks.length - 1 - i) * 0.04,
+                                            delay: (arr.length - 1 - i) * 0.04,
                                             ease: [0.55, 0.06, 0.68, 0.19],
                                         },
                                     }}
@@ -133,10 +146,7 @@ export function InlineNav() {
                                     <span className="text-muted-foreground/20">·</span>
                                     <Link
                                         href={link.href}
-                                        className={cn(
-                                            "transition-colors hover:text-primary whitespace-nowrap",
-                                            isActive(link.href) && "text-primary"
-                                        )}
+                                        className="transition-colors hover:text-primary whitespace-nowrap"
                                     >
                                         {link.name}
                                     </Link>
@@ -147,15 +157,12 @@ export function InlineNav() {
 
                     {/* Right: utility nav */}
                     <div className="hidden sm:flex items-center gap-3 md:gap-5 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground/50">
-                        {rightLinks.map((link, i) => (
+                        {rightLinks.filter(link => !isActive(link.href)).map((link, i) => (
                             <span key={link.name} className="flex items-center gap-3 md:gap-5">
                                 {i > 0 && <span className="text-muted-foreground/20">·</span>}
                                 <Link
                                     href={link.href}
-                                    className={cn(
-                                        "transition-colors hover:text-primary",
-                                        isActive(link.href) && "text-primary"
-                                    )}
+                                    className="transition-colors hover:text-primary"
                                 >
                                     {link.name === "profile" && username ? username : link.name}
                                 </Link>

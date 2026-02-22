@@ -34,13 +34,12 @@ export default function AboutPage() {
             className="w-full max-w-[720px] mx-auto px-6 py-12 space-y-12"
         >
             {/* Header */}
-            <div className="flex items-center gap-4 border-b border-border/50 pb-8">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <Info className="h-6 w-6" />
-                </div>
+            <div className="flex flex-col items-center text-center gap-4 opacity-70 hover:opacity-100 transition-opacity mb-12">
                 <div className="space-y-1">
-                    <h1 className="text-2xl font-bold tracking-tight font-mono text-primary">about</h1>
-                    <p className="text-muted-foreground text-xs font-mono">
+                    <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                        ABOUT
+                    </h1>
+                    <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
                         the story behind openwrit
                     </p>
                 </div>

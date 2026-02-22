@@ -274,17 +274,17 @@
 [data-theme='dark'] :root,
 [data-theme='dark'][data-palette='standard'],
 [data-palette='standard'][data-theme='dark'] {
-  --background: #0a0a0a;
+  --background: #18181b;
   --foreground: #ededed;
   --primary: #ededed;
-  --primary-foreground: #0a0a0a;
-  --muted: #262626;
-  --muted-foreground: #a3a3a3;
-  --accent: #262626;
+  --primary-foreground: #18181b;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
   --accent-foreground: #ededed;
-  --card: #0a0a0a;
+  --card: #18181b;
   --card-foreground: #ededed;
-  --border: #262626;
+  --border: #27272a;
 }
 
 /* --- SOLARIZED --- */

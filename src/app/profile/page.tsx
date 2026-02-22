@@ -345,8 +345,8 @@ export default function ProfilePage() {
             className="w-full max-w-[720px] mx-auto px-6 py-12 space-y-12"
         >
             {/* Header */}
-            <div className="flex items-center justify-between gap-4 border-b border-border/50 pb-8">
-                <div className="flex items-center gap-4">
+            <div className="flex flex-col items-center text-center gap-4 opacity-70 hover:opacity-100 transition-opacity mb-12">
+                <div className="flex flex-col items-center gap-4">
                     {/* Profile Photo with Upload */}
                     <div
                         className="relative h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary cursor-pointer group overflow-hidden"
@@ -398,15 +398,19 @@ export default function ProfilePage() {
                         />
                     </div>
                     <div className="space-y-1">
-                        <h1 className="text-2xl font-bold tracking-tight font-mono text-primary">{user.user_metadata?.username || "user"}</h1>
-                        <p className="text-muted-foreground text-xs font-mono">
+                        <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                            {user.user_metadata?.username || "USER"}
+                        </h1>
+                        <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
                             {user.email} • joined {new Date(user.created_at).toLocaleDateString()}
                         </p>
                     </div>
                 </div>
-                <Button variant="ghost" onClick={handleSignOut} className="h-8 text-xs font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-0">
-                    <LogOut className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity" /> sign out
-                </Button>
+                <div className="mt-2">
+                    <Button variant="ghost" onClick={handleSignOut} className="h-8 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-full border border-border/40 bg-secondary/5 hover:border-primary/30">
+                        <LogOut className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity" /> SIGN OUT
+                    </Button>
+                </div>
             </div>
 
             <div className="grid gap-12">

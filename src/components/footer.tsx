@@ -75,20 +75,7 @@ export function Footer() {
                     <Mail className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
                     <span className="pb-px">contact</span>
                 </Link>
-                <Link
-                    href="/calendar"
-                    className="flex items-center gap-2 hover:text-primary transition-colors group"
-                >
-                    <Church className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-                    <span className="pb-px">calendar</span>
-                </Link>
-                <Link
-                    href="/features"
-                    className="flex items-center gap-2 hover:text-primary transition-colors group"
-                >
-                    <Lightbulb className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-                    <span className="pb-px">features</span>
-                </Link>
+
             </div>
 
             {/* Right side: Theme & Version */}

@@ -265,21 +265,18 @@ export default function LibraryPage() {
             />
 
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-border/50 pb-8">
-                <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                        <BookOpen className="h-6 w-6" />
-                    </div>
-                    <div className="space-y-1">
-                        <h1 className="text-2xl font-bold tracking-tight font-mono text-primary">library</h1>
-                        <p className="text-muted-foreground text-xs font-mono">
-                            your collection of verses and wisdom
-                        </p>
-                    </div>
+            <div className="flex flex-col items-center text-center gap-4 opacity-70 hover:opacity-100 transition-opacity mb-12">
+                <div className="space-y-1">
+                    <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                        LIBRARY
+                    </h1>
+                    <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
+                        your collection of verses and wisdom
+                    </p>
                 </div>
 
                 {/* Custom Fluid Toggle */}
-                <div className="flex p-1 border border-border/60 rounded-lg self-start sm:self-center">
+                <div className="flex p-1 border border-border/60 rounded-lg mt-2">
                     {[
                         { id: 'highlights', count: groupedHighlights.length, icon: PenTool },
                         { id: 'wisdom', count: wisdom.length, icon: Heart },

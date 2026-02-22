@@ -1,12 +1,14 @@
 "use client"
 
 import { useLayoutEffect } from "react"
+import { usePathname } from "next/navigation"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { useTheme } from "next-themes"
 
 export function ThemeFavicon() {
     const { palette } = useReadingPreferences()
     const { resolvedTheme } = useTheme()
+    const pathname = usePathname()
 
     useLayoutEffect(() => {
         const updateFavicon = () => {
@@ -40,9 +42,12 @@ export function ThemeFavicon() {
                 `
                 const svgDataUri = `data:image/svg+xml;base64,${btoa(svg)}`
 
-                const existingLink = document.querySelector("link[rel*='icon']") as HTMLLinkElement
-                if (existingLink) {
-                    existingLink.href = svgDataUri
+                // Update existing icon links in place so Next.js doesn't crash on unmount
+                const existingLinks = document.querySelectorAll("link[rel*='icon']")
+                if (existingLinks.length > 0) {
+                    existingLinks.forEach(link => {
+                        (link as HTMLLinkElement).href = svgDataUri
+                    })
                 } else {
                     const newLink = document.createElement("link")
                     newLink.rel = "shortcut icon"
@@ -68,7 +73,7 @@ export function ThemeFavicon() {
 
         return () => observer.disconnect()
 
-    }, [palette, resolvedTheme])
+    }, [palette, resolvedTheme, pathname])
 
     return null
 }

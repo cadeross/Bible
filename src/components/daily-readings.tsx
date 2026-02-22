@@ -140,53 +140,99 @@ export function DailyReadings({ data }: DailyReadingsProps) {
     const isFirst = currentIndex === 0
 
     return (
-        <div className="space-y-4">
-            {/* Header Row: Title + Progress Dots */}
-            <div className="flex items-center justify-between">
-                <h2 className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-                    Daily Readings
-                </h2>
+        <div className="w-full max-w-[720px] mx-auto space-y-8">
+            {/* Header Row: Centered Progress & Title + Navigation */}
+            <div className="flex items-center justify-between pb-6 border-b border-border/5">
+                {/* Back Button */}
+                <div className="w-24 flex justify-start">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleBack}
+                        disabled={isFirst}
+                        className={cn(
+                            "gap-2 font-mono text-[10px] uppercase tracking-widest px-3 transition-all h-8 rounded-full text-muted-foreground/70",
+                            isFirst ? "opacity-0 pointer-events-none" : "hover:text-foreground hover:bg-secondary/40 hover:-translate-x-0.5"
+                        )}
+                    >
+                        <ChevronRight className="h-3 w-3 rotate-180" />
+                        Back
+                    </Button>
+                </div>
 
-                {/* Progress Dots */}
-                <div className="flex items-center gap-1.5">
-                    {sections.map((section, idx) => {
-                        const isActive = idx === currentIndex;
-                        const isPast = idx < currentIndex;
+                <div className="flex flex-col items-center justify-center space-y-3">
+                    <div className="flex items-center gap-2 text-muted-foreground/30 text-[9px] font-mono uppercase tracking-[0.3em] select-none">
+                        <span>Daily</span>
+                        <span className="w-0.5 h-0.5 rounded-full bg-border/40" />
+                        <span className="text-muted-foreground/60 font-medium">{activeSection?.label || "Reading"}</span>
+                    </div>
 
-                        return (
-                            <button
-                                key={section.id}
-                                onClick={() => setCurrentIndex(idx)}
-                                className="group relative outline-none focus-visible:ring-0"
-                                aria-label={section.label}
-                            >
-                                <div
-                                    className={cn(
-                                        "h-1.5 rounded-full transition-all duration-400 ease-in-out",
-                                        isActive
-                                            ? "w-6 bg-primary"
-                                            : isPast
-                                                ? "w-1.5 bg-primary/40"
-                                                : "w-1.5 bg-border/60 group-hover:bg-primary/20"
-                                    )}
-                                />
+                    {/* Progress Indicator - Subtle */}
+                    <div className="flex items-center gap-2 px-2">
+                        {sections.map((section, idx) => {
+                            const isActive = idx === currentIndex;
+                            const isPast = idx < currentIndex;
 
-                                {/* Tooltip */}
-                                <div className={cn(
-                                    "absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-popover border border-border text-[10px] font-mono whitespace-nowrap opacity-0 transition-opacity duration-200 pointer-events-none z-50 shadow-sm",
-                                    "group-hover:opacity-100"
-                                )}>
-                                    {section.label}
-                                </div>
-                            </button>
-                        )
-                    })}
+                            return (
+                                <button
+                                    key={section.id}
+                                    onClick={() => setCurrentIndex(idx)}
+                                    className="group relative outline-none focus-visible:ring-0 flex items-center justify-center h-4 px-0.5"
+                                    aria-label={section.label}
+                                >
+                                    <div
+                                        className={cn(
+                                            "h-1 rounded-full transition-all duration-500 ease-out",
+                                            isActive
+                                                ? "w-4 bg-foreground/60"
+                                                : isPast
+                                                    ? "w-1.5 bg-foreground/20 hover:bg-foreground/40"
+                                                    : "w-1.5 bg-border/30 hover:bg-border/60"
+                                        )}
+                                    />
+
+                                    {/* Tooltip */}
+                                    <div className={cn(
+                                        "absolute top-full mt-3 left-1/2 -translate-x-1/2 px-2.5 py-1.5 rounded-md bg-popover/95 backdrop-blur-md border border-border/10 text-[10px] font-mono whitespace-nowrap opacity-0 transition-all duration-200 pointer-events-none z-50 shadow-xl translate-y-1 group-hover:translate-y-0",
+                                        "group-hover:opacity-100"
+                                    )}>
+                                        {section.label}
+                                    </div>
+                                </button>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                {/* Next Button */}
+                <div className="w-24 flex justify-end">
+                    <Button
+                        onClick={handleNext}
+                        disabled={isLast}
+                        variant="ghost"
+                        size="sm"
+                        className={cn(
+                            "gap-2 font-mono text-[10px] uppercase tracking-widest px-3 transition-all h-8 rounded-full",
+                            isLast
+                                ? "text-muted-foreground/40 bg-secondary/20 cursor-default pointer-events-none"
+                                : "text-primary bg-primary/10 hover:bg-primary/15 hover:scale-105 border border-primary/10"
+                        )}
+                    >
+                        {isLast ? (
+                            <>
+                                Done <Check className="h-3 w-3" />
+                            </>
+                        ) : (
+                            <>
+                                Next <ChevronRight className="h-3 w-3" />
+                            </>
+                        )}
+                    </Button>
                 </div>
             </div>
 
-            {/* Content with static border */}
-            <div className="pl-4 border-l border-border/40">
+            {/* Content */}
+            <div className="w-full">
                 {/* Loading State */}
                 {loading && !activeChapter && (
                     <div className="flex items-center justify-center min-h-[200px]">
@@ -215,10 +261,10 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                     {activeChapter && activeSection && (
                         <motion.div
                             key={activeSection.id}
-                            initial={{ opacity: 0, filter: "blur(4px)" }}
-                            animate={{ opacity: 1, filter: "blur(0px)" }}
-                            exit={{ opacity: 0, filter: "blur(4px)" }}
-                            transition={{ duration: 0.4, ease: "easeInOut" }}
+                            initial={{ opacity: 0, filter: "blur(8px)", y: 10 }}
+                            animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+                            exit={{ opacity: 0, filter: "blur(8px)", y: -10 }}
+                            transition={{ duration: 0.5, ease: "easeInOut" }}
                             className="space-y-8"
                         >
                             <div className="min-h-[200px]">
@@ -230,70 +276,25 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                                 />
                             </div>
 
-                            {/* Footer Controls */}
-                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-t border-border/40 pt-6">
-
-                                {/* Back Button (Left) */}
-                                <div className="justify-self-start">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleBack}
-                                        disabled={isFirst}
-                                        className={cn(
-                                            "gap-2 font-mono text-xs uppercase tracking-wider pl-2 pr-4 transition-all h-8",
-                                            isFirst ? "opacity-0 pointer-events-none" : "hover:bg-transparent hover:text-primary hover:-translate-x-1"
-                                        )}
+                            {/* Reference Center */}
+                            <div className="flex justify-center pt-6 border-t border-border/10">
+                                {activeSection.data?.reference && parsed && (
+                                    <Link
+                                        href={`/read/${encodeURIComponent(parsed.book)}/${parsed.chapter}`}
+                                        className="group/ref flex flex-col items-center gap-0.5 hover:opacity-100 transition-opacity"
                                     >
-                                        <ChevronRight className="h-3.5 w-3.5 rotate-180" />
-                                        Back
-                                    </Button>
-                                </div>
-
-                                {/* Reference (Center) - links to Read page */}
-                                <div className="justify-self-center text-center">
-                                    {activeSection.data?.reference && parsed && (
-                                        <Link
-                                            href={`/read/${encodeURIComponent(parsed.book)}/${parsed.chapter}`}
-                                            className="group/ref flex flex-col items-center gap-0.5 hover:opacity-100 transition-opacity"
-                                        >
-                                            <div className="flex items-center gap-1.5 text-xs font-mono text-primary/80 group-hover/ref:text-primary transition-colors">
-                                                <BookOpen className="h-3 w-3 opacity-70" />
-                                                <span>{activeSection.data.reference}</span>
-                                                <ExternalLink className="h-2.5 w-2.5 opacity-0 group-hover/ref:opacity-60 transition-opacity" />
-                                            </div>
-                                            {cachedChapter && (
-                                                <span className="text-[9px] font-mono text-muted-foreground/40 uppercase">
-                                                    {cachedChapter.translation_name}
-                                                </span>
-                                            )}
-                                        </Link>
-                                    )}
-                                </div>
-
-                                {/* Next Button (Right) */}
-                                <div className="justify-self-end">
-                                    <Button
-                                        onClick={handleNext}
-                                        disabled={isLast}
-                                        variant={isLast ? "outline" : "default"}
-                                        size="sm"
-                                        className={cn(
-                                            "gap-2 font-mono text-xs uppercase tracking-wider pl-4 pr-3 transition-all h-8",
-                                            isLast ? "opacity-50 cursor-not-allowed" : "hover:pl-5 shadow-sm"
+                                        <div className="flex items-center gap-1.5 text-xs font-mono text-foreground/50 group-hover/ref:text-foreground transition-colors">
+                                            <BookOpen className="h-3 w-3 opacity-70" />
+                                            <span>{activeSection.data.reference}</span>
+                                            <ExternalLink className="h-2.5 w-2.5 opacity-0 group-hover/ref:opacity-60 transition-opacity" />
+                                        </div>
+                                        {cachedChapter && (
+                                            <span className="text-[9px] font-mono text-muted-foreground/30 uppercase">
+                                                {cachedChapter.translation_name}
+                                            </span>
                                         )}
-                                    >
-                                        {isLast ? (
-                                            <>
-                                                Finished <Check className="h-3.5 w-3.5" />
-                                            </>
-                                        ) : (
-                                            <>
-                                                Next <ChevronRight className="h-3.5 w-3.5" />
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
+                                    </Link>
+                                )}
                             </div>
                         </motion.div>
                     )}

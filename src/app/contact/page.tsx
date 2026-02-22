@@ -80,24 +80,22 @@ export default function ContactPage() {
                 transition={{ duration: 0.5, ease: "easeOut" }}
                 className="w-full max-w-md space-y-12 relative z-10"
             >
-                <div className="text-center space-y-2">
-                    <motion.h1
+                <div className="flex flex-col items-center text-center gap-4 opacity-70 hover:opacity-100 transition-opacity mb-12">
+                    <motion.div
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-3xl font-bold tracking-tight font-mono text-primary"
+                        className="space-y-1"
                     >
-                        get in touch
-                    </motion.h1>
-                    <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-sm text-muted-foreground font-mono"
-                    >
-                        have a question or feature request?
-                    </motion.p>
+                        <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                            GET IN TOUCH
+                        </h1>
+                        <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
+                            have a question or feature request?
+                        </p>
+                    </motion.div>
                 </div>
 
-                <div className="space-y-6 pt-4">
+                <div className="space-y-6">
                     <form onSubmit={handleSubmit} className="space-y-8">
                         {!user && (
                             <div className="space-y-4">

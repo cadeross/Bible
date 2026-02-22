@@ -303,190 +303,71 @@ export default function Home() {
       animate="visible"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="space-y-5 border-b border-border/50 pb-8">
-        <div className="space-y-5">
+      <motion.div variants={itemVariants} className="mb-12">
+        <div className="flex flex-col items-center text-center gap-4 opacity-70 hover:opacity-100 transition-opacity">
+          {/*
           {navMode === 'classic' && (
-            <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60 w-full">
-              <span className="h-px w-8 bg-border" />
+            <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60 w-full justify-center">
               openwrit
             </div>
           )}
+          */}
 
-          <div className="space-y-4">
-            <h1 className="text-4xl md:text-6xl font-mono font-bold text-primary tracking-tight leading-tight">
+          <div className="space-y-1">
+            <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
               {greeting}
             </h1>
-            <div className="text-xs font-mono text-muted-foreground/60">
-              a quiet place for daily reading
-            </div>
+            {liturgyLabel && (
+              <Link
+                href="/calendar"
+                className="text-[10px] font-mono text-muted-foreground/60 hover:text-foreground transition-colors inline-block"
+              >
+                <span className="truncate max-w-[300px] md:max-w-[500px] block uppercase tracking-wider">
+                  {liturgyLabel}
+                </span>
+              </Link>
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-muted-foreground/60">
-            {todayLabel && (
-              <span className={`hidden items-center gap-2 ${isLoading ? "animate-pulse" : ""}`}>
-                <Clock className="h-3 w-3" />
-                {todayLabel}
-              </span>
-            )}
-            {liturgyLabel && (
-              <>
-                <span className="text-muted-foreground/30">·</span>
+          {/* Quick Actions */}
+          {(streakDays !== null || continueReading) && (
+            <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
+              {streakDays !== null && (
                 <Link
-                  href="/calendar"
-                  className="flex items-center gap-2 hover:text-primary transition-colors group"
+                  href="/profile"
+                  className="group flex items-center gap-2.5 px-4 py-2 rounded-full border border-border/40 bg-secondary/5 hover:bg-secondary/10 hover:border-primary/30 transition-all duration-300"
                 >
-                  <Church className="h-3 w-3 group-hover:scale-110 transition-transform" />
-                  <span>
-                    <span className="truncate max-w-[300px] md:max-w-[500px] block">
-                      {liturgyLabel}
-                      {liturgyRank ? ` · ${liturgyRank}` : ""}
-                    </span>
+                  <Heart className="h-3.5 w-3.5 text-primary/60 group-hover:text-primary transition-colors" />
+                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">
+                    {streakDays} day streak
                   </span>
                 </Link>
-              </>
-            )}
-          </div>
-
-
-
+              )}
+              {continueReading && (
+                <Link
+                  href={`/read/${encodeURIComponent(continueReading.book)}/${continueReading.chapter}`}
+                  className="group flex items-center gap-2.5 px-4 py-2 rounded-full border border-border/40 bg-secondary/5 hover:bg-secondary/10 hover:border-primary/30 transition-all duration-300"
+                >
+                  <BookOpen className="h-3.5 w-3.5 text-primary/60 group-hover:text-primary transition-colors" />
+                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">
+                    resume {continueReading.book} {continueReading.chapter}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/50 opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all">
+                    →
+                  </span>
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       </motion.div>
 
       {/* Daily Focus */}
       <motion.div variants={itemVariants}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Main Column - Verse of the Day (2/3) */}
-          <div className="lg:col-span-2 space-y-10">
-            {/* Daily Wisdom Section - Hidden for now */}
-            {/* 
-            <Section title="Daily wisdom">
-              <div className="group space-y-3">
-                <blockquote className="max-w-[760px]">
-                  <p className={cn(
-                    "text-sm md:text-base leading-relaxed text-foreground/80",
-                    getFontClass(fontFamily),
-                    isLoading && "animate-pulse"
-                  )}>
-                    "{dailyContent.verse_text}"
-                  </p>
-                </blockquote>
-
-                <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-muted-foreground/60">
-                  {parsedVerse ? (
-                    <Link
-                      href={`/read/${parsedVerse.book}/${parsedVerse.chapter}?translation=${bibleVersion}`}
-                      className="text-primary transition-colors hover:underline underline-offset-4 decoration-primary/40"
-                    >
-                      {dailyContent.verse_ref}
-                    </Link>
-                  ) : (
-                    <span className="text-primary">
-                      {dailyContent.verse_ref}
-                    </span>
-                  )}
-                  <span className="text-muted-foreground/30">·</span>
-                  <span className={isLoading ? "animate-pulse" : ""}>
-                    {(currentVerseSource || dailyContent.verse_source).toUpperCase()}
-                  </span>
-
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                    <span className="text-muted-foreground/30 ml-1">·</span>
-                    <button
-                      onClick={handleHighlight}
-                      className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-2"
-                    >
-                      <BookOpen className="h-3 w-3" />
-                      save
-                    </button>
-                    <span className="text-muted-foreground/30">·</span>
-                    <button
-                      onClick={handleShareVerse}
-                      className="font-mono text-xs text-muted-foreground/60 hover:text-primary transition-all duration-300 flex items-center gap-2"
-                    >
-                      <Share2 className="h-3 w-3" />
-                      share
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </Section>
-            */}
-
-            {/* Daily Readings - Moved here */}
-            {dailyReadings && (
-              <DailyReadings data={dailyReadings} />
-            )}
-          </div>
-
-          {/* Side Column - Info cards (1/3) */}
-          <div className="space-y-6">
-            {streakDays !== null && (
-              <Section title="Reading status">
-                <Link
-                  href="/profile"
-                  className="group block p-4 rounded-md border border-border/40 bg-secondary/5 hover:bg-secondary/10 hover:border-primary/20 transition-all duration-300 space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-primary/10 text-primary">
-                        <Heart className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-foreground/90">
-                          {streakDays} day streak
-                        </div>
-                        <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-tight">
-                          reading daily
-                        </div>
-                      </div>
-                    </div>
-                    <div className="h-6 w-6 rounded-full border border-border/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-xs">→</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    {[...Array(7)].map((_, i) => (
-                      <div
-                        key={i}
-                        className={cn(
-                          "h-1 flex-1 rounded-full",
-                          i < (streakDays % 7 || (streakDays > 0 ? 7 : 0)) ? 'bg-primary/60' : 'bg-border/30'
-                        )}
-                      />
-                    ))}
-                  </div>
-                </Link>
-              </Section>
-            )}
-
-            {continueReading && (
-              <Section title="Continue Reading">
-                <Link
-                  href={`/read/${encodeURIComponent(continueReading.book)}/${continueReading.chapter}`}
-                  className="group flex flex-col gap-2 p-4 rounded-md border border-border/40 bg-secondary/5 hover:bg-secondary/10 hover:border-primary/20 transition-all duration-300"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-primary/10 text-primary">
-                        <BookOpen className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-foreground/90">
-                          {continueReading.book} {continueReading.chapter}
-                        </div>
-                        <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-tight">
-                          resume reading
-                        </div>
-                      </div>
-                    </div>
-                    <div className="h-6 w-6 rounded-full border border-border/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-xs">→</span>
-                    </div>
-                  </div>
-                </Link>
-              </Section>
-            )}
-          </div>
+        <div className="w-full">
+          {dailyReadings && (
+            <DailyReadings data={dailyReadings} />
+          )}
         </div>
       </motion.div>
 

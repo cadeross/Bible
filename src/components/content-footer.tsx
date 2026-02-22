@@ -10,7 +10,6 @@ const footerLinks = [
     { name: "contact", href: "/contact" },
     { name: "about", href: "/about" },
     { name: "how to", href: "/how-to" },
-    { name: "features", href: "/features" },
 ]
 
 export function ContentFooter() {
