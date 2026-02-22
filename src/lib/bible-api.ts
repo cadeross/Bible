@@ -4,6 +4,7 @@ export interface BibleVerse {
     chapter: number;
     verse: number;
     text: string;
+    heading?: string;
 }
 
 export interface BibleChapter {
@@ -144,20 +145,42 @@ export async function getChapter(book: string, chapter: number, translation: str
         let match;
         let lastIndex = 0;
         let lastVerse: BibleVerse | null = null;
+        let pendingHeading: string | undefined = undefined;
 
         // Helper to strip HTML tags from text
         const stripHtml = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+        // OSIS heading regex: matches <p class="s">, <div class="s1">, <h3>, <h2>, etc.
+        const headingRegex = /<(?:p|div|span)[^>]*class=["'](?:[^"']*\s+)?s\d*(?:\s+[^"']*)?["'][^>]*>(.*?)<\/(?:p|div|span)>|<h[2-4][^>]*>(.*?)<\/h[2-4]>/gi;
 
         while ((match = verseTagRegex.exec(data.content)) !== null) {
             // Found a verse start
             const [fullTag, numStr] = match;
             const currentIndex = match.index;
 
+            let rawText = data.content.substring(lastIndex, currentIndex);
+
+            // Look for headings in the gap before this verse
+            let currentHeading: string | undefined = undefined;
+            const hMatches = [...rawText.matchAll(headingRegex)];
+            if (hMatches.length > 0) {
+                // Get the last heading in the gap to assign to the new verse
+                const lastMatch = hMatches[hMatches.length - 1];
+                currentHeading = stripHtml(lastMatch[1] || lastMatch[2] || "").trim();
+
+                // Remove the headings from rawText so they don't bleed into the previous verse's text
+                rawText = rawText.replace(headingRegex, ' ');
+            }
+
             // If we have a previous verse, its text ends here
             if (lastVerse) {
-                const rawText = data.content.substring(lastIndex, currentIndex);
                 lastVerse.text = stripHtml(rawText);
                 verses.push(lastVerse);
+            } else {
+                // If a heading was found before the very first verse
+                if (currentHeading) {
+                    pendingHeading = currentHeading;
+                }
             }
 
             // Start new verse
@@ -165,9 +188,11 @@ export async function getChapter(book: string, chapter: number, translation: str
                 book_id: bookId,
                 book_name: book,
                 chapter: chapter,
-                verse: parseInt(numStr), // Use the number inside the tag
-                text: "" // Will be filled in next iteration or end of loop
+                verse: parseInt(numStr),
+                text: "",
+                heading: currentHeading || pendingHeading
             };
+            pendingHeading = undefined;
 
             // Update lastIndex to be AFTER this tag
             lastIndex = currentIndex + fullTag.length;

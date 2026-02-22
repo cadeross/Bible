@@ -11,6 +11,7 @@ export interface ReadingPreferences {
     lineHeight: number
     showVerseNumbers: boolean
     redLetters: boolean
+    showTitles: boolean
     defaultHighlightColor: string
     palette: PaletteType
     bibleVersion: string
@@ -23,6 +24,7 @@ interface ReadingPreferencesContextType extends ReadingPreferences {
     setLineHeight: (height: number) => void
     setShowVerseNumbers: (show: boolean) => void
     setRedLetters: (show: boolean) => void
+    setShowTitles: (show: boolean) => void
     setDefaultHighlightColor: (color: string) => void
     setPalette: (palette: PaletteType) => void
     setBibleVersion: (version: string) => void
@@ -35,6 +37,7 @@ const defaultPreferences: ReadingPreferences = {
     lineHeight: 1.6,
     showVerseNumbers: true,
     redLetters: true,
+    showTitles: true,
     defaultHighlightColor: "yellow",
     palette: "standard",
     bibleVersion: "40adb70626acff3f-01", // RSVCE
@@ -89,6 +92,7 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
     const setLineHeight = (lineHeight: number) => setPreferences((prev) => ({ ...prev, lineHeight }))
     const setShowVerseNumbers = (showVerseNumbers: boolean) => setPreferences((prev) => ({ ...prev, showVerseNumbers }))
     const setRedLetters = (redLetters: boolean) => setPreferences((prev) => ({ ...prev, redLetters }))
+    const setShowTitles = (showTitles: boolean) => setPreferences((prev) => ({ ...prev, showTitles }))
     const setDefaultHighlightColor = (defaultHighlightColor: string) => setPreferences((prev) => ({ ...prev, defaultHighlightColor }))
     const setPalette = (palette: PaletteType) => setPreferences((prev) => ({ ...prev, palette }))
     const setBibleVersion = (bibleVersion: string) => setPreferences((prev) => ({ ...prev, bibleVersion }))
@@ -102,6 +106,7 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
         setLineHeight,
         setShowVerseNumbers,
         setRedLetters,
+        setShowTitles,
         setDefaultHighlightColor,
         setPalette,
         setBibleVersion,

@@ -4,7 +4,7 @@ import { useTheme } from "next-themes"
 import { useReadingPreferences, FontType, PaletteType } from "@/contexts/reading-preferences"
 import { cn } from "@/lib/utils"
 // Settings page is preferences only for now.
-import { Monitor, Moon, Sun, Type, Hash, Palette, User, Settings as SettingsIcon, PenTool, RotateCcw, Languages } from "lucide-react"
+import { Monitor, Moon, Sun, Type, Hash, Palette, User, Settings as SettingsIcon, PenTool, RotateCcw, Languages, Heading } from "lucide-react"
 import Link from "next/link"
 import { QuickSelector } from "@/components/reading/quick-selector"
 import { TRANSLATIONS } from "@/lib/bible-api"
@@ -34,6 +34,8 @@ export default function SettingsPage() {
         setShowVerseNumbers,
         redLetters,
         setRedLetters,
+        showTitles,
+        setShowTitles,
         defaultHighlightColor,
         setDefaultHighlightColor,
         palette,
@@ -374,6 +376,15 @@ export default function SettingsPage() {
                             onClick={() => setRedLetters(!redLetters)}
                             label={redLetters ? "on" : "off"}
                             icon={Palette}
+                        />
+                    </SettingRow>
+
+                    <SettingRow label="Section Titles" description="show or hide section headings">
+                        <Toggle
+                            active={showTitles}
+                            onClick={() => setShowTitles(!showTitles)}
+                            label={showTitles ? "visible" : "hidden"}
+                            icon={Heading}
                         />
                     </SettingRow>
 

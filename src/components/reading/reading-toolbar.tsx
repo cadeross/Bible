@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { BOOK_LIST, TRANSLATIONS } from "@/lib/bible-api"
 import { BIBLE_BOOKS } from "@/lib/bible-data"
-import { Book, Languages, Type, Hash, Palette, ChevronLeft, ChevronRight } from "lucide-react"
+import { Book, Languages, Type, Hash, Palette, ChevronLeft, ChevronRight, Heading } from "lucide-react"
 import { motion } from "framer-motion"
 import { QuickSelector } from "./quick-selector"
 
@@ -93,6 +93,8 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
         setShowVerseNumbers,
         redLetters,
         setRedLetters,
+        showTitles,
+        setShowTitles,
         setBibleVersion,
     } = useReadingPreferences()
 
@@ -239,6 +241,18 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                     >
                         <Palette className="h-3 w-3" />
                         <span>red letters</span>
+                    </button>
+
+                    <button
+                        suppressHydrationWarning
+                        onClick={() => setShowTitles(!showTitles)}
+                        className={cn(
+                            "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer",
+                            showTitles && isLoaded ? "text-primary" : "text-muted-foreground/50"
+                        )}
+                    >
+                        <Heading className="h-3 w-3" />
+                        <span>titles</span>
                     </button>
                 </div>
 

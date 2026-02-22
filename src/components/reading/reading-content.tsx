@@ -26,7 +26,7 @@ const HIGHLIGHT_COLORS = [
 ]
 
 export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [], mode = 'default' }: ReadingContentProps) {
-    const { isLoaded, fontSize, fontFamily, lineHeight, showVerseNumbers, redLetters, defaultHighlightColor } = useReadingPreferences()
+    const { isLoaded, fontSize, fontFamily, lineHeight, showVerseNumbers, redLetters, showTitles, defaultHighlightColor } = useReadingPreferences()
     const [highlights, setHighlights] = React.useState<Highlight[]>([])
 
     // Track which verses are being highlighted from share link (for pulse animation)
@@ -613,6 +613,17 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
                                 return (
                                     <React.Fragment key={verse.verse}>
+                                        {verse.heading && (isLoaded ? showTitles : true) && (
+                                            <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                className="w-full mt-10 mb-4 flex justify-center"
+                                            >
+                                                <h3 className="text-lg md:text-xl font-bold font-sans text-foreground/90 tracking-tight leading-tight text-center max-w-[80%]">
+                                                    {verse.heading}
+                                                </h3>
+                                            </motion.div>
+                                        )}
                                         <motion.span
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
