@@ -287,54 +287,8 @@ export default function ProfilePage() {
     }
 
     if (!user) {
-        return (
-            <div className="flex min-h-[85vh] items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
-                <div className="w-full max-w-4xl grid md:grid-cols-2 gap-12 items-center">
-
-                    {/* Marketing / Info Side */}
-                    <div className="space-y-8 text-left order-2 md:order-1">
-                        <div className="space-y-2">
-                            <h1 className="text-4xl font-mono font-bold tracking-tight text-primary">account</h1>
-                            <p className="text-muted-foreground font-mono text-sm max-w-md leading-relaxed">
-                                sign in to access cloud features and save your reading progress.
-                            </p>
-                        </div>
-
-                        <div className="space-y-6">
-                            {[
-                                { icon: Cloud, label: "cloud sync", desc: "access highlights & wisdom across all devices" },
-                                { icon: Activity, label: "reading stats", desc: "track words read, chapters completed, and streaks" },
-                                { icon: Palette, label: "customization", desc: "persist themes and reading preferences" }
-                            ].map((item, i) => (
-                                <div key={i} className="flex gap-4 group">
-                                    <div className="h-10 w-10 shrink-0 rounded-md bg-secondary/20 flex items-center justify-center border border-border/50 group-hover:border-primary/50 transition-colors">
-                                        <item.icon className="h-4 w-4 text-primary" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="font-mono text-xs font-bold uppercase tracking-widest text-foreground">{item.label}</div>
-                                        <div className="font-mono text-xs text-muted-foreground">{item.desc}</div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="pt-4 border-t border-border/40">
-                            <div className="flex gap-8 text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                                <span>v1.0.0</span>
-                                <span>secure</span>
-                                <span>privacy focused</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Auth Form Side */}
-                    <div className="order-1 md:order-2 bg-secondary/5 border border-border/50 rounded-lg p-6 md:p-8 backdrop-blur-sm relative overflow-hidden">
-                        <AuthTabs onSuccess={() => router.refresh()} />
-                    </div>
-
-                </div>
-            </div>
-        );
+        router.push("/auth/login");
+        return <Loading />;
     }
 
     return (

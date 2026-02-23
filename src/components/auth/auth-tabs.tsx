@@ -98,54 +98,52 @@ export function AuthTabs({ onSuccess, showHomeLink = false }: { onSuccess?: () =
 
     return (
         <div className="w-full max-w-[360px] mx-auto font-mono">
-            <div className="space-y-6">
-                <div className="space-y-2">
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-                        account
-                    </div>
-                    <h2 className="text-lg font-bold tracking-tight">continue here</h2>
-                    <p className="text-xs text-muted-foreground">we’ll create an account if you’re new</p>
-                </div>
-                <form onSubmit={handleContinue} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="email" className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div>
+                <form onSubmit={handleContinue} className="space-y-6">
+                    <div className="space-y-1">
+                        <Label htmlFor="email" className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70 font-mono">
                             email
                         </Label>
-                        <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/60" />
-                            <Input
+                        <div className="relative group">
+                            <Mail className="absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary/60 transition-colors" />
+                            <input
                                 id="email"
                                 type="email"
                                 placeholder="name@email.com"
                                 required
+                                autoComplete="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="pl-9 bg-secondary/10 border border-border/60 focus-visible:ring-1 focus-visible:ring-primary/40 text-sm"
+                                className="w-full pl-6 pr-0 py-2.5 bg-transparent border-0 border-b border-border/50 font-mono text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/60 transition-colors"
                             />
                         </div>
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="password" className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <div className="space-y-1">
+                        <Label htmlFor="password" className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70 font-mono">
                             password
                         </Label>
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/60" />
-                            <Input
+                        <div className="relative group">
+                            <Lock className="absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary/60 transition-colors" />
+                            <input
                                 id="password"
                                 type="password"
                                 placeholder="••••••••"
                                 required
+                                autoComplete="current-password"
                                 minLength={6}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="pl-9 bg-secondary/10 border border-border/60 focus-visible:ring-1 focus-visible:ring-primary/40 text-sm"
+                                className="w-full pl-6 pr-0 py-2.5 bg-transparent border-0 border-b border-border/50 font-mono text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/60 transition-colors"
                             />
                         </div>
-                        <p className="text-[10px] text-muted-foreground/60">minimum 6 characters</p>
+                        <p className="text-[10px] text-muted-foreground/40 pt-1">minimum 6 characters</p>
                     </div>
-                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2 text-xs font-mono uppercase tracking-wider" type="submit" disabled={loading}>
-                        {loading ? "checking..." : "continue"} <ArrowRight className="h-4 w-4" />
+                    <Button
+                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2 text-xs font-mono uppercase tracking-[0.2em] h-11 rounded-md transition-all duration-200 cursor-pointer"
+                        type="submit"
+                        disabled={loading}
+                    >
+                        {loading ? "checking..." : "continue"} <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
                 </form>
             </div>
