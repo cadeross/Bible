@@ -40,7 +40,7 @@ const defaultPreferences: ReadingPreferences = {
     showTitles: true,
     defaultHighlightColor: "yellow",
     palette: "standard",
-    bibleVersion: "40adb70626acff3f-01", // RSVCE
+    bibleVersion: "nrsvce",
 }
 
 const ReadingPreferencesContext = createContext<ReadingPreferencesContextType | undefined>(undefined)
@@ -65,7 +65,7 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
 
                     // Default bibleVersion if missing
                     if (!parsed.bibleVersion) {
-                        parsed.bibleVersion = "40adb70626acff3f-01"; // RSVCE
+                        parsed.bibleVersion = "nrsvce";
                     }
 
                     setPreferences({ ...defaultPreferences, ...parsed })

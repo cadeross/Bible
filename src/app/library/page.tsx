@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAllHighlights, getAllWisdom, Highlight, SavedWisdom } from "@/lib/persistence";
-import { PenTool, ArrowRight, BookOpen, Heart, Quote, StickyNote, Share2, Trash2 } from "lucide-react";
+import { PenTool, ArrowRight, BookOpen, Heart, Quote, StickyNote, Share2, Trash2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NoteDialog } from "@/components/reading/note-dialog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -121,7 +121,7 @@ export default function LibraryPage() {
             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     }, [rawHighlights])
 
-    const [activeTab, setActiveTab] = useState<'highlights' | 'wisdom' | 'notes'>('highlights');
+    const [activeTab, setActiveTab] = useState<'highlights' | 'notes'>('highlights');
     const router = useRouter()
 
     // Note Editing State
@@ -279,7 +279,6 @@ export default function LibraryPage() {
                 <div className="flex p-1 border border-border/60 rounded-lg mt-2">
                     {[
                         { id: 'highlights', count: groupedHighlights.length, icon: PenTool },
-                        { id: 'wisdom', count: wisdom.length, icon: Heart },
                         { id: 'notes', count: notes.length, icon: StickyNote }
                     ].map((tab) => (
                         <button
@@ -381,7 +380,7 @@ export default function LibraryPage() {
                                     </div>
                                 )}
                             </motion.div>
-                        ) : activeTab === 'notes' ? (
+                        ) : (
                             <motion.div
                                 key="notes"
                                 initial={{ opacity: 0, y: 10 }}
@@ -394,121 +393,52 @@ export default function LibraryPage() {
                                     <div className="text-center py-12 text-muted-foreground italic font-mono text-sm">no notes yet.</div>
                                 ) : (
                                     <div className="grid grid-cols-1 gap-4">
-                                        {notes.map((note, idx) => (
+                                        {notes.map((note) => (
                                             <div
-                                                key={note.id || idx}
-                                                onClick={() => router.push(`/read/${note.book}/${note.chapter}?translation=dra`)}
-                                                className="group relative block p-4 pb-2 rounded-md bg-secondary/10 border border-border/50 hover:border-primary/20 transition-all cursor-pointer hover:bg-secondary/20"
+                                                key={note.id}
+                                                className="group relative block p-4 rounded-md bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20"
                                             >
-                                                <div className="space-y-3">
+                                                <div className="space-y-2">
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2 font-mono">
+                                                        <Link
+                                                            href={`/read/${note.book}/${note.chapter}?translation=dra`}
+                                                            className="text-[10px] font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2 font-mono"
+                                                        >
                                                             <StickyNote className="h-3 w-3" />
                                                             {note.book} {note.chapter}:{note.verse}
-                                                        </span>
+                                                        </Link>
                                                         <span className="text-[10px] text-muted-foreground/50 font-mono">
                                                             {new Date(note.created_at).toLocaleDateString()}
                                                         </span>
                                                     </div>
-
-                                                    {/* Note Content */}
-                                                    <div className="pl-4 border-l-2 border-primary/20">
-                                                        <p className="text-sm leading-relaxed text-foreground/90 font-serif italic whitespace-pre-wrap">
-                                                            {note.note}
-                                                        </p>
-                                                    </div>
-
-                                                    {/* Verse Context (Dimmed) */}
-                                                    <p className="text-xs text-muted-foreground/60 line-clamp-1 italic font-serif px-1">
+                                                    <p className="text-sm leading-relaxed text-foreground/90 font-serif italic line-clamp-3">
                                                         "{note.content}"
                                                     </p>
-
-                                                    {/* Actions */}
-                                                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="flex items-center justify-end gap-2 pt-2">
                                                         <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation()
-                                                                setNoteToDelete(note)
-                                                            }}
-                                                            className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-md transition-colors"
+                                                            onClick={() => handleEditNote(note)}
+                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-all"
+                                                            title="Edit Note"
+                                                        >
+                                                            <Pencil className="h-3.5 w-3.5" />
+                                                            <span className="sr-only">Edit</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setNoteToDelete(note)}
+                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-all"
                                                             title="Delete Note"
                                                         >
                                                             <Trash2 className="h-3.5 w-3.5" />
+                                                            <span className="sr-only">Delete</span>
                                                         </button>
                                                         <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation()
-                                                                handleShareNote(note)
-                                                            }}
-                                                            className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                                                            onClick={() => handleShareNote(note)}
+                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-all"
                                                             title="Share Note"
                                                         >
                                                             <Share2 className="h-3.5 w-3.5" />
                                                             <span className="sr-only">Share</span>
                                                         </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation()
-                                                                handleEditNote(note)
-                                                            }}
-                                                            className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                                                            title="Edit Note"
-                                                        >
-                                                            <PenTool className="h-3.5 w-3.5" />
-                                                            <span className="sr-only">Edit</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="wisdom"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                                className="space-y-6"
-                            >
-                                {wisdom.length === 0 ? (
-                                    <div className="text-center py-12 text-muted-foreground italic font-mono text-sm">no saved wisdom yet.</div>
-                                ) : (
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {wisdom.map((item, idx) => (
-                                            <div
-                                                key={item.id || idx}
-                                                className="group relative block p-4 rounded-md bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20"
-                                            >
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2 font-mono">
-                                                            <Quote className="h-3 w-3" /> daily wisdom
-                                                        </span>
-                                                        <span className="text-[10px] text-muted-foreground/50 font-mono">
-                                                            {new Date(item.created_at).toLocaleDateString()}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-sm leading-relaxed text-foreground/90 group-hover:text-foreground transition-colors font-serif italic">
-                                                        "{item.content}"
-                                                    </p>
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="text-right flex-1">
-                                                            <span className="text-[10px] font-mono text-primary/60">
-                                                                — {item.source || "Unknown"}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button
-                                                                onClick={() => handleShareWisdom(item)}
-                                                                className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                                                                title="Share Wisdom"
-                                                            >
-                                                                <Share2 className="h-3.5 w-3.5" />
-                                                            </button>
-                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>

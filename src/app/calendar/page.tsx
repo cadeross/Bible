@@ -498,62 +498,59 @@ export default function CalendarPage() {
             initial="hidden"
             animate="visible"
         >
-            {/* Header */}
-            <motion.div variants={sectionVariants} className="space-y-5 border-b border-border/50 pb-8">
-                {navMode === 'classic' && (
-                    <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60">
-                        <span className="h-px w-8 bg-border" />
-                        <Link href="/" className="hover:text-primary transition-colors">openwrit</Link>
-                        <span className="text-muted-foreground/30">/</span>
-                        <span>liturgical calendar</span>
-                    </div>
-                )}
+            {/* Month Navigation Header */}
+            <motion.div variants={sectionVariants} className="relative flex flex-col items-center justify-center border-b border-border/50 pb-6 mb-8 min-h-[80px] opacity-80 hover:opacity-100 transition-opacity">
+                {/* Previous Button (Left) */}
+                <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                    <button
+                        onClick={goToPrevMonth}
+                        className="p-2 rounded-md hover:bg-muted/40 transition-colors text-muted-foreground/50 hover:text-primary"
+                    >
+                        <ChevronLeft className="h-5 w-5" />
+                    </button>
+                </div>
 
-                {/* Month Navigation */}
-                <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                        <h1 className="text-3xl md:text-5xl font-mono font-bold text-primary tracking-tight">
-                            {MONTH_NAMES[currentMonth - 1]}
-                        </h1>
-                        <div className="flex items-center gap-3 text-xs font-mono text-muted-foreground/60">
-                            <span>{currentYear}</span>
-                            {currentSeason && (
-                                <>
-                                    <span className="text-muted-foreground/30">·</span>
-                                    <span className={cn(
-                                        "flex items-center gap-1.5",
-                                        SEASON_COLORS[currentSeasonKey] || 'text-muted-foreground/60'
-                                    )}>
-                                        <Church className="h-3 w-3" />
-                                        {currentSeason}
-                                    </span>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                        {!isCurrentMonth && (
-                            <button
-                                onClick={goToToday}
-                                className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50 hover:text-primary transition-colors px-3 py-2 rounded-md hover:bg-muted/40"
-                            >
-                                Today
-                            </button>
+                {/* Centered Month/Year Text */}
+                <div className="text-center space-y-2">
+                    <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                        CALENDAR
+                    </h1>
+                    <h2 className="text-3xl md:text-5xl font-mono font-bold text-primary tracking-tight">
+                        {MONTH_NAMES[currentMonth - 1]}
+                    </h2>
+                    <div className="flex items-center justify-center gap-3 text-xs font-mono text-muted-foreground/60">
+                        <span>{currentYear}</span>
+                        {currentSeason && (
+                            <>
+                                <span className="text-muted-foreground/30">·</span>
+                                <span className={cn(
+                                    "flex items-center gap-1.5",
+                                    SEASON_COLORS[currentSeasonKey] || 'text-muted-foreground/60'
+                                )}>
+                                    <Church className="h-3 w-3" />
+                                    {currentSeason}
+                                </span>
+                            </>
                         )}
-                        <button
-                            onClick={goToPrevMonth}
-                            className="p-2 rounded-md hover:bg-muted/40 transition-colors text-muted-foreground/50 hover:text-primary"
-                        >
-                            <ChevronLeft className="h-5 w-5" />
-                        </button>
-                        <button
-                            onClick={goToNextMonth}
-                            className="p-2 rounded-md hover:bg-muted/40 transition-colors text-muted-foreground/50 hover:text-primary"
-                        >
-                            <ChevronRight className="h-5 w-5" />
-                        </button>
                     </div>
+                </div>
+
+                {/* Next Button & Today (Right) */}
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    {!isCurrentMonth && (
+                        <button
+                            onClick={goToToday}
+                            className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50 hover:text-primary transition-colors px-3 py-2 rounded-md hover:bg-muted/40 hidden sm:block"
+                        >
+                            Today
+                        </button>
+                    )}
+                    <button
+                        onClick={goToNextMonth}
+                        className="p-2 rounded-md hover:bg-muted/40 transition-colors text-muted-foreground/50 hover:text-primary"
+                    >
+                        <ChevronRight className="h-5 w-5" />
+                    </button>
                 </div>
             </motion.div>
 
