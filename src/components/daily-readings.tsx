@@ -140,9 +140,9 @@ export function DailyReadings({ data }: DailyReadingsProps) {
     const isFirst = currentIndex === 0
 
     return (
-        <div className="w-full max-w-[720px] mx-auto space-y-8">
+        <div className="w-full max-w-[720px] mx-auto space-y-2">
             {/* Header Row: Centered Progress & Title + Navigation */}
-            <div className="flex items-center justify-between pb-6 border-b border-border/5">
+            <div className="flex items-center justify-between pb-3 border-b border-border/5">
                 {/* Back Button */}
                 <div className="w-24 flex justify-start">
                     <Button

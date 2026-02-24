@@ -446,7 +446,7 @@ export default function ProfilePage() {
                                     tick={{ fill: 'var(--muted-foreground)', fontSize: 10, fontFamily: 'monospace' }}
                                 />
                                 <ChartTooltip content={<ChartTooltipContent />} cursor={{ fill: 'hsl(var(--muted)/0.2)' }} />
-                                <Bar dataKey="minutes" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="minutes" fill="var(--primary)" radius={[1, 1, 0, 0]} />
                             </BarChart>
                         </ChartContainer>
                     </Section>
@@ -484,7 +484,7 @@ export default function ProfilePage() {
                                 <Bar
                                     dataKey="minutes"
                                     fill="var(--primary)"
-                                    radius={[0, 4, 4, 0]}
+                                    radius={[0, 1, 1, 0]}
                                 />
                             </BarChart>
                         </ChartContainer>

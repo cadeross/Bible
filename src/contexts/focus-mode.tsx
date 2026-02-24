@@ -8,7 +8,13 @@ type FocusContextType = {
     setFocusMode: (value: boolean) => void
 }
 
-const FocusContext = createContext<FocusContextType | undefined>(undefined)
+const defaultContext: FocusContextType = {
+    isFocusMode: false,
+    toggleFocusMode: () => { },
+    setFocusMode: () => { }
+}
+
+const FocusContext = createContext<FocusContextType>(defaultContext)
 
 export function FocusProvider({ children }: { children: React.ReactNode }) {
     const [isFocusMode, setIsFocusMode] = useState(false)
@@ -42,9 +48,5 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useFocusMode() {
-    const context = useContext(FocusContext)
-    if (context === undefined) {
-        throw new Error("useFocusMode must be used within a FocusProvider")
-    }
-    return context
+    return useContext(FocusContext)
 }

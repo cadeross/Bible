@@ -1,25 +1,17 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAllHighlights, getAllWisdom, Highlight, SavedWisdom } from "@/lib/persistence";
 import { PenTool, ArrowRight, BookOpen, Heart, Quote, StickyNote, Share2, Trash2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { NoteDialog } from "@/components/reading/note-dialog";
+import { NotePanel } from "@/components/reading/note-dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { BIBLE_BOOKS } from "@/lib/bible-data";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import Loading from "../loading";
+import { useReadingPreferences } from "@/contexts/reading-preferences";
 
 interface GroupedHighlight extends Highlight {
     verseEnd: number;
@@ -66,6 +58,18 @@ export default function LibraryPage() {
 
         fetchData();
     }, []);
+
+    const { fontFamily, isLoaded: preferencesLoaded } = useReadingPreferences();
+    const getFontClass = () => {
+        if (!preferencesLoaded) return "font-serif";
+        switch (fontFamily) {
+            case "sans": return "font-sans";
+            case "mono": return "font-mono";
+            case "pixel": return "font-pixel";
+            case "serif":
+            default: return "font-serif";
+        }
+    };
 
 
 
@@ -126,15 +130,41 @@ export default function LibraryPage() {
 
     // Note Editing State
     const [editingNote, setEditingNote] = useState<Highlight | null>(null)
-    const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false)
-    const [noteToDelete, setNoteToDelete] = useState<Highlight | null>(null)
+    const [isNoteSheetOpen, setIsNoteSheetOpen] = useState(false)
+    const [noteSaveStatus, setNoteSaveStatus] = useState<"idle" | "saving" | "saved">("idle")
+    const noteSaveTimeout = useRef<NodeJS.Timeout | null>(null)
 
     const handleEditNote = (note: Highlight) => {
         setEditingNote(note)
-        setIsNoteDialogOpen(true)
+        setNoteSaveStatus("idle")
+        setIsNoteSheetOpen(true)
     }
 
-    const handleSaveEditedNote = async (content: string) => {
+    const handleNoteContentChange = (content: string) => {
+        if (!editingNote) return
+        setNoteSaveStatus("saving")
+        if (noteSaveTimeout.current) clearTimeout(noteSaveTimeout.current)
+        noteSaveTimeout.current = setTimeout(async () => {
+            const persistence = await import("@/lib/persistence")
+            const noteValue = content.trim().length > 0 ? content : undefined
+
+            // Optimistic Update
+            const updatedHighlights = rawHighlights.map(h => {
+                if (h.id === editingNote.id) {
+                    return { ...h, note: noteValue }
+                }
+                return h
+            })
+            setRawHighlights(updatedHighlights)
+
+            // DB Update
+            const updatedNote = { ...editingNote, note: noteValue }
+            await persistence.saveHighlight(updatedNote)
+            setNoteSaveStatus("saved")
+        }, 600)
+    }
+
+    const handleDeleteNote = async () => {
         if (!editingNote) return
 
         const persistence = await import("@/lib/persistence")
@@ -142,41 +172,17 @@ export default function LibraryPage() {
         // Optimistic Update
         const updatedHighlights = rawHighlights.map(h => {
             if (h.id === editingNote.id) {
-                return { ...h, note: content }
-            }
-            return h
-        })
-        setRawHighlights(updatedHighlights)
-
-        // DB Update
-        const updatedNote = { ...editingNote, note: content }
-        await persistence.saveHighlight(updatedNote)
-
-        setIsNoteDialogOpen(false)
-        setEditingNote(null)
-    }
-
-    const handleDeleteNote = async (noteToDelete?: Highlight) => {
-        const target = noteToDelete || editingNote
-        if (!target) return
-
-        const persistence = await import("@/lib/persistence")
-
-        // Optimistic Update
-        const updatedHighlights = rawHighlights.map(h => {
-            if (h.id === target.id) {
                 return { ...h, note: undefined }
             }
             return h
         })
         setRawHighlights(updatedHighlights)
 
-        const updatedNote = { ...target, note: undefined }
+        const updatedNote = { ...editingNote, note: undefined }
         await persistence.saveHighlight(updatedNote)
 
-        setIsNoteDialogOpen(false)
+        setIsNoteSheetOpen(false)
         setEditingNote(null)
-        setNoteToDelete(null)
     }
 
     const handleShareNote = async (h: Highlight) => {
@@ -255,14 +261,27 @@ export default function LibraryPage() {
             transition={{ type: "spring" as const, stiffness: 400, damping: 25 }}
             className="w-full max-w-[720px] mx-auto px-6 py-12 space-y-12"
         >
-            <NoteDialog
-                isOpen={isNoteDialogOpen}
-                onOpenChange={setIsNoteDialogOpen}
-                verseRef={editingNote ? `${editingNote.book} ${editingNote.chapter}:${editingNote.verse}` : ""}
-                initialContent={editingNote?.note || ""}
-                onSave={handleSaveEditedNote}
-                onDelete={handleDeleteNote}
-            />
+            <Dialog open={isNoteSheetOpen} onOpenChange={setIsNoteSheetOpen}>
+                <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden bg-background">
+                    <DialogTitle className="sr-only">
+                        Note for {editingNote ? `${editingNote.book} ${editingNote.chapter}:${editingNote.verse}` : ""}
+                    </DialogTitle>
+                    {editingNote && (
+                        <div className="p-6 md:p-8">
+                            <NotePanel
+                                verseLabel={`${editingNote.book} ${editingNote.chapter}:${editingNote.verse}`}
+                                versePreview={editingNote.content}
+                                highlightColor={editingNote.color}
+                                initialContent={editingNote.note || ""}
+                                saveStatus={noteSaveStatus}
+                                fontClass={getFontClass()}
+                                onContentChange={handleNoteContentChange}
+                                onDelete={handleDeleteNote}
+                            />
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
 
             {/* Header */}
             <div className="flex flex-col items-center text-center gap-4 opacity-70 hover:opacity-100 transition-opacity mb-12">
@@ -286,14 +305,14 @@ export default function LibraryPage() {
                             onClick={() => setActiveTab(tab.id as any)}
                             title={`${tab.id} (${tab.count})`}
                             className={cn(
-                                "relative px-3 py-1.5 rounded-sm transition-colors flex items-center justify-center z-10",
+                                "relative px-3 py-1.5 rounded-[1px] transition-colors flex items-center justify-center z-10",
                                 activeTab === tab.id ? "text-primary" : "text-muted-foreground hover:text-foreground/80"
                             )}
                         >
                             {activeTab === tab.id && (
                                 <motion.div
                                     layoutId="activeTab"
-                                    className="absolute inset-0 bg-primary/10 rounded-sm -z-10"
+                                    className="absolute inset-0 bg-primary/10 rounded-[1px] -z-10"
                                     transition={{ type: "spring", bounce: 0.1, duration: 0.5 }}
                                 />
                             )}
@@ -396,43 +415,30 @@ export default function LibraryPage() {
                                         {notes.map((note) => (
                                             <div
                                                 key={note.id}
-                                                className="group relative block p-4 rounded-[2px] bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20"
+                                                className="group relative block p-4 rounded-[2px] bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20 cursor-pointer"
+                                                onClick={() => handleEditNote(note)}
                                             >
                                                 <div className="space-y-2">
                                                     <div className="flex items-center justify-between">
-                                                        <Link
-                                                            href={`/read/${note.book}/${note.chapter}?translation=dra`}
+                                                        <span
                                                             className="text-[10px] font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2 font-mono"
                                                         >
                                                             <StickyNote className="h-3 w-3" />
                                                             {note.book} {note.chapter}:{note.verse}
-                                                        </Link>
+                                                        </span>
                                                         <span className="text-[10px] text-muted-foreground/50 font-mono">
                                                             {new Date(note.created_at).toLocaleDateString()}
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm leading-relaxed text-foreground/90 font-serif italic line-clamp-3">
+                                                    <p className="text-sm leading-relaxed text-foreground/90 font-sans line-clamp-3">
+                                                        {note.note}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground/40 font-serif italic line-clamp-1">
                                                         "{note.content}"
                                                     </p>
-                                                    <div className="flex items-center justify-end gap-2 pt-2">
+                                                    <div className="flex items-center justify-end gap-2 pt-1">
                                                         <button
-                                                            onClick={() => handleEditNote(note)}
-                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-[2px] text-muted-foreground hover:text-foreground transition-all"
-                                                            title="Edit Note"
-                                                        >
-                                                            <Pencil className="h-3.5 w-3.5" />
-                                                            <span className="sr-only">Edit</span>
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setNoteToDelete(note)}
-                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-[2px] text-muted-foreground hover:text-foreground transition-all"
-                                                            title="Delete Note"
-                                                        >
-                                                            <Trash2 className="h-3.5 w-3.5" />
-                                                            <span className="sr-only">Delete</span>
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleShareNote(note)}
+                                                            onClick={(e) => { e.stopPropagation(); handleShareNote(note) }}
                                                             className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-[2px] text-muted-foreground hover:text-foreground transition-all"
                                                             title="Share Note"
                                                         >
@@ -451,25 +457,7 @@ export default function LibraryPage() {
                 </div>
             </div>
 
-            <AlertDialog open={!!noteToDelete} onOpenChange={(open) => !open && setNoteToDelete(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Note</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete this note? This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={() => handleDeleteNote(noteToDelete!)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+
         </motion.div>
     );
 }

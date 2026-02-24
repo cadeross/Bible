@@ -21,7 +21,7 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <SheetPrimitive.Overlay
         className={cn(
-            "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-all data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:duration-500 data-[state=closed]:duration-500",
             className
         )}
         {...props}
@@ -63,16 +63,16 @@ const SheetContent = React.forwardRef<
                 data-side={side}
                 className={cn(
                     sheetVariants({ side }),
-                    // Slide animation classes
-                    "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+                    // Elegant slide animation
+                    "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
                     // Right side transforms
-                    side === "right" && "data-[state=closed]:translate-x-full data-[state=open]:translate-x-0",
+                    side === "right" && "data-[state=closed]:translate-x-full data-[state=open]:translate-x-0 data-[state=closed]:opacity-80 data-[state=open]:opacity-100",
                     // Left side transforms  
-                    side === "left" && "data-[state=closed]:-translate-x-full data-[state=open]:translate-x-0",
+                    side === "left" && "data-[state=closed]:-translate-x-full data-[state=open]:translate-x-0 data-[state=closed]:opacity-80 data-[state=open]:opacity-100",
                     // Top side transforms
-                    side === "top" && "data-[state=closed]:-translate-y-full data-[state=open]:translate-y-0",
+                    side === "top" && "data-[state=closed]:-translate-y-full data-[state=open]:translate-y-0 data-[state=closed]:opacity-80 data-[state=open]:opacity-100",
                     // Bottom side transforms
-                    side === "bottom" && "data-[state=closed]:translate-y-full data-[state=open]:translate-y-0",
+                    side === "bottom" && "data-[state=closed]:translate-y-full data-[state=open]:translate-y-0 data-[state=closed]:opacity-80 data-[state=open]:opacity-100",
                     className
                 )}
                 {...props}

@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils"
 const footerLinks = [
     { name: "x.com", href: "https://x.com/cadeross", external: true },
     { name: "contact", href: "/contact" },
-    { name: "about", href: "/about" },
     { name: "how to", href: "/how-to" },
 ]
 

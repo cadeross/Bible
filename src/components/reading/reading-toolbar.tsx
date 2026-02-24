@@ -224,7 +224,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                         onClick={() => setShowVerseNumbers(!showVerseNumbers)}
                         className={cn(
                             "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer",
-                            showVerseNumbers && isLoaded ? "text-primary" : "text-muted-foreground/50"
+                            (!isLoaded || showVerseNumbers) ? "text-primary" : "text-muted-foreground/50"
                         )}
                     >
                         <Hash className="h-3 w-3" />
@@ -236,7 +236,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                         onClick={() => setRedLetters(!redLetters)}
                         className={cn(
                             "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer",
-                            redLetters && isLoaded ? "text-red-500" : "text-muted-foreground/50"
+                            (!isLoaded || redLetters) ? "text-red-500" : "text-muted-foreground/50"
                         )}
                     >
                         <Palette className="h-3 w-3" />
@@ -248,7 +248,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                         onClick={() => setShowTitles(!showTitles)}
                         className={cn(
                             "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer",
-                            showTitles && isLoaded ? "text-primary" : "text-muted-foreground/50"
+                            isLoaded && showTitles ? "text-primary" : "text-muted-foreground/50"
                         )}
                     >
                         <Heading className="h-3 w-3" />

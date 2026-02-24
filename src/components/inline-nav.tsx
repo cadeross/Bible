@@ -16,7 +16,6 @@ const BREADCRUMBS: Record<string, string> = {
     "/calendar": "liturgical calendar",
     "/profile": "profile",
     "/settings": "settings",
-    "/about": "about",
     "/how-to": "how to",
     "/contact": "contact",
     "/features": "features",

@@ -192,11 +192,44 @@
 
 /* Overlay fade animation */
 [data-radix-dialog-overlay][data-state="open"] {
-  animation: fadeIn 200ms ease-out;
+  animation: fadeIn 400ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 [data-radix-dialog-overlay][data-state="closed"] {
-  animation: fadeOut 150ms ease-in;
+  animation: fadeOut 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Dialog content — elegant entrance/exit */
+@keyframes dialogContentIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes dialogContentOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+}
+
+[data-radix-dialog-content][data-state="open"] {
+  animation: dialogContentIn 450ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-radix-dialog-content][data-state="closed"] {
+  animation: dialogContentOut 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Animation utility classes */

@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { isRedLetterVerse } from "@/lib/red-letter-data"
 import { Highlight } from "@/lib/persistence"
 import { Trash2, StickyNote, Share2 } from "lucide-react"
-import { Sheet, SheetContent, SheetClose, SheetTitle } from "@/components/ui/sheet"
+import { NotePanel } from "@/components/reading/note-dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 interface ReadingContentProps {
     chapter: BibleChapter
@@ -289,6 +290,12 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
     const [noteStatus, setNoteStatus] = React.useState<"idle" | "saving" | "saved">("idle")
     const noteSaveTimeout = React.useRef<NodeJS.Timeout | null>(null)
 
+    const selectedHighlightColor = React.useMemo(() => {
+        if (selectedVerses.length === 0) return undefined
+        const h = highlights.find(h => h.verse === selectedVerses[0])
+        return h?.color
+    }, [selectedVerses, highlights])
+
     // ... (existing handlers)
 
     const handleOpenNote = () => {
@@ -432,6 +439,27 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
         }
     }
 
+    const fontFamilyStyle = (() => {
+        const fc = isLoaded ? fontFamily : "serif"
+        switch (fc) {
+            case "sans": return "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif"
+            case "mono": return "var(--font-geist-mono), ui-monospace, monospace"
+            case "pixel": return "var(--font-nunito), ui-rounded, sans-serif"
+            case "serif":
+            default: return "Merriweather, Georgia, ui-serif, serif"
+        }
+    })()
+
+    // Imperatively apply styles after preferences load — React's suppressHydrationWarning
+    // can cause the initial server-rendered style to persist through reconciliation
+    React.useEffect(() => {
+        if (containerRef.current && isLoaded) {
+            containerRef.current.style.fontFamily = fontFamilyStyle
+            containerRef.current.style.fontSize = `${fontSize}px`
+            containerRef.current.style.lineHeight = `${lineHeight}`
+        }
+    }, [isLoaded, fontFamily, fontSize, lineHeight, fontFamilyStyle])
+
     return (
         <div
             suppressHydrationWarning
@@ -439,14 +467,14 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
             className={cn(
                 "w-full transition-all duration-300 ease-in-out relative",
                 mode === 'default' ? "max-w-[720px] mx-auto px-6 py-8" : "px-0 py-2",
-                getFontClass()
             )}
             style={{
                 fontSize: `${isLoaded ? fontSize : 18}px`,
-                lineHeight: isLoaded ? lineHeight : 1.6
+                lineHeight: isLoaded ? lineHeight : 1.6,
+                fontFamily: fontFamilyStyle,
             }}
         >
-            <Sheet
+            <Dialog
                 open={noteOpen}
                 onOpenChange={(open) => {
                     if (!open && noteTouched) {
@@ -455,55 +483,25 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                     setNoteOpen(open)
                 }}
             >
-                <SheetContent side="right" className="sm:max-w-md space-y-6">
-                    <SheetTitle className="sr-only">Note for {verseLabel}</SheetTitle>
-                    <div className="space-y-2">
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-                            Note
-                        </p>
-                        <h2 className="text-lg font-mono text-foreground">
-                            {verseLabel}
-                        </h2>
-                        {versePreview && (
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                {versePreview}
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="rounded-[2px] border border-border/50 bg-secondary/10 p-3">
-                        <textarea
-                            value={noteContent}
-                            onChange={(e) => {
-                                setNoteContent(e.target.value)
+                <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden bg-background">
+                    <DialogTitle className="sr-only">Note for {verseLabel}</DialogTitle>
+                    <div className="p-6 md:p-8">
+                        <NotePanel
+                            verseLabel={verseLabel}
+                            versePreview={versePreview}
+                            highlightColor={selectedHighlightColor}
+                            initialContent={getInitialNoteContent()}
+                            saveStatus={noteStatus}
+                            fontClass={getFontClass()}
+                            onContentChange={(val) => {
+                                setNoteContent(val)
                                 setNoteTouched(true)
                             }}
-                            placeholder="Write a note…"
-                            className="w-full h-48 bg-transparent border-0 resize-none focus:ring-0 focus:outline-none p-0 text-sm text-foreground placeholder:text-muted-foreground/50 font-sans leading-relaxed"
-                            spellCheck={false}
+                            onDelete={handleDeleteNote}
                         />
                     </div>
-
-                    <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
-                        <span>
-                            {noteStatus === "saving" ? "saving…" : noteStatus === "saved" ? "saved" : " "}
-                        </span>
-                        <div className="flex items-center gap-3">
-                            {noteContent.trim().length > 0 && (
-                                <button
-                                    onClick={handleDeleteNote}
-                                    className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                                >
-                                    delete
-                                </button>
-                            )}
-                            <SheetClose className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                                done
-                            </SheetClose>
-                        </div>
-                    </div>
-                </SheetContent>
-            </Sheet>
+                </DialogContent>
+            </Dialog>
 
             {/* Elegant Floating Highlight Menu */}
             <AnimatePresence>
@@ -613,7 +611,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
                                 return (
                                     <React.Fragment key={verse.verse}>
-                                        {verse.heading && (isLoaded ? showTitles : true) && (
+                                        {verse.heading && isLoaded && showTitles && (
                                             <motion.div
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
@@ -648,17 +646,18 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                             onTouchStart={(e) => handleTouchStart(verse.verse, e)}
                                             onTouchEnd={handleTouchEnd}
                                         >
-                                            {(isLoaded ? showVerseNumbers : true) && (
-                                                <sup className="mr-1 text-[0.6em] text-muted-foreground/50 select-none font-mono flex items-center gap-0.5 inline-flex">
-                                                    <span>{verse.verse}</span>
-                                                    {highlight?.note && (
-                                                        <StickyNote className="h-2 w-2 text-primary/70" />
-                                                    )}
-                                                </sup>
-                                            )}
+                                            <sup className={cn(
+                                                "mr-1 text-[0.6em] text-muted-foreground/50 select-none font-mono inline-flex items-center gap-0.5 transition-opacity",
+                                                isLoaded && !showVerseNumbers && "opacity-0 w-0 mr-0 overflow-hidden"
+                                            )}>
+                                                <span>{verse.verse}</span>
+                                                {highlight?.note && (
+                                                    <StickyNote className="h-2 w-2 text-primary/70" />
+                                                )}
+                                            </sup>
                                             <span className={cn(
                                                 "transition-colors duration-200",
-                                                (isLoaded ? redLetters : true) && isRedLetterVerse(bookName, chapterNum, verse.verse) && "text-red-700 dark:text-red-400"
+                                                isLoaded && redLetters && isRedLetterVerse(bookName, chapterNum, verse.verse) && "text-red-700 dark:text-red-400"
                                             )}>
                                                 {verse.text}
                                             </span>

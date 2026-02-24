@@ -124,7 +124,7 @@ export function CustomHeatmap({ data }: CustomHeatmapProps) {
                             <TooltipTrigger asChild>
                                 <div
                                     className={cn(
-                                        "w-[10px] h-[10px] rounded-[2px] transition-all duration-200 cursor-default",
+                                        "w-[10px] h-[10px] rounded-[1px] transition-all duration-200 cursor-default",
                                         "hover:ring-1 hover:ring-ring hover:ring-offset-1 hover:ring-offset-background",
                                         day.isFuture ? "opacity-0 pointer-events-none" : getColor(day.minutes)
                                     )}
@@ -158,11 +158,11 @@ export function CustomHeatmap({ data }: CustomHeatmapProps) {
             <div className="flex justify-end items-center mt-3 text-[10px] text-muted-foreground font-mono">
                 <div className="flex items-center gap-1">
                     <span className="mr-1">Less</span>
-                    <div className="w-[10px] h-[10px] rounded-[2px] bg-primary/[0.02]" />
-                    <div className="w-[10px] h-[10px] rounded-[2px] bg-primary/20" />
-                    <div className="w-[10px] h-[10px] rounded-[2px] bg-primary/40" />
-                    <div className="w-[10px] h-[10px] rounded-[2px] bg-primary/70" />
-                    <div className="w-[10px] h-[10px] rounded-[2px] bg-primary" />
+                    <div className="w-[10px] h-[10px] rounded-[1px] bg-primary/[0.02]" />
+                    <div className="w-[10px] h-[10px] rounded-[1px] bg-primary/20" />
+                    <div className="w-[10px] h-[10px] rounded-[1px] bg-primary/40" />
+                    <div className="w-[10px] h-[10px] rounded-[1px] bg-primary/70" />
+                    <div className="w-[10px] h-[10px] rounded-[1px] bg-primary" />
                     <span className="ml-1">More</span>
                 </div>
             </div>

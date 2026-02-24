@@ -94,11 +94,6 @@ export function Footer() {
                     </button>
                 )}
 
-                <Link href="/about" className="flex items-center gap-2 hover:text-primary transition-colors group">
-                    <Info className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-                    <span className="opacity-50 group-hover:opacity-100 transition-opacity pb-px">about</span>
-                </Link>
-
                 <Link href="/how-to" className="flex items-center gap-2 hover:text-primary transition-colors group">
                     <HelpCircle className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
                     <span className="opacity-50 group-hover:opacity-100 transition-opacity pb-px">how to</span>

@@ -313,7 +313,7 @@ export function OnboardingFlow() {
                         </div>
 
                         <StepNav
-                            onBack={handleBack}
+                            onBack={() => router.push('/profile')}
                             onNext={handleNext}
                             nextDisabled={!username || username.length < 3 || !usernameAvailable}
                         />
@@ -336,13 +336,13 @@ export function OnboardingFlow() {
                             subtitle="customize your reading experience — you can always change these later in settings."
                         />
 
-                        <div className="flex flex-col md:flex-row gap-8 items-start">
+                        <div className="flex flex-col md:flex-row gap-8 items-stretch">
                             {/* Left — Options */}
                             <div className="space-y-6 w-full md:w-[300px] md:flex-shrink-0">
 
                                 {/* Mode */}
-                                <div className="space-y-2.5">
-                                    <Label className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70 font-mono">mode</Label>
+                                <div>
+                                    <Label className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70 font-mono mb-3 block">mode</Label>
                                     <div className="grid grid-cols-3 gap-2">
                                         {[
                                             { value: 'system', icon: Monitor, label: 'system' },
@@ -367,8 +367,8 @@ export function OnboardingFlow() {
                                 </div>
 
                                 {/* Palette */}
-                                <div className="space-y-2.5">
-                                    <Label className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70 font-mono">palette</Label>
+                                <div>
+                                    <Label className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70 font-mono mb-3 block">palette</Label>
                                     <div className="grid grid-cols-4 gap-2">
                                         {[
                                             { value: 'standard', label: 'Standard', bg: '#ffffff', fg: '#1a1a1a' },
@@ -405,8 +405,8 @@ export function OnboardingFlow() {
                                 </div>
 
                                 {/* Typeface */}
-                                <div className="space-y-2.5">
-                                    <Label className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70 font-mono">typeface</Label>
+                                <div>
+                                    <Label className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70 font-mono mb-3 block">typeface</Label>
                                     <div className="grid grid-cols-4 gap-2">
                                         {[
                                             { value: 'sans', label: 'Sans', className: 'font-sans' },
@@ -434,12 +434,12 @@ export function OnboardingFlow() {
                             </div>
 
                             {/* Right — Live Preview */}
-                            <div className="flex-1 flex flex-col space-y-2.5 w-full">
-                                <Label className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70 font-mono flex items-center gap-2">
+                            <div className="flex-1 flex flex-col w-full">
+                                <Label className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70 font-mono flex items-center gap-2 mb-3">
                                     preview
                                     <span className="text-muted-foreground/30">• {currentPassage.reference}</span>
                                 </Label>
-                                <div className="p-6 rounded-[2px] border border-border/20 bg-card/30 h-[340px] overflow-y-auto">
+                                <div className="p-6 rounded-[2px] border border-border/20 bg-card/30 flex-1 overflow-y-auto">
                                     <div
                                         className={cn("text-sm leading-[1.9]", getFontClass(fontFamily))}
                                         style={{ fontFamily: fontFamily === 'sans' ? 'var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif' : undefined }}

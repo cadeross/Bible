@@ -1,59 +1,29 @@
 "use client"
 
-import { BookOpen } from "lucide-react"
 import { motion } from "framer-motion"
 
 export default function Loading() {
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-background">
             <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center gap-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="flex items-center gap-1.5"
             >
-                <div className="relative">
-                    {/* Glowing effect behind */}
+                {[0, 1, 2].map((i) => (
                     <motion.div
-                        animate={{
-                            opacity: [0.3, 0.6, 0.3],
-                            scale: [1, 1.2, 1]
-                        }}
+                        key={i}
+                        className="w-1.5 h-1.5 rounded-full bg-foreground/30"
+                        animate={{ opacity: [0.2, 1, 0.2] }}
                         transition={{
-                            duration: 2,
+                            duration: 1.2,
                             repeat: Infinity,
-                            ease: "easeInOut"
+                            ease: "easeInOut",
+                            delay: i * 0.2,
                         }}
-                        className="absolute inset-0 bg-primary/20 blur-xl rounded-[2px]"
                     />
-
-                    {/* Icon */}
-                    <div className="relative z-10 p-4 rounded-[2px] bg-secondary/10 border border-primary/10">
-                        <motion.div
-                            animate={{
-                                strokeOpacity: [0.5, 1, 0.5],
-                            }}
-                            transition={{
-                                duration: 2,
-                                repeat: Infinity,
-                                ease: "easeInOut"
-                            }}
-                        >
-                            <BookOpen className="h-8 w-8 text-primary" />
-                        </motion.div>
-                    </div>
-                </div>
-
-                <motion.p
-                    animate={{ opacity: [0.4, 0.8, 0.4] }}
-                    transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                    }}
-                    className="text-xs font-mono lowercase tracking-widest text-muted-foreground"
-                >
-                    loading...
-                </motion.p>
+                ))}
             </motion.div>
         </div>
     )

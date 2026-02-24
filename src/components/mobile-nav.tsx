@@ -37,13 +37,6 @@ export function MobileNav() {
                                     : "text-muted-foreground hover:text-foreground"
                             )}
                         >
-                            {isActive && (
-                                <motion.div
-                                    layoutId="mobile-nav-indicator"
-                                    className="absolute inset-0 bg-primary/10 rounded-xl"
-                                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                                />
-                            )}
                             <Icon
                                 className={cn(
                                     "h-5 w-5 relative z-10 transition-transform duration-200",
