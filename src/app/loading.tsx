@@ -23,11 +23,11 @@ export default function Loading() {
                             repeat: Infinity,
                             ease: "easeInOut"
                         }}
-                        className="absolute inset-0 bg-primary/20 blur-xl rounded-full"
+                        className="absolute inset-0 bg-primary/20 blur-xl rounded-[2px]"
                     />
 
                     {/* Icon */}
-                    <div className="relative z-10 p-4 rounded-full bg-secondary/10 border border-primary/10">
+                    <div className="relative z-10 p-4 rounded-[2px] bg-secondary/10 border border-primary/10">
                         <motion.div
                             animate={{
                                 strokeOpacity: [0.5, 1, 0.5],

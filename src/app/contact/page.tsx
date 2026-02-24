@@ -107,7 +107,7 @@ export default function ContactPage() {
                                         onChange={(e) => setName(e.target.value)}
                                         placeholder="your name"
                                         required
-                                        className="bg-transparent border-0 border-b border-border/50 rounded-none px-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-0 focus:border-b focus:border-primary font-sans placeholder:text-muted-foreground/30 transition-colors h-10"
+                                        className="bg-transparent border-0 border-b border-border/50 rounded-[2px] px-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-0 focus:border-b focus:border-primary font-sans placeholder:text-muted-foreground/30 transition-colors h-10"
                                     />
                                 </div>
 
@@ -120,7 +120,7 @@ export default function ContactPage() {
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="name@example.com"
                                         required
-                                        className="bg-transparent border-0 border-b border-border/50 rounded-none px-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-0 focus:border-b focus:border-primary font-sans placeholder:text-muted-foreground/30 transition-colors h-10"
+                                        className="bg-transparent border-0 border-b border-border/50 rounded-[2px] px-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-0 focus:border-b focus:border-primary font-sans placeholder:text-muted-foreground/30 transition-colors h-10"
                                     />
                                 </div>
                             </div>
@@ -146,7 +146,7 @@ export default function ContactPage() {
                                 placeholder="what's on your mind?"
                                 rows={1}
                                 required
-                                className="min-h-[2.5rem] bg-transparent border-0 border-b border-border/50 rounded-none px-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary font-sans resize-none placeholder:text-muted-foreground/30 transition-colors overflow-hidden"
+                                className="min-h-[2.5rem] bg-transparent border-0 border-b border-border/50 rounded-[2px] px-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary font-sans resize-none placeholder:text-muted-foreground/30 transition-colors overflow-hidden"
                             />
                         </div>
 

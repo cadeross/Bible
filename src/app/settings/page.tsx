@@ -124,7 +124,7 @@ export default function SettingsPage() {
 
     // Group Button
     const ButtonGroup = ({ children }: { children: React.ReactNode }) => (
-        <div className="flex flex-wrap items-center gap-1 bg-secondary/20 p-1 rounded-md">
+        <div className="flex flex-wrap items-center gap-1 bg-secondary/20 p-1 rounded-[2px]">
             {children}
         </div>
     )
@@ -179,9 +179,9 @@ export default function SettingsPage() {
                             <button
                                 onClick={() => setTheme('light')}
                                 className={cn(
-                                    "group relative w-20 h-16 rounded-lg border-2 overflow-hidden transition-all duration-200",
+                                    "group relative w-20 h-16 rounded-[2px] border overflow-hidden transition-all duration-200",
                                     theme === 'light'
-                                        ? "border-primary ring-2 ring-primary/20 scale-105"
+                                        ? "border-primary ring-1 ring-primary/20 scale-105"
                                         : "border-border/50 hover:border-border hover:scale-102"
                                 )}
                             >
@@ -203,9 +203,9 @@ export default function SettingsPage() {
                             <button
                                 onClick={() => setTheme('dark')}
                                 className={cn(
-                                    "group relative w-20 h-16 rounded-lg border-2 overflow-hidden transition-all duration-200",
+                                    "group relative w-20 h-16 rounded-[2px] border overflow-hidden transition-all duration-200",
                                     theme === 'dark'
-                                        ? "border-primary ring-2 ring-primary/20 scale-105"
+                                        ? "border-primary ring-1 ring-primary/20 scale-105"
                                         : "border-border/50 hover:border-border hover:scale-102"
                                 )}
                             >
@@ -227,9 +227,9 @@ export default function SettingsPage() {
                             <button
                                 onClick={() => setTheme('system')}
                                 className={cn(
-                                    "group relative w-20 h-16 rounded-lg border-2 overflow-hidden transition-all duration-200",
+                                    "group relative w-20 h-16 rounded-[2px] border overflow-hidden transition-all duration-200",
                                     theme === 'system'
-                                        ? "border-primary ring-2 ring-primary/20 scale-105"
+                                        ? "border-primary ring-1 ring-primary/20 scale-105"
                                         : "border-border/50 hover:border-border hover:scale-102"
                                 )}
                             >
@@ -277,7 +277,7 @@ export default function SettingsPage() {
                                     className={cn(
                                         "w-10 h-12 rounded overflow-hidden p-1 flex flex-col gap-1 transition-all duration-300 hover:scale-105 active:scale-95",
                                         palette === p.id
-                                            ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                            ? "ring-1 ring-primary ring-offset-1 ring-offset-background"
                                             : "opacity-60 hover:opacity-100"
                                     )}
                                     style={{ backgroundColor: p.bg }}
@@ -344,7 +344,7 @@ export default function SettingsPage() {
                     </SettingRow>
 
                     <SettingRow label="Font Size" description={`adjust text size (${fontSize}px)`}>
-                        <div className="flex items-center gap-4 bg-secondary/20 p-2 rounded-md">
+                        <div className="flex items-center gap-4 bg-secondary/20 p-2 rounded-[2px]">
                             <button
                                 onClick={() => setFontSize(Math.max(12, fontSize - 2))}
                                 className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground font-mono transition-colors"
@@ -389,7 +389,7 @@ export default function SettingsPage() {
                     </SettingRow>
 
                     <SettingRow label="Default Highlight" description="quick highlight color">
-                        <div className="flex items-center gap-2 bg-secondary/20 p-2 rounded-md">
+                        <div className="flex items-center gap-2 bg-secondary/20 p-2 rounded-[2px]">
                             <PenTool className="h-4 w-4 text-muted-foreground mr-2" />
                             {HIGHLIGHT_COLORS.map(c => (
                                 <button
@@ -399,7 +399,7 @@ export default function SettingsPage() {
                                         "w-5 h-5 rounded-full border transition-transform hover:scale-110",
                                         c.class,
                                         c.border,
-                                        defaultHighlightColor === c.id && "ring-2 ring-primary ring-offset-1 ring-offset-background scale-110"
+                                        defaultHighlightColor === c.id && "ring-1 ring-primary ring-offset-1 ring-offset-background scale-110"
                                     )}
                                     aria-label={`Select ${c.id}`}
                                 />

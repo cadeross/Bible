@@ -29,7 +29,7 @@ export function HowToDialog({ children }: { children: React.ReactNode }) {
                 >
                     <DialogPrimitive.Title className="sr-only">How To Use</DialogPrimitive.Title>
 
-                    <div className="bg-background border-2 border-primary/10 shadow-2xl rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
+                    <div className="bg-background border border-border/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-[2px] overflow-hidden flex flex-col max-h-[60vh]">
                         {/* Header */}
                         <div className="flex items-center justify-between px-4 py-3 border-b border-primary/10 bg-muted/20">
                             <div className="flex items-center gap-2 text-sm font-mono font-medium opacity-70">

@@ -72,7 +72,7 @@ export default function AuthPage() {
                         return (
                             <div
                                 key={feature.label}
-                                className="group flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border/40 bg-secondary/5 hover:bg-secondary/10 hover:border-primary/30 transition-all duration-300 cursor-default"
+                                className="group flex items-center gap-2 px-3.5 py-1.5 rounded-[2px] border border-border/30 bg-secondary/5 hover:bg-secondary/10 hover:border-foreground/20 transition-all duration-300 cursor-default"
                             >
                                 <Icon className="h-3 w-3 text-primary/50 group-hover:text-primary transition-colors" />
                                 <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">

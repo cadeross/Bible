@@ -335,7 +335,7 @@ export default function Home() {
               {streakDays !== null && (
                 <Link
                   href="/profile"
-                  className="group flex items-center gap-2.5 px-4 py-2 rounded-full border border-border/40 bg-secondary/5 hover:bg-secondary/10 hover:border-primary/30 transition-all duration-300"
+                  className="group flex items-center gap-2.5 px-4 py-2 rounded-[2px] border border-border/30 bg-secondary/5 hover:bg-secondary/10 hover:border-foreground/20 transition-all duration-300"
                 >
                   <Heart className="h-3.5 w-3.5 text-primary/60 group-hover:text-primary transition-colors" />
                   <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">
@@ -346,7 +346,7 @@ export default function Home() {
               {continueReading && (
                 <Link
                   href={`/read/${encodeURIComponent(continueReading.book)}/${continueReading.chapter}`}
-                  className="group flex items-center gap-2.5 px-4 py-2 rounded-full border border-border/40 bg-secondary/5 hover:bg-secondary/10 hover:border-primary/30 transition-all duration-300"
+                  className="group flex items-center gap-2.5 px-4 py-2 rounded-[2px] border border-border/30 bg-secondary/5 hover:bg-secondary/10 hover:border-foreground/20 transition-all duration-300"
                 >
                   <BookOpen className="h-3.5 w-3.5 text-primary/60 group-hover:text-primary transition-colors" />
                   <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">

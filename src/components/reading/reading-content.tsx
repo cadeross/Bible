@@ -471,7 +471,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                         )}
                     </div>
 
-                    <div className="rounded-md border border-border/50 bg-secondary/10 p-3">
+                    <div className="rounded-[2px] border border-border/50 bg-secondary/10 p-3">
                         <textarea
                             value={noteContent}
                             onChange={(e) => {
@@ -513,7 +513,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 5 }}
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        className="fixed z-50 flex items-center gap-2 p-1.5 bg-background border border-border shadow-lg rounded-xl"
+                        className="fixed z-50 flex items-center gap-2 p-1.5 bg-background border border-border/30 shadow-[0_4px_16px_rgba(0,0,0,0.08)] rounded-[2px]"
                         style={{
                             top: menuPosition.top,
                             left: menuPosition.left,

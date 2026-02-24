@@ -113,7 +113,7 @@ export default function RootLayout({
                   position="bottom-right"
                   style={{ zIndex: 9999 }}
                   toastOptions={{
-                    className: "font-mono text-xs !bg-background text-foreground border-border/60 border shadow-none rounded-lg px-6 py-4 gap-4 opacity-100",
+                    className: "font-mono text-xs !bg-background text-foreground border-border/30 border shadow-[0_4px_16px_rgba(0,0,0,0.08)] rounded-[2px] px-6 py-4 gap-4 opacity-100",
                     descriptionClassName: "text-muted-foreground",
                     actionButtonStyle: {
                       backgroundColor: "hsl(var(--primary))",

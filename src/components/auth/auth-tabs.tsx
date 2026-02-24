@@ -152,7 +152,7 @@ export function AuthTabs({ onSuccess, showHomeLink = false }: { onSuccess?: () =
                     </div>
                     <div className="flex items-center gap-3">
                         <Button
-                            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 gap-2 text-xs font-mono uppercase tracking-[0.2em] h-11 rounded-md transition-all duration-200 cursor-pointer"
+                            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 gap-2 text-xs font-mono uppercase tracking-[0.2em] h-11 rounded-[2px] transition-all duration-200 cursor-pointer"
                             type="submit"
                             disabled={loading || !email || !password}
                         >
@@ -162,7 +162,7 @@ export function AuthTabs({ onSuccess, showHomeLink = false }: { onSuccess?: () =
                             type="button"
                             onClick={() => setDevMode(!devMode)}
                             className={cn(
-                                "flex items-center justify-center gap-1.5 px-3 h-11 rounded-md text-[10px] font-mono transition-all duration-200 cursor-pointer shrink-0 border",
+                                "flex items-center justify-center gap-1.5 px-3 h-11 rounded-[2px] text-[10px] font-mono transition-all duration-200 cursor-pointer shrink-0 border",
                                 devMode
                                     ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border-yellow-500/50"
                                     : "text-muted-foreground/30 hover:text-muted-foreground/60 hover:bg-secondary/5 border-transparent"

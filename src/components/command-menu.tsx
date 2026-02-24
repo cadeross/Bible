@@ -174,11 +174,11 @@ export function CommandMenu() {
                 >
                     <DialogPrimitive.Title className="sr-only">Command Menu</DialogPrimitive.Title>
                     {/* Monkeytype Style: Solid/Flat, Monospace, Sharp corners */}
-                    <div className="bg-background border-2 border-primary/10 shadow-2xl rounded-lg overflow-hidden">
+                    <div className="bg-background border border-border/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-[2px] overflow-hidden">
                         <div className="flex items-center px-4 py-1">
                             <Search className="mr-3 h-4 w-4 opacity-40" />
                             <input
-                                className="flex h-12 w-full rounded-md bg-transparent py-3 text-lg outline-none placeholder:text-muted-foreground/30 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+                                className="flex h-12 w-full rounded-[2px] bg-transparent py-3 text-lg outline-none placeholder:text-muted-foreground/30 disabled:cursor-not-allowed disabled:opacity-50 font-mono tracking-wide"
                                 placeholder="type to jump..."
                                 value={input}
                                 autoFocus

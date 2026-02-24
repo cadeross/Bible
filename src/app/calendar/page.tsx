@@ -168,7 +168,7 @@ function DayDetail({ day, onClose }: { day: LiturgicalDay; onClose: () => void }
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="border border-border/40 rounded-lg p-6 space-y-5 bg-card/50 backdrop-blur-sm"
+            className="border border-border/30 rounded-[2px] p-6 space-y-5 bg-card/50 backdrop-blur-sm"
         >
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
@@ -182,7 +182,7 @@ function DayDetail({ day, onClose }: { day: LiturgicalDay; onClose: () => void }
                 </div>
                 <button
                     onClick={onClose}
-                    className="p-1.5 rounded-md hover:bg-muted/50 transition-colors text-muted-foreground/50 hover:text-muted-foreground shrink-0"
+                    className="p-1.5 rounded-[2px] hover:bg-muted/50 transition-colors text-muted-foreground/50 hover:text-muted-foreground shrink-0"
                 >
                     <X className="h-4 w-4" />
                 </button>
@@ -276,10 +276,10 @@ function CalendarDayCell({
             variants={itemVariants}
             onClick={onClick}
             className={cn(
-                "group relative flex flex-col items-start p-2 md:p-3 rounded-lg transition-all duration-200 text-left min-h-[60px] md:min-h-[90px] w-full border",
+                "group relative flex flex-col items-start p-2 md:p-3 rounded-[2px] transition-all duration-200 text-left min-h-[60px] md:min-h-[90px] w-full border border-border/20",
                 isCurrentMonth ? "hover:bg-foreground/[0.04] border-foreground/[0.08]" : "opacity-30 border-transparent",
                 isSelected && "!border-primary/40 ring-1 ring-primary/30",
-                isToday && !isSelected && "!border-primary/50 ring-2 ring-primary/30",
+                isToday && !isSelected && "!border-primary/50 ring-1 ring-primary/30",
             )}
         >
             {/* Day Number + Color Dot */}
@@ -352,7 +352,7 @@ function MobileListItem({
             variants={itemVariants}
             onClick={onClick}
             className={cn(
-                "flex items-center gap-3 w-full p-3 rounded-lg transition-all duration-200 text-left",
+                "flex items-center gap-3 w-full p-3 rounded-[2px] transition-all duration-200 text-left",
                 "hover:bg-muted/40",
                 isSelected && "bg-muted/60 ring-1 ring-primary/30",
                 isToday && !isSelected && "ring-1 ring-primary/50",
@@ -504,7 +504,7 @@ export default function CalendarPage() {
                 <div className="absolute left-0 top-1/2 -translate-y-1/2">
                     <button
                         onClick={goToPrevMonth}
-                        className="p-2 rounded-md hover:bg-muted/40 transition-colors text-muted-foreground/50 hover:text-primary"
+                        className="p-2 rounded-[2px] hover:bg-muted/40 transition-colors text-muted-foreground/50 hover:text-primary"
                     >
                         <ChevronLeft className="h-5 w-5" />
                     </button>
@@ -540,14 +540,14 @@ export default function CalendarPage() {
                     {!isCurrentMonth && (
                         <button
                             onClick={goToToday}
-                            className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50 hover:text-primary transition-colors px-3 py-2 rounded-md hover:bg-muted/40 hidden sm:block"
+                            className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50 hover:text-primary transition-colors px-3 py-2 rounded-[2px] hover:bg-muted/40 hidden sm:block"
                         >
                             Today
                         </button>
                     )}
                     <button
                         onClick={goToNextMonth}
-                        className="p-2 rounded-md hover:bg-muted/40 transition-colors text-muted-foreground/50 hover:text-primary"
+                        className="p-2 rounded-[2px] hover:bg-muted/40 transition-colors text-muted-foreground/50 hover:text-primary"
                     >
                         <ChevronRight className="h-5 w-5" />
                     </button>

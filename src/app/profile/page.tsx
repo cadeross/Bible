@@ -361,7 +361,7 @@ export default function ProfilePage() {
                     </div>
                 </div>
                 <div className="mt-2">
-                    <Button variant="ghost" onClick={handleSignOut} className="h-8 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-full border border-border/40 bg-secondary/5 hover:border-primary/30">
+                    <Button variant="ghost" onClick={handleSignOut} className="h-8 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-[2px] border border-border/30 bg-secondary/5 hover:border-foreground/20">
                         <LogOut className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity" /> SIGN OUT
                     </Button>
                 </div>
@@ -404,7 +404,7 @@ export default function ProfilePage() {
                             ];
 
                             return kpis.map((stat: any, i) => (
-                                <div key={i} className="bg-secondary/10 p-4 rounded-md space-y-2 border border-border/50">
+                                <div key={i} className="bg-secondary/10 p-4 rounded-[2px] space-y-2 border border-border/50">
                                     <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{stat.label}</p>
                                     <p className="text-2xl font-mono font-bold text-primary">
                                         {stat.isStreak ? `${stat.value}` : stat.value}
@@ -493,7 +493,7 @@ export default function ProfilePage() {
 
                 {/* YEARLY HEATMAP - Custom */}
                 <Section title="Yearly Activity">
-                    <div className="p-4 bg-secondary/5 rounded-md border border-border/30 overflow-hidden">
+                    <div className="p-4 bg-secondary/5 rounded-[2px] border border-border/30 overflow-hidden">
                         <CustomHeatmap data={activityMap} />
                     </div>
                 </Section>

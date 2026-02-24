@@ -81,7 +81,7 @@ export function NoteDialog({
                                         {onDelete && initialContent && (
                                             <button
                                                 onClick={onDelete}
-                                                className="p-1.5 text-muted-foreground hover:text-destructive transition-colors rounded-md hover:bg-muted"
+                                                className="p-1.5 text-muted-foreground hover:text-destructive transition-colors rounded-[2px] hover:bg-muted"
                                                 title="Delete Note"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -89,7 +89,7 @@ export function NoteDialog({
                                         )}
                                         <button
                                             onClick={() => onOpenChange(false)}
-                                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted"
+                                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-[2px] hover:bg-muted"
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
@@ -116,7 +116,7 @@ export function NoteDialog({
                                     </div>
                                     <button
                                         onClick={handleSave}
-                                        className="flex items-center gap-2 px-4 py-1.5 text-xs font-semibold text-primary-foreground bg-primary hover:opacity-90 active:scale-95 transition-all rounded-md shadow-sm"
+                                        className="flex items-center gap-2 px-4 py-1.5 text-xs font-semibold text-primary-foreground bg-primary hover:opacity-90 active:scale-[0.98] transition-all rounded-[2px] shadow-none"
                                     >
                                         <Save className="w-3 h-3" />
                                         SAVE

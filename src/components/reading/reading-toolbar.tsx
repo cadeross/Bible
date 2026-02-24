@@ -204,7 +204,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
             </div>
 
             {/* Appearance Bar */}
-            <div className="flex flex-wrap items-center justify-center gap-4 py-2 px-6 rounded-lg bg-secondary/30 backdrop-blur-sm mx-4">
+            <div className="flex flex-wrap items-center justify-center gap-4 py-2 px-6 rounded-[2px] bg-secondary/30 backdrop-blur-sm mx-4">
 
 
 

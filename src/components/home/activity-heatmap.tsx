@@ -78,11 +78,11 @@ export function ActivityHeatmap() {
                                             className={cn(
                                                 "w-2 h-2 md:w-3 md:h-3 rounded-[2px] transition-colors cursor-alias",
                                                 // Empty state: slightly darker than before for contrast
-                                                day.intensity === 0 && "bg-muted/20 hover:ring-2 hover:ring-muted-foreground/30 hover:z-10",
-                                                day.intensity === 1 && "bg-primary/30 hover:ring-2 hover:ring-primary/50 hover:z-10",
-                                                day.intensity === 2 && "bg-primary/50 hover:ring-2 hover:ring-primary/60 hover:z-10",
-                                                day.intensity === 3 && "bg-primary/70 hover:ring-2 hover:ring-primary/80 hover:z-10",
-                                                day.intensity === 4 && "bg-primary hover:ring-2 hover:ring-primary/90 hover:z-10"
+                                                day.intensity === 0 && "bg-muted/20 hover:ring-1 hover:ring-muted-foreground/30 hover:z-10",
+                                                day.intensity === 1 && "bg-primary/30 hover:ring-1 hover:ring-primary/50 hover:z-10",
+                                                day.intensity === 2 && "bg-primary/50 hover:ring-1 hover:ring-primary/60 hover:z-10",
+                                                day.intensity === 3 && "bg-primary/70 hover:ring-1 hover:ring-primary/80 hover:z-10",
+                                                day.intensity === 4 && "bg-primary hover:ring-1 hover:ring-primary/90 hover:z-10"
                                             )}
                                         />
                                     </TooltipTrigger>

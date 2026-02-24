@@ -27,7 +27,7 @@ const Shortcut = ({ action, keys }: { action: string, keys: string }) => (
 
 // Feature card
 const Feature = ({ title, description, icon: Icon }: { title: string, description: string, icon: React.ElementType }) => (
-    <div className="bg-secondary/10 border border-border/50 rounded-lg p-4 space-y-2">
+    <div className="bg-secondary/10 border border-border/50 rounded-[2px] p-4 space-y-2">
         <div className="flex items-center gap-2 text-primary">
             <Icon className="h-4 w-4" />
             <span className="font-mono text-sm font-bold">{title}</span>
@@ -38,7 +38,7 @@ const Feature = ({ title, description, icon: Icon }: { title: string, descriptio
 
 // GIF placeholder for future demo recordings
 const GifPlaceholder = ({ label }: { label: string }) => (
-    <div className="mt-4 rounded-lg border-2 border-dashed border-border/50 bg-secondary/5 aspect-video flex flex-col items-center justify-center gap-2 text-muted-foreground/40">
+    <div className="mt-4 rounded-[2px] border border-dashed border-border/50 bg-secondary/5 aspect-video flex flex-col items-center justify-center gap-2 text-muted-foreground/40">
         <ImageIcon className="h-8 w-8" />
         <span className="text-xs font-mono">{label} demo</span>
     </div>
@@ -91,7 +91,7 @@ export default function HowToPage() {
                     <p className="text-muted-foreground text-sm leading-relaxed mb-4">
                         Navigate quickly with these keyboard shortcuts:
                     </p>
-                    <div className="bg-secondary/10 border border-border/50 rounded-lg p-4 space-y-2">
+                    <div className="bg-secondary/10 border border-border/50 rounded-[2px] p-4 space-y-2">
                         <Shortcut action="Next Chapter" keys="→ Right Arrow" />
                         <Shortcut action="Previous Chapter" keys="← Left Arrow" />
                         <Shortcut action="Open Command Menu" keys="⌘ + K" />

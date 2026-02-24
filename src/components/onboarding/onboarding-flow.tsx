@@ -99,7 +99,7 @@ const StepNav = ({
         <Button
             onClick={onNext}
             disabled={nextDisabled || loading}
-            className="gap-2 text-xs font-mono uppercase tracking-[0.15em] h-10 px-6 rounded-full cursor-pointer"
+            className="gap-2 text-xs font-mono uppercase tracking-[0.15em] h-10 px-6 rounded-[2px] cursor-pointer"
         >
             {loading ? "saving..." : nextLabel} <ChevronRight className="w-3.5 h-3.5" />
         </Button>
@@ -119,7 +119,7 @@ const StepDots = ({ steps, currentIndex }: { steps: Step[]; currentIndex: number
                 <div
                     key={s}
                     className={cn(
-                        "rounded-full transition-all duration-300",
+                        "rounded-[2px] transition-all duration-300",
                         i === innerIndex
                             ? "w-6 h-1.5 bg-primary"
                             : i < innerIndex
@@ -353,7 +353,7 @@ export function OnboardingFlow() {
                                                 key={opt.value}
                                                 onClick={() => setTheme(opt.value)}
                                                 className={cn(
-                                                    "flex flex-col items-center justify-center p-3 rounded-lg border transition-all duration-200 h-16 cursor-pointer",
+                                                    "flex flex-col items-center justify-center p-3 rounded-[2px] border border-border/20 transition-all duration-200 h-16 cursor-pointer",
                                                     theme === opt.value
                                                         ? 'bg-primary/10 border-primary/50 text-primary'
                                                         : 'bg-secondary/5 border-border/30 text-muted-foreground hover:bg-secondary/10 hover:border-border/60'
@@ -385,7 +385,7 @@ export function OnboardingFlow() {
                                                 // @ts-ignore
                                                 onClick={() => setPalette(opt.value)}
                                                 className={cn(
-                                                    "flex flex-col items-center justify-center p-2 rounded-lg border transition-all duration-200 h-16 group cursor-pointer",
+                                                    "flex flex-col items-center justify-center p-2 rounded-[2px] border border-border/20 transition-all duration-200 h-16 group cursor-pointer",
                                                     palette === opt.value
                                                         ? 'border-primary/50 shadow-sm'
                                                         : 'border-border/20 hover:border-border/50'
@@ -394,7 +394,7 @@ export function OnboardingFlow() {
                                                 <div
                                                     className={cn(
                                                         "w-7 h-7 rounded-full shadow-sm transition-transform duration-200 group-hover:scale-110 mb-1",
-                                                        palette === opt.value && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                                        palette === opt.value && "ring-1 ring-primary ring-offset-2 ring-offset-background"
                                                     )}
                                                     style={{ background: `linear-gradient(135deg, ${opt.bg} 50%, ${opt.fg} 50%)` }}
                                                 />
@@ -419,7 +419,7 @@ export function OnboardingFlow() {
                                                 // @ts-ignore
                                                 onClick={() => setFontFamily(opt.value)}
                                                 className={cn(
-                                                    "flex flex-col items-center justify-center p-2 rounded-lg border transition-all duration-200 h-16 cursor-pointer",
+                                                    "flex flex-col items-center justify-center p-2 rounded-[2px] border border-border/20 transition-all duration-200 h-16 cursor-pointer",
                                                     fontFamily === opt.value
                                                         ? 'bg-primary/10 border-primary/50 text-primary'
                                                         : 'bg-secondary/5 border-border/30 text-muted-foreground hover:bg-secondary/10 hover:border-border/60'
@@ -439,7 +439,7 @@ export function OnboardingFlow() {
                                     preview
                                     <span className="text-muted-foreground/30">• {currentPassage.reference}</span>
                                 </Label>
-                                <div className="p-6 rounded-lg border border-border/30 bg-card/30 h-[340px] overflow-y-auto">
+                                <div className="p-6 rounded-[2px] border border-border/20 bg-card/30 h-[340px] overflow-y-auto">
                                     <div
                                         className={cn("text-sm leading-[1.9]", getFontClass(fontFamily))}
                                         style={{ fontFamily: fontFamily === 'sans' ? 'var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif' : undefined }}
@@ -513,7 +513,7 @@ export function OnboardingFlow() {
                                             key={v.id}
                                             onClick={() => setBibleVersion(v.id)}
                                             className={cn(
-                                                "flex items-center justify-between p-3 rounded-lg border transition-all duration-200 text-left cursor-pointer",
+                                                "flex items-center justify-between p-3 rounded-[2px] border border-border/20 transition-all duration-200 text-left cursor-pointer",
                                                 bibleVersion === v.id
                                                     ? 'bg-primary/10 border-primary/50 text-primary'
                                                     : 'bg-secondary/5 border-border/20 text-muted-foreground hover:bg-secondary/10 hover:border-border/50'
