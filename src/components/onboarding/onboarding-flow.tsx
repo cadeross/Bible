@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { getAllTranslations } from "@/lib/bible-api";
 import { cn } from "@/lib/utils";
 
-type Step = 'welcome' | 'identity' | 'preferences' | 'content' | 'complete';
+type Step = 'identity' | 'preferences' | 'content' | 'complete';
 
 // Sample Bible passages for preview
 const PREVIEW_PASSAGES = [
@@ -135,7 +135,7 @@ const StepDots = ({ steps, currentIndex }: { steps: Step[]; currentIndex: number
 // ── Main Component ─────────────────────────────────────────
 
 export function OnboardingFlow() {
-    const [step, setStep] = useState<Step>('welcome');
+    const [step, setStep] = useState<Step>('identity');
     const [loading, setLoading] = useState(false);
     const [devMode, setDevMode] = useState(false);
     const router = useRouter();
@@ -192,7 +192,7 @@ export function OnboardingFlow() {
         );
     }, [versions, versionSearch]);
 
-    const steps: Step[] = ['welcome', 'identity', 'preferences', 'content', 'complete'];
+    const steps: Step[] = ['identity', 'preferences', 'content', 'complete'];
     const currentStepIndex = steps.indexOf(step);
 
     const handleNext = () => { const next = steps[currentStepIndex + 1]; if (next) setStep(next); };
@@ -263,65 +263,7 @@ export function OnboardingFlow() {
 
             <AnimatePresence mode="wait">
 
-                {/* ── WELCOME ─────────────────────────── */}
-                {step === 'welcome' && (
-                    <motion.div
-                        key="welcome"
-                        variants={variants}
-                        initial="enter"
-                        animate="center"
-                        exit="exit"
-                        transition={{ duration: 0.4 }}
-                        className="flex flex-col items-center text-center space-y-10 max-w-lg"
-                    >
-                        <div className="space-y-2">
-                            <motion.h1
-                                initial={{ opacity: 0, y: 12 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.15 }}
-                                className="text-sm font-bold tracking-widest uppercase text-muted-foreground"
-                            >
-                                Welcome to OpenWrit
-                            </motion.h1>
 
-                            <motion.p
-                                initial={{ opacity: 0, y: 12 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.25 }}
-                                className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider"
-                            >
-                                let's set up your reading experience
-                            </motion.p>
-                        </div>
-
-                        <motion.div
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5 }}
-                            className="flex items-center gap-3"
-                        >
-                            <Button
-                                onClick={handleNext}
-                                className="gap-2 text-xs font-mono uppercase tracking-[0.15em] h-11 px-8 rounded-full cursor-pointer"
-                            >
-                                get started <ChevronRight className="w-3.5 h-3.5" />
-                            </Button>
-                            <button
-                                onClick={() => setDevMode(!devMode)}
-                                className={cn(
-                                    "flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-mono transition-all duration-200 cursor-pointer",
-                                    devMode
-                                        ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-500 border border-yellow-500/50"
-                                        : "text-muted-foreground/30 hover:text-muted-foreground/60 hover:bg-secondary/5"
-                                )}
-                                title="Toggle Dev Mode (skips DB save)"
-                            >
-                                <Bug className="w-3.5 h-3.5" />
-                                {devMode && "dev"}
-                            </button>
-                        </motion.div>
-                    </motion.div>
-                )}
 
                 {/* ── IDENTITY ────────────────────────── */}
                 {step === 'identity' && (

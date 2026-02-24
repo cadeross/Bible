@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowRight, Mail, Lock } from "lucide-react";
+import { ArrowRight, Mail, Lock, Bug } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function AuthTabs({ onSuccess, showHomeLink = false }: { onSuccess?: () => void, showHomeLink?: boolean }) {
     const [loading, setLoading] = useState(false);
+    const [devMode, setDevMode] = useState(false);
 
     // Credentials State
     const [email, setEmail] = useState("");
@@ -22,6 +24,16 @@ export function AuthTabs({ onSuccess, showHomeLink = false }: { onSuccess?: () =
     const handleContinue = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+
+        if (devMode) {
+            console.log('[DEV MODE] Skipping auth for:', email);
+            toast.success("[DEV] Simulated login", { description: "Redirecting to setup." });
+            setTimeout(() => {
+                setLoading(false);
+                router.push('/onboarding');
+            }, 800);
+            return;
+        }
 
         // 1. Try Login
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -138,13 +150,29 @@ export function AuthTabs({ onSuccess, showHomeLink = false }: { onSuccess?: () =
                         </div>
                         <p className="text-[10px] text-muted-foreground/40 pt-1">minimum 6 characters</p>
                     </div>
-                    <Button
-                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2 text-xs font-mono uppercase tracking-[0.2em] h-11 rounded-md transition-all duration-200 cursor-pointer"
-                        type="submit"
-                        disabled={loading}
-                    >
-                        {loading ? "checking..." : "continue"} <ArrowRight className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        <Button
+                            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 gap-2 text-xs font-mono uppercase tracking-[0.2em] h-11 rounded-md transition-all duration-200 cursor-pointer"
+                            type="submit"
+                            disabled={loading || !email || !password}
+                        >
+                            {loading ? "checking..." : "continue"} <ArrowRight className="h-3.5 w-3.5" />
+                        </Button>
+                        <button
+                            type="button"
+                            onClick={() => setDevMode(!devMode)}
+                            className={cn(
+                                "flex items-center justify-center gap-1.5 px-3 h-11 rounded-md text-[10px] font-mono transition-all duration-200 cursor-pointer shrink-0 border",
+                                devMode
+                                    ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border-yellow-500/50"
+                                    : "text-muted-foreground/30 hover:text-muted-foreground/60 hover:bg-secondary/5 border-transparent"
+                            )}
+                            title="Toggle Dev Mode (skips DB auth)"
+                        >
+                            <Bug className="w-4 h-4" />
+                            {devMode && "dev"}
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
