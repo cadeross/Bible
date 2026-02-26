@@ -106,16 +106,20 @@ export default function Home() {
       const { getProfile, getHistory } = await import("@/lib/persistence")
 
       // Fetch user, content, and reading context in parallel
-      const [userResult, content, profile, history, readingsRes] = await Promise.all([
-        supabase.auth.getUser(),
-        getDailyContent(),
-        getProfile(),
-        getHistory(),
-        fetch("/api/readings/daily").catch(err => {
-          console.error("Failed to fetch daily readings", err);
-          return null;
-        })
-      ])
+      let userResult, content, profile, history, readingsRes
+      try {
+        ;[userResult, content, profile, history, readingsRes] = await Promise.all([
+          supabase.auth.getUser(),
+          getDailyContent(),
+          getProfile(),
+          getHistory(),
+          fetch("/api/readings/daily").catch(() => null)
+        ])
+      } catch (err) {
+        console.error("Failed to load page data:", err)
+        setIsLoading(false)
+        return
+      }
 
       if (userResult.data.user?.user_metadata?.username) {
         setUsername(userResult.data.user.user_metadata.username)
@@ -217,7 +221,10 @@ export default function Home() {
       }
     }
 
-    loadData()
+    loadData().catch(err => {
+      console.error("Unhandled loadData error:", err)
+      setIsLoading(false)
+    })
   }, [])
 
   const liturgyLabel = dailyReadings?.title || dailyContent.feast_name || dailyContent.liturgical_season

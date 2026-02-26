@@ -16,6 +16,7 @@ interface ReadingContentProps {
     nextChapterLink?: string
     sharedVerses?: number[]
     mode?: 'default' | 'minimal'
+    disableHighlighting?: boolean
 }
 
 const HIGHLIGHT_COLORS = [
@@ -26,7 +27,7 @@ const HIGHLIGHT_COLORS = [
     { id: "purple", class: "bg-purple-500/30 dark:bg-purple-500/20", border: "border-purple-500/50" },
 ]
 
-export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [], mode = 'default' }: ReadingContentProps) {
+export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [], mode = 'default', disableHighlighting = false }: ReadingContentProps) {
     const { isLoaded, fontSize, fontFamily, lineHeight, showVerseNumbers, redLetters, showTitles, defaultHighlightColor } = useReadingPreferences()
     const [highlights, setHighlights] = React.useState<Highlight[]>([])
 
@@ -602,6 +603,33 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                         {chapter.verses.length === 0 ? (
                             <div className="text-center text-muted-foreground italic my-12">
                                 {chapter.text}
+                            </div>
+                        ) : disableHighlighting ? (
+                            // Non-Scripture fallback: render as block paragraphs, no highlighting
+                            <div className="space-y-4">
+                                {chapter.verses.map((verse, i) => (
+                                    <React.Fragment key={verse.verse}>
+                                        {verse.heading && (
+                                            <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                className="w-full mt-10 mb-4 flex justify-center"
+                                            >
+                                                <h3 className="text-lg md:text-xl font-bold font-sans text-foreground/90 tracking-tight leading-tight text-center max-w-[80%]">
+                                                    {verse.heading}
+                                                </h3>
+                                            </motion.div>
+                                        )}
+                                        <motion.p
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: i * 0.002, duration: 0.2 }}
+                                            className="leading-relaxed"
+                                        >
+                                            {verse.text}
+                                        </motion.p>
+                                    </React.Fragment>
+                                ))}
                             </div>
                         ) : (
                             chapter.verses.map((verse, i) => {

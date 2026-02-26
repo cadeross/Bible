@@ -273,6 +273,7 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                                     chapter={activeChapter}
                                     bookName={bookName}
                                     chapterNum={chapterNum}
+                                    disableHighlighting={!cachedChapter}
                                 />
                             </div>
 

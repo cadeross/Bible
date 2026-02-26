@@ -1,3 +1,5 @@
+"use server";
+
 import { BibleChapter, BibleVerse } from "./bible-api";
 
 const BOLLS_API_URL = "https://bolls.life";

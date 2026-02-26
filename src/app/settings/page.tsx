@@ -110,15 +110,14 @@ export default function SettingsPage() {
         <button
             onClick={onClick}
             className={cn(
-                "group relative inline-flex items-center gap-2 px-3 py-1.5 rounded-sm transition-all text-xs font-mono border select-none",
+                "group relative inline-flex items-center gap-2 px-3 py-1.5 rounded-[2px] transition-all text-xs font-mono select-none border border-transparent",
                 active
-                    ? "bg-primary/10 border-primary/20 text-primary"
-                    : "bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    ? "bg-muted/60 text-foreground/80 hover:bg-muted/80 hover:text-foreground"
+                    : "bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
             )}
         >
             {Icon && <Icon className="h-3 w-3" />}
             {label}
-            {active && <span className="absolute inset-0 border border-primary/20 rounded-sm pointer-events-none" />}
         </button>
     )
 
@@ -181,7 +180,7 @@ export default function SettingsPage() {
                                 className={cn(
                                     "group relative w-20 h-16 rounded-[2px] border overflow-hidden transition-all duration-200",
                                     theme === 'light'
-                                        ? "border-primary ring-1 ring-primary/20 scale-105"
+                                        ? "ring-1 ring-inset ring-primary border-transparent scale-105"
                                         : "border-border/50 hover:border-border hover:scale-102"
                                 )}
                             >
@@ -205,7 +204,7 @@ export default function SettingsPage() {
                                 className={cn(
                                     "group relative w-20 h-16 rounded-[2px] border overflow-hidden transition-all duration-200",
                                     theme === 'dark'
-                                        ? "border-primary ring-1 ring-primary/20 scale-105"
+                                        ? "ring-1 ring-inset ring-primary border-transparent scale-105"
                                         : "border-border/50 hover:border-border hover:scale-102"
                                 )}
                             >
@@ -229,7 +228,7 @@ export default function SettingsPage() {
                                 className={cn(
                                     "group relative w-20 h-16 rounded-[2px] border overflow-hidden transition-all duration-200",
                                     theme === 'system'
-                                        ? "border-primary ring-1 ring-primary/20 scale-105"
+                                        ? "ring-1 ring-inset ring-primary border-transparent scale-105"
                                         : "border-border/50 hover:border-border hover:scale-102"
                                 )}
                             >
@@ -275,10 +274,10 @@ export default function SettingsPage() {
                                     onClick={() => setPalette(p.id as PaletteType)}
                                     title={p.id}
                                     className={cn(
-                                        "w-10 h-12 rounded overflow-hidden p-1 flex flex-col gap-1 transition-all duration-300 hover:scale-105 active:scale-95",
+                                        "w-10 h-12 rounded-[2px] overflow-hidden p-1 flex flex-col gap-1 transition-all duration-300 hover:scale-105 active:scale-95 border",
                                         palette === p.id
-                                            ? "ring-1 ring-primary ring-offset-1 ring-offset-background"
-                                            : "opacity-60 hover:opacity-100"
+                                            ? "ring-1 ring-inset ring-primary border-transparent"
+                                            : "border-transparent opacity-60 hover:opacity-100"
                                     )}
                                     style={{ backgroundColor: p.bg }}
                                 >
