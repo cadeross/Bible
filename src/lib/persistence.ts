@@ -382,19 +382,33 @@ export async function uploadAvatar(file: File): Promise<string | null> {
         .from('avatars')
         .getPublicUrl(fileName);
 
-    const avatarUrl = urlData.publicUrl;
+    const avatarUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`;
 
     // Update profile with avatar URL
     const { error: updateError } = await supabase
         .from('profiles')
-        .upsert({
-            id: session.user.id,
+        .update({
             avatar_url: avatarUrl,
             updated_at: new Date().toISOString()
-        }, { onConflict: 'id' });
+        })
+        .eq('id', session.user.id)
+        .select()
+        .single();
 
     if (updateError) {
-        console.error("Error updating avatar URL", updateError);
+        if (updateError.code === 'PGRST116') {
+            // Profile didn't exist, insert it instead
+            const { error: insertError } = await supabase.from('profiles').insert([{
+                id: session.user.id,
+                avatar_url: avatarUrl,
+                updated_at: new Date().toISOString()
+            }]);
+            if (insertError) {
+                console.error("Error inserting avatar URL", insertError);
+            }
+        } else {
+            console.error("Error updating avatar URL", updateError);
+        }
     }
 
     return avatarUrl;

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { AuthTabs } from "@/components/auth/auth-tabs";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { User, LogOut, Cloud, Activity, Palette, Camera } from "lucide-react";
+import { User, LogOut, Cloud, Activity, Palette, Camera, PenLine } from "lucide-react";
 import { toast } from "sonner";
 import { getHistory, getAllHighlights, ReadingHistory, getProfile, uploadAvatar } from "@/lib/persistence";
 import { motion } from "framer-motion";
@@ -89,10 +89,55 @@ export default function ProfilePage() {
     const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
     const [isHoveringAvatar, setIsHoveringAvatar] = useState(false);
 
+    // Edit Profile State
+    const [isEditing, setIsEditing] = useState(false);
+    const [editUsername, setEditUsername] = useState("");
+    const [editEmail, setEditEmail] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
 
 
     const router = useRouter();
     const supabase = createClient();
+
+    const handleUpdateProfile = async () => {
+        setIsSaving(true);
+        try {
+            const updates: any = {};
+
+            // Only update email if it changed
+            if (editEmail !== user.email) {
+                updates.email = editEmail;
+            }
+
+            // Only update username if it changed
+            if (editUsername !== user.user_metadata?.username) {
+                updates.data = { username: editUsername };
+            }
+
+            if (Object.keys(updates).length > 0) {
+                const { data, error } = await supabase.auth.updateUser(updates);
+
+                if (error) throw error;
+
+                // Update local user state
+                setUser(data.user);
+
+                if (updates.email) {
+                    toast.success("Profile updated", {
+                        description: "Please check your new email address for a confirmation link."
+                    });
+                } else {
+                    toast.success("Profile updated successfully");
+                }
+            }
+            setIsEditing(false);
+        } catch (error: any) {
+            console.error("Error updating profile:", error);
+            toast.error(error.message || "Failed to update profile");
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     useEffect(() => {
         const loadData = async () => {
@@ -352,15 +397,72 @@ export default function ProfilePage() {
                         />
                     </div>
                     <div className="space-y-1">
-                        <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                            {user.user_metadata?.username || "USER"}
-                        </h1>
-                        <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
-                            {user.email} • joined {new Date(user.created_at).toLocaleDateString()}
-                        </p>
+                        {isEditing ? (
+                            <form
+                                onSubmit={(e) => { e.preventDefault(); handleUpdateProfile(); }}
+                                className="flex flex-col gap-2 items-center"
+                            >
+                                <input
+                                    type="text"
+                                    value={editUsername}
+                                    onChange={(e) => setEditUsername(e.target.value)}
+                                    placeholder="Username"
+                                    className="bg-transparent border border-border/30 rounded-[2px] px-2 py-1 text-sm font-bold tracking-widest uppercase text-muted-foreground text-center focus:outline-none focus:border-primary/50"
+                                    disabled={isSaving}
+                                />
+                                <input
+                                    type="email"
+                                    value={editEmail}
+                                    onChange={(e) => setEditEmail(e.target.value)}
+                                    placeholder="Email"
+                                    className="bg-transparent border border-border/30 rounded-[2px] px-2 py-1 text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider text-center focus:outline-none focus:border-primary/50"
+                                    disabled={isSaving}
+                                />
+                                <div className="flex gap-2 mt-1">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() => setIsEditing(false)}
+                                        disabled={isSaving}
+                                        className="h-6 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-foreground px-2"
+                                    >
+                                        CANCEL
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={isSaving}
+                                        className="h-6 text-[10px] uppercase tracking-widest font-mono bg-primary text-primary-foreground hover:bg-primary/90 px-3 rounded-[2px]"
+                                    >
+                                        {isSaving ? "SAVING..." : "SAVE"}
+                                    </Button>
+                                </div>
+                            </form>
+                        ) : (
+                            <div className="flex flex-col items-center gap-1 group/edit">
+                                <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                                    {user.user_metadata?.username || "USER"}
+                                </h1>
+                                <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
+                                    {user.email} • joined {new Date(user.created_at).toLocaleDateString()}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 text-center flex justify-center gap-2">
+                    {!isEditing && (
+                        <Button
+                            variant="ghost"
+                            onClick={() => {
+                                setEditUsername(user.user_metadata?.username || "");
+                                setEditEmail(user.email || "");
+                                setIsEditing(true);
+                            }}
+                            className="h-8 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-[2px] border border-border/30 bg-secondary/5 hover:border-foreground/20"
+                        >
+                            <PenLine className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity" /> EDIT PROFILE
+                        </Button>
+                    )}
                     <Button variant="ghost" onClick={handleSignOut} className="h-8 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-[2px] border border-border/30 bg-secondary/5 hover:border-foreground/20">
                         <LogOut className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity" /> SIGN OUT
                     </Button>
