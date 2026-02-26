@@ -76,6 +76,8 @@ export async function getBollsChapter(translation: string, book: string, chapter
             text: v.text
                 .replace(/<br\s*\/?>/gi, ' ') // Replace breaks with spaces
                 .replace(/<[^>]*>/g, '') // Strip other HTML tags (like <i>)
+                .replace(/#[-\u2013\u2014]+\s*#/g, '') // Remove artifact markers like "#— #", "#-- #"
+                .replace(/\s+/g, ' ')
                 .trim()
         }));
 

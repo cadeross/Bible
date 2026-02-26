@@ -84,6 +84,13 @@ const BASE_URL = 'https://bible-api.com';
 import { getChapterText as getApiBibleChapter, getAvailableBibles } from './api-bible';
 import { getBollsChapter } from './bolls-api';
 
+function sanitizeVerseText(text: string): string {
+    return text
+        .replace(/#[-\u2013\u2014]+\s*#/g, '') // Remove artifact markers like "#— #", "#-- #", "#– #"
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 export async function getChapter(book: string, chapter: number, translation: string = 'web', signal?: AbortSignal): Promise<BibleChapter> {
 
     // Bolls Life Integrations
@@ -108,7 +115,11 @@ export async function getChapter(book: string, chapter: number, translation: str
         const data = await res.json();
         return {
             ...data,
-            translation_note: data.translation_note || "Public Domain"
+            translation_note: data.translation_note || "Public Domain",
+            verses: data.verses?.map((v: BibleVerse) => ({
+                ...v,
+                text: sanitizeVerseText(v.text ?? '')
+            })) ?? []
         };
     } else {
         const bookId = getBookId(book);
@@ -148,7 +159,7 @@ export async function getChapter(book: string, chapter: number, translation: str
         let pendingHeading: string | undefined = undefined;
 
         // Helper to strip HTML tags from text
-        const stripHtml = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        const stripHtml = (html: string) => sanitizeVerseText(html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
 
         // OSIS heading regex: matches <p class="s">, <div class="s1">, <h3>, <h2>, etc.
         const headingRegex = /<(?:p|div|span)[^>]*class=["'](?:[^"']*\s+)?s\d*(?:\s+[^"']*)?["'][^>]*>(.*?)<\/(?:p|div|span)>|<h[2-4][^>]*>(.*?)<\/h[2-4]>/gi;
@@ -325,7 +336,7 @@ async function getLocalChapter(book: string, chapter: number): Promise<BibleChap
             book_name: book,
             chapter: chapter,
             verse: parseInt(verseNum),
-            text: (text as string).replace(/\*/g, '').trim() // Clean asterisks often found in DRA text
+            text: sanitizeVerseText((text as string).replace(/\*/g, '')) // Clean asterisks and artifacts
         })).sort((a, b) => a.verse - b.verse);
 
         return {

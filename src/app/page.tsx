@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { BookOpen, Church, Clock, Heart, Share2 } from "lucide-react"
+import { BookOpen, Church, Clock, Heart, Share2, X } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -79,6 +79,7 @@ export default function Home() {
   const [mounted, setMounted] = useState(false)
   const [dailyContent, setDailyContent] = useState<DailyContent>(FALLBACK_CONTENT)
   const [dailyReadings, setDailyReadings] = useState<DailyReadingsData | null>(null)
+  const [showUpdateMessage, setShowUpdateMessage] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [currentVerseSource, setCurrentVerseSource] = useState<string>("") // Track actual Bible version used
   const { fontFamily, bibleVersion } = useReadingPreferences()
@@ -94,6 +95,11 @@ export default function Home() {
         day: "numeric"
       }).format(new Date())
     )
+
+    const updateSeen = localStorage.getItem("openwrit-v1-update-seen")
+    if (!updateSeen) {
+      setShowUpdateMessage(true)
+    }
 
     const loadData = async () => {
       const supabase = createClient()
@@ -330,8 +336,28 @@ export default function Home() {
           </div>
 
           {/* Quick Actions */}
-          {(streakDays !== null || continueReading) && (
+          {(streakDays !== null || continueReading || showUpdateMessage) && (
             <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
+              {showUpdateMessage && (
+                <div className="group flex items-center gap-2.5 px-4 py-2 rounded-[2px] border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all duration-300">
+                  <Link href="/updates" className="flex items-center gap-2.5 group-hover:opacity-80 transition-opacity">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    <span className="text-[10px] font-mono text-foreground uppercase tracking-wider group-hover:text-primary transition-colors">
+                      v1.0 is here
+                    </span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      localStorage.setItem('openwrit-v1-update-seen', 'true');
+                      setShowUpdateMessage(false);
+                    }}
+                    className="ml-1 text-muted-foreground/40 hover:text-foreground transition-colors p-0.5 rounded-sm"
+                    title="Dismiss"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
               {streakDays !== null && (
                 <Link
                   href="/profile"

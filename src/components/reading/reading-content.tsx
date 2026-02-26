@@ -611,11 +611,14 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
                                 return (
                                     <React.Fragment key={verse.verse}>
-                                        {verse.heading && isLoaded && showTitles && (
+                                        {verse.heading && (
                                             <motion.div
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
-                                                className="w-full mt-10 mb-4 flex justify-center"
+                                                className={cn(
+                                                    "w-full mt-10 mb-4 flex justify-center",
+                                                    isLoaded && !showTitles && "hidden"
+                                                )}
                                             >
                                                 <h3 className="text-lg md:text-xl font-bold font-sans text-foreground/90 tracking-tight leading-tight text-center max-w-[80%]">
                                                     {verse.heading}

@@ -1,6 +1,6 @@
 "use client"
 
-import { HelpCircle, Keyboard, Eye, Palette, BookOpen, PenTool, Command, ArrowLeft, ArrowRight, Search, Library, Settings, User, ImageIcon } from "lucide-react"
+import { HelpCircle, Keyboard, Eye, Palette, BookOpen, PenTool, Command, ArrowLeft, ArrowRight, Search, Library, Settings, User, ImageIcon, Church } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 
@@ -83,7 +83,18 @@ export default function HowToPage() {
                             description="Select any text while reading to highlight it. Your highlights are saved to your library."
                         />
                     </div>
-                    <GifPlaceholder label="getting started" />
+                </Section>
+
+                {/* DAILY READINGS */}
+                <Section title="Daily Readings" icon={Church}>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                        Stay connected with the daily liturgical rhythm of the Church:
+                    </p>
+                    <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
+                        <li><strong className="text-foreground">Liturgical Calendar:</strong> Follow daily feast days, seasons, and liturgical colors displayed directly on your dashboard.</li>
+                        <li><strong className="text-foreground">Curated Passages:</strong> Read selected scriptural passages aligned with the Church's daily rhythm right from the home page.</li>
+                        <li><strong className="text-foreground">Progress Tracking:</strong> A clean progress indicator helps you track how much of the daily reading you've completed.</li>
+                    </ul>
                 </Section>
 
                 {/* KEYBOARD SHORTCUTS */}
@@ -97,7 +108,6 @@ export default function HowToPage() {
                         <Shortcut action="Open Command Menu" keys="⌘ + K" />
                         <Shortcut action="Search" keys="⌘ + K → type query" />
                     </div>
-                    <GifPlaceholder label="keyboard shortcuts" />
                 </Section>
 
                 {/* FOCUS MODE */}
@@ -108,7 +118,6 @@ export default function HowToPage() {
                     <div className="text-xs text-muted-foreground/60 font-mono">
                         Tip: Perfect for extended reading sessions without visual distractions.
                     </div>
-                    <GifPlaceholder label="focus mode" />
                 </Section>
 
                 {/* THEMES & CUSTOMIZATION */}
@@ -126,7 +135,13 @@ export default function HowToPage() {
                     <Link href="/settings" className="inline-flex items-center gap-2 text-xs font-mono text-primary hover:underline underline-offset-4 mt-2">
                         <Settings className="h-3 w-3" /> open settings
                     </Link>
-                    <GifPlaceholder label="themes" />
+                </Section>
+
+                {/* TRANSLATIONS */}
+                <Section title="Bible Translations" icon={BookOpen}>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                        OpenWrit provides access to multiple Bible translations. Switch translations instantly via the command menu or the translation selector on the read page. Set your default preferred translation in settings (e.g. NRSV-CE, ASV, etc.).
+                    </p>
                 </Section>
 
                 {/* HIGHLIGHTS & LIBRARY */}
@@ -143,7 +158,6 @@ export default function HowToPage() {
                     <p className="text-xs text-muted-foreground/60 font-mono mt-2">
                         Highlights sync across devices when signed in.
                     </p>
-                    <GifPlaceholder label="highlights" />
                 </Section>
 
                 {/* COMMAND MENU */}
@@ -157,11 +171,10 @@ export default function HowToPage() {
                         <li>Switch translations</li>
                         <li>Access settings and other pages</li>
                     </ul>
-                    <GifPlaceholder label="command menu" />
                 </Section>
 
-                {/* ACCOUNT */}
-                <Section title="Account & Sync" icon={User}>
+                {/* ACCOUNT & PROGRESS */}
+                <Section title="Account & Progress" icon={User}>
                     <p className="text-muted-foreground text-sm leading-relaxed">
                         Create an account to unlock cloud sync and track your reading journey:
                     </p>
@@ -173,20 +186,29 @@ export default function HowToPage() {
                         />
                         <Feature
                             icon={User}
-                            title="Reading Stats"
-                            description="Track words read, chapters completed, and maintain your daily reading streak."
+                            title="Activity Tracking"
+                            description="View your reading history through an interactive heatmap and activity chart on your profile."
+                        />
+                        <Feature
+                            icon={BookOpen}
+                            title="Reading Streaks"
+                            description="Maintain a daily reading streak, visible on your home dashboard."
+                        />
+                        <Feature
+                            icon={ImageIcon}
+                            title="Personalization"
+                            description="Upload a custom profile photo to make your account your own."
                         />
                     </div>
                     <Link href="/profile" className="inline-flex items-center gap-2 text-xs font-mono text-primary hover:underline underline-offset-4 mt-2">
                         <User className="h-3 w-3" /> view profile
                     </Link>
-                    <GifPlaceholder label="account" />
                 </Section>
 
                 {/* Footer */}
                 <div className="pt-8 border-t border-border/30 text-center">
                     <p className="text-[10px] text-muted-foreground font-mono opacity-50">
-                        openwrit • monkeytype inspired
+                        openwrit • minimalist bible reader
                     </p>
                 </div>
 

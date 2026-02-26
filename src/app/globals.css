@@ -304,7 +304,7 @@
   --radius: 0.5rem;
 }
 
-[data-theme='dark'] :root,
+:root[data-theme='dark'],
 [data-theme='dark'][data-palette='standard'],
 [data-palette='standard'][data-theme='dark'] {
   --background: #18181b;
