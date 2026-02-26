@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { BookOpen, Church, Clock, Heart, Share2, X } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -302,6 +302,59 @@ export default function Home() {
   }
 
   return (
+    <>
+    {/* Floating update announcement */}
+    <AnimatePresence>
+      {showUpdateMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 16, transition: { duration: 0.18 } }}
+          transition={{ type: "spring", stiffness: 320, damping: 26, delay: 0.8 }}
+          className="fixed bottom-28 md:bottom-8 right-4 md:right-8 z-[200] w-64 bg-background border border-border/50 shadow-[0_8px_32px_rgba(0,0,0,0.14)] rounded-[2px] overflow-hidden"
+        >
+          {/* Accent line */}
+          <div className="h-px w-full bg-primary/40" />
+
+          <div className="px-4 py-3.5 space-y-3">
+            {/* Header row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+                <span className="text-[10px] font-mono text-primary uppercase tracking-[0.3em] font-bold">
+                  v1.0 released
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  localStorage.setItem('openwrit-v1-update-seen', 'true');
+                  setShowUpdateMessage(false);
+                }}
+                className="text-muted-foreground/30 hover:text-foreground transition-colors -mr-0.5 p-0.5"
+                title="Dismiss"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+
+            {/* Description */}
+            <p className="text-[10px] font-mono text-muted-foreground/60 leading-relaxed">
+              highlights, red letter text, command search, and a new reading experience.
+            </p>
+
+            {/* CTA */}
+            <Link
+              href="/updates"
+              onClick={() => localStorage.setItem('openwrit-v1-update-seen', 'true')}
+              className="group flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/40 hover:text-primary transition-colors uppercase tracking-[0.2em]"
+            >
+              <span>see changelog</span>
+              <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+            </Link>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
     <motion.div
       className="w-full max-w-[900px] mx-auto px-6 py-12 space-y-12"
       variants={containerVariants}
@@ -336,28 +389,8 @@ export default function Home() {
           </div>
 
           {/* Quick Actions */}
-          {(streakDays !== null || continueReading || showUpdateMessage) && (
+          {(streakDays !== null || continueReading) && (
             <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
-              {showUpdateMessage && (
-                <div className="group flex items-center gap-2.5 px-4 py-2 rounded-[2px] border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all duration-300">
-                  <Link href="/updates" className="flex items-center gap-2.5 group-hover:opacity-80 transition-opacity">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    <span className="text-[10px] font-mono text-foreground uppercase tracking-wider group-hover:text-primary transition-colors">
-                      v1.0 is here
-                    </span>
-                  </Link>
-                  <button
-                    onClick={() => {
-                      localStorage.setItem('openwrit-v1-update-seen', 'true');
-                      setShowUpdateMessage(false);
-                    }}
-                    className="ml-1 text-muted-foreground/40 hover:text-foreground transition-colors p-0.5 rounded-sm"
-                    title="Dismiss"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
               {streakDays !== null && (
                 <Link
                   href="/profile"
@@ -401,5 +434,6 @@ export default function Home() {
 
 
     </motion.div>
+    </>
   )
 }
