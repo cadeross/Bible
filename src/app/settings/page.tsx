@@ -20,7 +20,6 @@ const HIGHLIGHT_COLORS = [
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 
 export default function SettingsPage() {
@@ -58,26 +57,7 @@ export default function SettingsPage() {
         getUser();
     }, [supabase]);
 
-    const handleVerseEmailToggle = async (checked: boolean) => {
-        if (!user) {
-            toast.error("Please sign in to change this setting");
-            return;
-        }
-        // Optimistic
-        const updatedUser = { ...user, user_metadata: { ...user.user_metadata, daily_verse_emails: checked } };
-        setUser(updatedUser);
 
-        const { error } = await supabase.auth.updateUser({
-            data: { daily_verse_emails: checked }
-        });
-
-        if (error) {
-            toast.error("Failed to update preference");
-            setUser(user); // revert
-        } else {
-            toast.success(checked ? "Subscribed to daily verses" : "Unsubscribed");
-        }
-    };
 
     // Helper for section groups
     const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
@@ -159,14 +139,6 @@ export default function SettingsPage() {
                                 view stats
                             </button>
                         </Link>
-                    </SettingRow>
-
-                    <SettingRow label="Daily Verse Email" description="receive a verse every morning">
-                        <Switch
-                            checked={user?.user_metadata?.daily_verse_emails ?? false}
-                            onCheckedChange={handleVerseEmailToggle}
-                            disabled={!user}
-                        />
                     </SettingRow>
                 </Section>
 
