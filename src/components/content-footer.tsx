@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 
 const footerLinks = [
     { name: "x.com", href: "https://x.com/cadeross", external: true },
-    { name: "contact", href: "/contact" },
+    { name: "contact", href: "https://form.typeform.com/to/b26fjWPA", external: true },
     { name: "how to", href: "/how-to" },
 ]
 

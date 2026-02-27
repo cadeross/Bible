@@ -17,7 +17,6 @@ const BREADCRUMBS: Record<string, string> = {
     "/profile": "profile",
     "/settings": "settings",
     "/how-to": "how to",
-    "/contact": "contact",
     "/features": "features",
     "/updates": "updates",
 }

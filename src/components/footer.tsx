@@ -68,13 +68,15 @@ export function Footer() {
                     <Heart className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
                     <span className="pb-px">support</span>
                 </a> */}
-                <Link
-                    href="/contact"
+                <a
+                    href="https://form.typeform.com/to/b26fjWPA"
+                    target="_blank"
+                    rel="noreferrer"
                     className="flex items-center gap-2 hover:text-primary transition-colors group"
                 >
                     <Mail className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
                     <span className="pb-px">contact</span>
-                </Link>
+                </a>
 
             </div>
 
