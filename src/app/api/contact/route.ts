@@ -26,19 +26,32 @@ export async function POST(request: Request) {
             );
         }
 
-        const data = await resend.emails.send({
-            from: 'OpenWrit <onboarding@resend.dev>', // Default Resend sender for testing
-            to: ['cadeross33@gmail.com'],
-            subject: `Contact Form: Message from ${name}`,
-            replyTo: email,
-            text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
-        });
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'OpenWrit <hello@openwrit.com>';
+        const contactEmail = process.env.CONTACT_EMAIL || 'hello@openwrit.com';
 
-        if (data.error) {
-            return NextResponse.json({ error: data.error }, { status: 400 });
+        const [contactResponse, autoReplyResponse] = await Promise.all([
+            // Email to you
+            resend.emails.send({
+                from: fromEmail,
+                to: [contactEmail],
+                subject: `Contact Form: Message from ${name}`,
+                replyTo: email,
+                text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
+            }),
+            // Auto-reply to user
+            resend.emails.send({
+                from: fromEmail,
+                to: [email],
+                subject: `We received your message - OpenWrit`,
+                text: `Hi ${name},\n\nThank you for reaching out! We have received your message and will get back to you as soon as possible.\n\nBest,\nThe OpenWrit Team`,
+            })
+        ]);
+
+        if (contactResponse.error) {
+            return NextResponse.json({ error: contactResponse.error }, { status: 400 });
         }
 
-        return NextResponse.json({ success: true, data });
+        return NextResponse.json({ success: true, data: contactResponse.data });
     } catch (error) {
         console.error('Contact form error:', error);
         return NextResponse.json(
