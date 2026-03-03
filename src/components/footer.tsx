@@ -103,7 +103,7 @@ export function Footer() {
 
                 <Link href="/updates" className="flex items-center gap-2 hover:text-primary transition-colors group">
                     <GitBranch className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-                    <span className="opacity-50 group-hover:opacity-100 transition-opacity pb-px">v1.0.0</span>
+                    <span className="opacity-50 group-hover:opacity-100 transition-opacity pb-px">v1.0.1</span>
                 </Link>
             </div>
         </footer>
