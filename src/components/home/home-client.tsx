@@ -78,8 +78,20 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
   const [username, setUsername] = useState<string>("")
   const [greeting, setGreeting] = useState<string>("")
   const [todayLabel, setTodayLabel] = useState<string>("")
-  const [continueReading, setContinueReading] = useState<{ book: string, chapter: number } | null>(null)
-  const [streakDays, setStreakDays] = useState<number | null>(null)
+  const [continueReading, setContinueReading] = useState<{ book: string, chapter: number } | null>(() => {
+    if (typeof window === "undefined") return null
+    try {
+      const cached = localStorage.getItem("openwrit-continue-reading")
+      return cached ? JSON.parse(cached) : null
+    } catch { return null }
+  })
+  const [streakDays, setStreakDays] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null
+    try {
+      const cached = localStorage.getItem("openwrit-streak-days")
+      return cached !== null ? Number(cached) : null
+    } catch { return null }
+  })
   const [mounted, setMounted] = useState(false)
   const [dailyContent, setDailyContent] = useState<DailyContent>(FALLBACK_CONTENT)
   const [showUpdateMessage, setShowUpdateMessage] = useState(false)
@@ -170,17 +182,18 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
       }
 
       if (profile?.last_read_book && profile?.last_read_chapter) {
-        setContinueReading({
-          book: profile.last_read_book,
-          chapter: profile.last_read_chapter
-        })
+        const val = { book: profile.last_read_book, chapter: profile.last_read_chapter }
+        setContinueReading(val)
+        localStorage.setItem("openwrit-continue-reading", JSON.stringify(val))
       } else if (history && history.length > 0) {
         const sorted = [...history].sort((a, b) =>
           new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
         )
         const latest = sorted[0]
         if (latest?.book && latest?.chapter) {
-          setContinueReading({ book: latest.book, chapter: latest.chapter })
+          const val = { book: latest.book, chapter: latest.chapter }
+          setContinueReading(val)
+          localStorage.setItem("openwrit-continue-reading", JSON.stringify(val))
         }
       }
 
@@ -201,6 +214,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
           const yesterdayStr = cursor.toISOString().split("T")[0]
           if (!presence.has(yesterdayStr)) {
             setStreakDays(0)
+            localStorage.setItem("openwrit-streak-days", "0")
             return
           }
         }
@@ -211,6 +225,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
         }
 
         setStreakDays(streak)
+        localStorage.setItem("openwrit-streak-days", String(streak))
       }
     }
 
@@ -389,7 +404,18 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
           </div>
 
           {/* Quick Actions */}
-          {(streakDays !== null || continueReading) && (
+          {(isLoading && streakDays === null && !continueReading) ? (
+            <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
+              <div className="flex items-center gap-2.5 px-4 py-2 rounded-[2px] border border-border/30 bg-secondary/5">
+                <div className="h-3.5 w-3.5 rounded-full bg-muted-foreground/20 animate-pulse shrink-0" />
+                <div className="h-2 w-20 rounded-full bg-muted-foreground/20 animate-pulse" />
+              </div>
+              <div className="flex items-center gap-2.5 px-4 py-2 rounded-[2px] border border-border/30 bg-secondary/5">
+                <div className="h-3.5 w-3.5 rounded-full bg-muted-foreground/20 animate-pulse shrink-0" />
+                <div className="h-2 w-28 rounded-full bg-muted-foreground/20 animate-pulse" />
+              </div>
+            </div>
+          ) : (streakDays !== null || continueReading) ? (
             <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
               {streakDays !== null && (
                 <Link
@@ -417,7 +443,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
                 </Link>
               )}
             </div>
-          )}
+          ) : null}
         </div>
       </motion.div>
 
