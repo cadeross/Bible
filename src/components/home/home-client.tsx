@@ -424,8 +424,25 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
       {/* Daily Focus */}
       <motion.div variants={itemVariants}>
         <div className="w-full">
-          {dailyReadings && (
+          {dailyReadings ? (
             <DailyReadings data={dailyReadings} />
+          ) : (
+            <div className="w-full max-w-[720px] mx-auto flex flex-col items-center justify-center gap-3 py-16 text-center">
+              <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground/40">
+                · readings unavailable ·
+              </span>
+              <p className="text-xs font-mono text-muted-foreground/50 max-w-[280px] leading-relaxed">
+                today&apos;s readings could not be loaded. check back shortly or visit usccb.org directly.
+              </p>
+              <a
+                href="https://bible.usccb.org/daily-bible-reading"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] font-mono text-muted-foreground/30 hover:text-primary transition-colors uppercase tracking-wider mt-1"
+              >
+                usccb.org ↗
+              </a>
+            </div>
           )}
         </div>
       </motion.div>

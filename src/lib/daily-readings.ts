@@ -20,9 +20,11 @@ export interface DailyReadingsData {
     copyright: string;
 }
 
+// Module-level cache: survives across requests within the same serverless instance.
+// Acts as a fallback when the USCCB scrape fails mid-day (e.g. USCCB is down).
+let lastSuccessfulReadings: DailyReadingsData | null = null
+
 export async function getDailyReadings(): Promise<DailyReadingsData> {
-    // Use today's date or a specific date if needed
-    // For now, fetching the main daily readings page which redirects to today's reading
     const url = 'https://bible.usccb.org/daily-bible-reading';
 
     try {
@@ -163,15 +165,16 @@ export async function getDailyReadings(): Promise<DailyReadingsData> {
             }
         }
 
-        return {
-            date,
-            title,
-            readings,
-            copyright
-        };
+        const result = { date, title, readings, copyright }
+        lastSuccessfulReadings = result
+        return result
 
     } catch (error) {
         console.error('Error fetching daily readings:', error);
+        if (lastSuccessfulReadings) {
+            console.warn('Returning last known readings as fallback');
+            return lastSuccessfulReadings;
+        }
         throw error;
     }
 }
