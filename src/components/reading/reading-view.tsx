@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect } from "react"
+import React, { useEffect, useRef } from "react"
 import { BibleChapter, BOOK_LIST } from "@/lib/bible-api"
 import { ReadingContent } from "./reading-content"
 import { ReadingToolbar } from "./reading-toolbar"
@@ -10,7 +10,8 @@ import { ChevronLeft, ChevronRight, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useFocusMode } from "@/contexts/focus-mode"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
+import { SPRING_CONFIG } from "@/lib/animation"
 
 interface ReadingViewProps {
     chapter: BibleChapter
@@ -24,30 +25,33 @@ interface ReadingViewProps {
 export function ReadingView({ chapter, book, chapterNum, translation = "dra", sharedVerses = [], isExplicitTranslation = false }: ReadingViewProps) {
     const router = useRouter()
     const { isFocusMode, toggleFocusMode } = useFocusMode()
-    const { bibleVersion } = useReadingPreferences()
+    const { bibleVersion, isLoaded } = useReadingPreferences()
+    // Track navigation direction for slide animation: 1 = forward, -1 = backward
+    const navDirection = useRef(0)
+    // Prevent infinite redirect loop: only redirect once per mount
+    const hasRedirected = useRef(false)
 
     // Navigation Logic
     const handleNext = () => {
-        // Simple logic: increment chapter
-        // If last chapter of book, go to next book (not fully implemented for brevity without book metadata about max chapters)
-        // For now, just increment chapter.
+        navDirection.current = 1
         router.push(`/read/${book}/${chapterNum + 1}?translation=${translation}`)
     }
 
     const handlePrev = () => {
         if (chapterNum > 1) {
+            navDirection.current = -1
             router.push(`/read/${book}/${chapterNum - 1}?translation=${translation}`)
         }
     }
 
     // Sync with user's preferred translation if not explicitly set in URL
     useEffect(() => {
-        if (!isExplicitTranslation && bibleVersion && bibleVersion !== translation) {
-            // Force a hard navigation to ensure server-side props update correctly
-            // router.replace() was causing an infinite loop due to soft navigation issues with searchParams
-            window.location.replace(`/read/${book}/${chapterNum}?translation=${bibleVersion}`)
+        if (!isLoaded) return
+        if (!isExplicitTranslation && bibleVersion && bibleVersion !== translation && !hasRedirected.current) {
+            hasRedirected.current = true
+            router.replace(`/read/${book}/${chapterNum}?translation=${bibleVersion}`)
         }
-    }, [isExplicitTranslation, bibleVersion, translation, book, chapterNum])
+    }, [isExplicitTranslation, isLoaded, bibleVersion, translation, book, chapterNum, router])
 
     // Keyboard Navigation
     useEffect(() => {
@@ -68,10 +72,31 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra", sh
     return (
         <div className="min-h-screen bg-background flex flex-col items-center py-8">
 
-            {/* Top Controls */}
-            <div className={cn("transition-opacity duration-500", isFocusMode ? "opacity-0 hover:opacity-100" : "opacity-100")}>
-                <ReadingToolbar currentBook={book} currentChapter={chapterNum} currentTranslation={translation} />
-            </div>
+            {/* Top Controls — animated with Framer Motion */}
+            <AnimatePresence mode="wait">
+                {!isFocusMode ? (
+                    <motion.div
+                        key="toolbar-visible"
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={SPRING_CONFIG}
+                    >
+                        <ReadingToolbar currentBook={book} currentChapter={chapterNum} currentTranslation={translation} />
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="toolbar-focus"
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 0.08 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        whileHover={{ opacity: 1, y: 0 }}
+                        transition={SPRING_CONFIG}
+                    >
+                        <ReadingToolbar currentBook={book} currentChapter={chapterNum} currentTranslation={translation} />
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Focus Toggle */}
             {/* Focus Toggle - Moved to Footer */}
@@ -98,7 +123,24 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra", sh
                     </button>
                 </div>
 
-                <ReadingContent chapter={chapter} bookName={book} chapterNum={chapterNum} sharedVerses={sharedVerses} />
+                <AnimatePresence mode="wait" custom={navDirection.current}>
+                    <motion.div
+                        key={`${book}-${chapterNum}`}
+                        custom={navDirection.current}
+                        variants={{
+                            enter: (dir: number) => ({ opacity: 0, x: dir * 20 }),
+                            center: { opacity: 1, x: 0 },
+                            exit: (dir: number) => ({ opacity: 0, x: dir * -20 }),
+                        }}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={SPRING_CONFIG}
+                        className="w-full"
+                    >
+                        <ReadingContent chapter={chapter} bookName={book} chapterNum={chapterNum} sharedVerses={sharedVerses} />
+                    </motion.div>
+                </AnimatePresence>
 
                 {/* Right Nav (Desktop) */}
                 <div className="hidden lg:flex fixed right-8 top-1/2 -translate-y-1/2 flex-col gap-2 opacity-20 hover:opacity-100 transition-opacity">

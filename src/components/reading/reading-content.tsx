@@ -8,6 +8,7 @@ import { Highlight } from "@/lib/persistence"
 import { Trash2, StickyNote, Share2 } from "lucide-react"
 import { NotePanel } from "@/components/reading/note-dialog"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { SPRING_FAST } from "@/lib/animation"
 
 interface ReadingContentProps {
     chapter: BibleChapter
@@ -20,11 +21,11 @@ interface ReadingContentProps {
 }
 
 const HIGHLIGHT_COLORS = [
-    { id: "yellow", class: "bg-yellow-500/30 dark:bg-yellow-500/20", border: "border-yellow-500/50" },
-    { id: "green", class: "bg-green-500/30 dark:bg-green-500/20", border: "border-green-500/50" },
-    { id: "blue", class: "bg-blue-500/30 dark:bg-blue-500/20", border: "border-blue-500/50" },
-    { id: "pink", class: "bg-pink-500/30 dark:bg-pink-500/20", border: "border-pink-500/50" },
-    { id: "purple", class: "bg-purple-500/30 dark:bg-purple-500/20", border: "border-purple-500/50" },
+    { id: "yellow", label: "Highlight yellow", class: "bg-yellow-500/40 dark:bg-yellow-500/30", border: "border-yellow-500/50" },
+    { id: "green", label: "Highlight green", class: "bg-green-500/40 dark:bg-green-500/30", border: "border-green-500/50" },
+    { id: "blue", label: "Highlight blue", class: "bg-blue-500/40 dark:bg-blue-500/30", border: "border-blue-500/50" },
+    { id: "pink", label: "Highlight pink", class: "bg-pink-500/40 dark:bg-pink-500/30", border: "border-pink-500/50" },
+    { id: "purple", label: "Highlight purple", class: "bg-purple-500/40 dark:bg-purple-500/30", border: "border-purple-500/50" },
 ]
 
 export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [], mode = 'default', disableHighlighting = false }: ReadingContentProps) {
@@ -38,6 +39,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
     const [menuOpen, setMenuOpen] = React.useState(false)
     const [menuPosition, setMenuPosition] = React.useState({ top: 0, left: 0 })
     const [selectedVerses, setSelectedVerses] = React.useState<number[]>([])
+    const [liveAnnouncement, setLiveAnnouncement] = React.useState("")
 
     // Ref for the container to limit selection scope
     const containerRef = React.useRef<HTMLDivElement>(null)
@@ -219,8 +221,9 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                             left: rect.left + rect.width / 2
                         })
                         setSelectedVerses(selectedIds)
-                        // Reset for multi-select
                         setMenuOpen(true)
+                        const wordCount = sel.toString().trim().split(/\s+/).length
+                        setLiveAnnouncement(`${wordCount} word${wordCount !== 1 ? 's' : ''} selected. Choose a highlight color or press 1–5.`)
                     }
                 }
             }, 10)
@@ -272,6 +275,25 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
     }
 
 
+
+    // Keyboard shortcuts for highlight menu: 1–5 apply colors, Escape closes
+    React.useEffect(() => {
+        if (!menuOpen) return
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setMenuOpen(false)
+                window.getSelection()?.removeAllRanges()
+                return
+            }
+            const colorIndex = parseInt(e.key, 10) - 1
+            if (colorIndex >= 0 && colorIndex < HIGHLIGHT_COLORS.length) {
+                e.preventDefault()
+                applyColor(HIGHLIGHT_COLORS[colorIndex].id)
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [menuOpen, selectedVerses])
 
     const clearSelection = async () => {
         const newHighlights = highlights.filter(h => !selectedVerses.includes(h.verse))
@@ -504,14 +526,19 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 </DialogContent>
             </Dialog>
 
+            {/* Screen reader live region for selection feedback */}
+            <div aria-live="polite" className="sr-only">{liveAnnouncement}</div>
+
             {/* Elegant Floating Highlight Menu */}
             <AnimatePresence>
                 {menuOpen && (
                     <motion.div
+                        role="toolbar"
+                        aria-label="Highlight options"
                         initial={{ opacity: 0, scale: 0.95, y: 5 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 5 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        transition={SPRING_FAST}
                         className="fixed z-50 flex items-center gap-2 p-1.5 bg-background border border-border/30 shadow-[0_4px_16px_rgba(0,0,0,0.08)] rounded-[2px]"
                         style={{
                             top: menuPosition.top,
@@ -525,8 +552,9 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={() => applyColor(c.id)}
+                                aria-label={c.label}
                                 className={cn(
-                                    "w-5 h-5 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/10 transition-colors focus:outline-none",
+                                    "w-5 h-5 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary",
                                     c.class
                                 )}
                             />
@@ -538,8 +566,8 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={handleOpenNote}
-                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-                            title="Add Note"
+                            aria-label="Add note"
+                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary rounded-sm"
                         >
                             <StickyNote className="h-4 w-4" />
                         </motion.button>
@@ -548,8 +576,8 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={handleShareSelection}
-                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-                            title="Share"
+                            aria-label="Share verse"
+                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary rounded-sm"
                         >
                             <Share2 className="h-4 w-4" />
                         </motion.button>
@@ -560,7 +588,8 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                             whileHover={{ scale: 1.1, color: "var(--destructive)" }}
                             whileTap={{ scale: 0.95 }}
                             onClick={clearSelection}
-                            className="p-1.5 text-muted-foreground transition-colors"
+                            aria-label="Remove highlight"
+                            className="p-1.5 text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary rounded-sm"
                         >
                             <Trash2 className="h-4 w-4" />
                         </motion.button>
@@ -596,7 +625,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    transition={{ type: "spring" as const, stiffness: 500, damping: 30 }}
+                    transition={SPRING_FAST}
                 >
                     {/* Verses */}
                     <div className="prose dark:prose-invert max-w-none">
@@ -643,6 +672,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                             <motion.div
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
+                                                suppressHydrationWarning
                                                 className={cn(
                                                     "w-full mt-10 mb-4 flex justify-center",
                                                     isLoaded && !showTitles && "hidden"
@@ -661,8 +691,14 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                             className={cn(
                                                 "inline cursor-pointer transition-colors duration-200 rounded px-[2px] -mx-[2px] relative",
                                                 bgClass || "hover:bg-primary/5",
-                                                // Pulse animation for shared verses
-                                                pulsingVerses.includes(verse.verse) && "animate-verse-pulse",
+                                                // Pulse animation for shared verses — use highlight color if present
+                                                pulsingVerses.includes(verse.verse) && (
+                                                    highlight?.color === 'green' ? "animate-verse-pulse-green" :
+                                                    highlight?.color === 'blue' ? "animate-verse-pulse-blue" :
+                                                    highlight?.color === 'pink' ? "animate-verse-pulse-pink" :
+                                                    highlight?.color === 'purple' ? "animate-verse-pulse-purple" :
+                                                    "animate-verse-pulse"
+                                                ),
                                                 // Show indicator if there's a note but no color
                                                 highlight?.note && !bgClass && "underline decoration-dotted decoration-primary/50"
                                             )}
@@ -677,15 +713,19 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                             onTouchStart={(e) => handleTouchStart(verse.verse, e)}
                                             onTouchEnd={handleTouchEnd}
                                         >
-                                            <sup className={cn(
-                                                "mr-1 text-[0.6em] text-muted-foreground/50 select-none font-mono inline-flex items-center gap-0.5 transition-opacity",
-                                                isLoaded && !showVerseNumbers && "opacity-0 w-0 mr-0 overflow-hidden"
+                                            <motion.sup
+                                                aria-hidden="true"
+                                                animate={{ opacity: isLoaded && !showVerseNumbers ? 0 : 1 }}
+                                                transition={{ duration: 0.2 }}
+                                                className={cn(
+                                                "mr-1 text-[0.6em] text-muted-foreground/50 select-none font-mono inline-flex items-center gap-0.5",
+                                                isLoaded && !showVerseNumbers && "w-0 mr-0 overflow-hidden"
                                             )}>
                                                 <span>{verse.verse}</span>
                                                 {highlight?.note && (
                                                     <StickyNote className="h-2 w-2 text-primary/70" />
                                                 )}
-                                            </sup>
+                                            </motion.sup>
                                             <span className={cn(
                                                 "transition-colors duration-200",
                                                 isLoaded && redLetters && isRedLetterVerse(bookName, chapterNum, verse.verse) && "text-red-700 dark:text-red-400"
