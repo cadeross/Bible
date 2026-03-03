@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { DailyReadingsData } from "@/lib/daily-readings"
-import { BookOpen, ChevronRight, Check, Loader2, ExternalLink, AlertTriangle } from "lucide-react"
+import { BookOpen, ChevronRight, Check, ExternalLink, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { ReadingContent } from "@/components/reading/reading-content"
@@ -151,7 +151,7 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                         onClick={handleBack}
                         disabled={isFirst}
                         className={cn(
-                            "gap-2 font-mono text-[10px] uppercase tracking-widest px-3 transition-all h-8 rounded-[2px] text-muted-foreground/70",
+                            "gap-2 font-mono text-xs uppercase tracking-widest px-3 transition-all h-8 rounded-[2px] text-muted-foreground/80",
                             isFirst ? "opacity-0 pointer-events-none" : "hover:text-foreground hover:bg-secondary/40 hover:-translate-x-0.5"
                         )}
                     >
@@ -161,10 +161,10 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                 </div>
 
                 <div className="flex flex-col items-center justify-center space-y-3">
-                    <div className="flex items-center gap-2 text-muted-foreground/30 text-[9px] font-mono uppercase tracking-[0.3em] select-none">
+                    <div className="flex items-center gap-2 text-muted-foreground/60 text-[10px] font-mono uppercase tracking-[0.3em] select-none">
                         <span>Daily</span>
                         <span className="w-0.5 h-0.5 rounded-full bg-border/40" />
-                        <span className="text-muted-foreground/60 font-medium">{activeSection?.label || "Reading"}</span>
+                        <span className="text-muted-foreground/80 font-medium">{activeSection?.label || "Reading"}</span>
                     </div>
 
                     {/* Progress Indicator - Subtle */}
@@ -212,7 +212,7 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                         variant="ghost"
                         size="sm"
                         className={cn(
-                            "gap-2 font-mono text-[10px] uppercase tracking-widest px-3 transition-all h-8 rounded-[2px] text-muted-foreground/70",
+                            "gap-2 font-mono text-xs uppercase tracking-widest px-3 transition-all h-8 rounded-[2px] text-muted-foreground/80",
                             isLast
                                 ? "opacity-0 pointer-events-none"
                                 : "hover:text-foreground hover:bg-secondary/40 hover:translate-x-0.5"
@@ -236,7 +236,21 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                 {/* Loading State */}
                 {loading && !activeChapter && (
                     <div className="flex items-center justify-center min-h-[200px]">
-                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/40" />
+                        <div className="flex items-center gap-1.5">
+                            {[0, 1, 2].map((i) => (
+                                <motion.div
+                                    key={i}
+                                    className="w-1.5 h-1.5 rounded-full bg-foreground/30"
+                                    animate={{ opacity: [0.2, 1, 0.2] }}
+                                    transition={{
+                                        duration: 1.2,
+                                        repeat: Infinity,
+                                        ease: "easeInOut",
+                                        delay: i * 0.2,
+                                    }}
+                                />
+                            ))}
+                        </div>
                     </div>
                 )}
 
@@ -281,7 +295,7 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                             <div className="flex justify-center pt-6 border-t border-border/10">
                                 {activeSection.data?.reference && parsed && (
                                     <Link
-                                        href={`/read/${encodeURIComponent(parsed.book)}/${parsed.chapter}`}
+                                        href={`/read/${encodeURIComponent(parsed.book)}/${parsed.chapter}?translation=${bibleVersion}`}
                                         className="group/ref flex flex-col items-center gap-0.5 hover:opacity-100 transition-opacity"
                                     >
                                         <div className="flex items-center gap-1.5 text-xs font-mono text-foreground/50 group-hover/ref:text-foreground transition-colors">
@@ -290,7 +304,7 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                                             <ExternalLink className="h-2.5 w-2.5 opacity-0 group-hover/ref:opacity-60 transition-opacity" />
                                         </div>
                                         {cachedChapter && (
-                                            <span className="text-[9px] font-mono text-muted-foreground/30 uppercase">
+                                            <span className="text-[10px] font-mono text-muted-foreground/50 uppercase">
                                                 {cachedChapter.translation_name}
                                             </span>
                                         )}

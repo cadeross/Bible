@@ -26,6 +26,7 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra", sh
     const router = useRouter()
     const { isFocusMode, toggleFocusMode } = useFocusMode()
     const { bibleVersion, isLoaded } = useReadingPreferences()
+    const hasSectionTitles = chapter.verses.some(v => v.heading)
     // Track navigation direction for slide animation: 1 = forward, -1 = backward
     const navDirection = useRef(0)
     // Prevent infinite redirect loop: only redirect once per mount
@@ -82,7 +83,7 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra", sh
                         exit={{ opacity: 0, y: -8 }}
                         transition={SPRING_CONFIG}
                     >
-                        <ReadingToolbar currentBook={book} currentChapter={chapterNum} currentTranslation={translation} />
+                        <ReadingToolbar currentBook={book} currentChapter={chapterNum} currentTranslation={translation} hasSectionTitles={hasSectionTitles} />
                     </motion.div>
                 ) : (
                     <motion.div
@@ -93,7 +94,7 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra", sh
                         whileHover={{ opacity: 1, y: 0 }}
                         transition={SPRING_CONFIG}
                     >
-                        <ReadingToolbar currentBook={book} currentChapter={chapterNum} currentTranslation={translation} />
+                        <ReadingToolbar currentBook={book} currentChapter={chapterNum} currentTranslation={translation} hasSectionTitles={hasSectionTitles} />
                     </motion.div>
                 )}
             </AnimatePresence>

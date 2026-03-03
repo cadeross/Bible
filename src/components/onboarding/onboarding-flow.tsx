@@ -63,7 +63,7 @@ const StepHeader = ({ title, subtitle }: { title: string; subtitle: string }) =>
         <h2 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
             {title}
         </h2>
-        <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
+        <p className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider">
             {subtitle}
         </p>
     </div>
@@ -308,7 +308,7 @@ export function OnboardingFlow() {
                                 </div>
                             </div>
                             {username.length > 0 && username.length < 3 && (
-                                <p className="text-[10px] text-muted-foreground/40 pt-1">minimum 3 characters</p>
+                                <p className="text-[10px] text-muted-foreground/60 pt-1">minimum 3 characters</p>
                             )}
                         </div>
 
@@ -360,7 +360,7 @@ export function OnboardingFlow() {
                                                 )}
                                             >
                                                 <opt.icon className="w-4 h-4 mb-1 opacity-70" />
-                                                <span className="text-[9px] font-mono uppercase tracking-wider">{opt.label}</span>
+                                                <span className="text-[10px] font-mono uppercase tracking-wider">{opt.label}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -398,7 +398,7 @@ export function OnboardingFlow() {
                                                     )}
                                                     style={{ background: `linear-gradient(135deg, ${opt.bg} 50%, ${opt.fg} 50%)` }}
                                                 />
-                                                <span className="text-[8px] font-mono text-muted-foreground/70 uppercase tracking-wider">{opt.label}</span>
+                                                <span className="text-[10px] font-mono text-muted-foreground/70 uppercase tracking-wider">{opt.label}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -426,7 +426,7 @@ export function OnboardingFlow() {
                                                 )}
                                             >
                                                 <span className={cn("text-xl mb-0.5", opt.className)}>Ag</span>
-                                                <span className="text-[8px] font-mono opacity-60 uppercase tracking-wider">{opt.label}</span>
+                                                <span className="text-[10px] font-mono opacity-70 uppercase tracking-wider">{opt.label}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -565,7 +565,7 @@ export function OnboardingFlow() {
                             <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
                                 you're all set, {username}.
                             </h1>
-                            <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
+                            <p className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider">
                                 preparing your reading experience
                             </p>
                         </motion.div>
@@ -574,7 +574,7 @@ export function OnboardingFlow() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 1.5, duration: 1 }}
-                            className="flex items-center gap-1.5 text-[10px] text-muted-foreground/30 font-mono"
+                            className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60 font-mono"
                         >
                             <BookOpen className="w-3 h-3" />
                             redirecting to home

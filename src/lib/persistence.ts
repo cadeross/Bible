@@ -61,7 +61,7 @@ export async function saveHighlight(highlight: Highlight) {
 
             if (error) {
                 console.error("Error updating highlight", JSON.stringify(error, null, 2));
-                throw error;
+                throw new Error(error.message);
             }
         } else {
             console.log("Persistence: Inserting new record for", highlight.verse);
@@ -80,7 +80,7 @@ export async function saveHighlight(highlight: Highlight) {
 
             if (error) {
                 console.error("Error inserting highlight", JSON.stringify(error, null, 2));
-                throw error;
+                throw new Error(error.message);
             }
         }
     } else {
@@ -132,7 +132,7 @@ export async function getHighlights(book: string, chapter: number): Promise<High
     if (session) {
         const { data, error } = await supabase
             .from('highlights')
-            .select('*')
+            .select('id, book, chapter, verse, color, content, note, created_at, user_id')
             .match({
                 user_id: session.user.id,
                 book,
@@ -163,8 +163,8 @@ export async function getAllHighlights(): Promise<Highlight[]> {
     if (session) {
         const { data, error } = await supabase
             .from('highlights')
-            .select('*')
-            .eq('user_id', session.user.id) // security policy usually handles this but good to be explicit
+            .select('id, book, chapter, verse, color, content, note, created_at, user_id')
+            .eq('user_id', session.user.id)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -227,7 +227,7 @@ export async function getAllWisdom(): Promise<SavedWisdom[]> {
     if (session) {
         const { data, error } = await supabase
             .from('saved_wisdom')
-            .select('*')
+            .select('id, content, source, created_at, user_id')
             .eq('user_id', session.user.id)
             .order('created_at', { ascending: false });
 
@@ -290,7 +290,7 @@ export async function getHistory(): Promise<ReadingHistory[]> {
     if (session) {
         const { data, error } = await supabase
             .from('reading_history')
-            .select('*')
+            .select('id, book, chapter, words_read, duration_seconds, completed_at, user_id')
             .eq('user_id', session.user.id)
             .order('completed_at', { ascending: false });
 
@@ -324,7 +324,7 @@ export async function getProfile(): Promise<Profile | null> {
 
     const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, username, last_read_book, last_read_chapter, avatar_url, updated_at')
         .eq('id', session.user.id)
         .single();
 

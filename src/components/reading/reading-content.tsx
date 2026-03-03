@@ -718,7 +718,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                 animate={{ opacity: isLoaded && !showVerseNumbers ? 0 : 1 }}
                                                 transition={{ duration: 0.2 }}
                                                 className={cn(
-                                                "mr-1 text-[0.6em] text-muted-foreground/50 select-none font-mono inline-flex items-center gap-0.5",
+                                                "mr-1 text-[0.6em] text-muted-foreground/60 select-none font-mono inline-flex items-center gap-0.5",
                                                 isLoaded && !showVerseNumbers && "w-0 mr-0 overflow-hidden"
                                             )}>
                                                 <span>{verse.verse}</span>
@@ -742,7 +742,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
                     {/* Citation / Copyright */}
                     {mode === 'default' && chapter.translation_note && (
-                        <div className="mt-12 text-center opacity-40 hover:opacity-80 transition-opacity">
+                        <div className="mt-12 text-center opacity-60 hover:opacity-80 transition-opacity">
                             <p className="text-[10px] font-mono leading-relaxed max-w-lg mx-auto">
                                 {chapter.translation_note}
                             </p>

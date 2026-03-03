@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { Monitor, Moon, Sun, Type, Hash, Palette, User, Settings as SettingsIcon, PenTool, RotateCcw, Languages, Heading } from "lucide-react"
 import Link from "next/link"
 import { QuickSelector } from "@/components/reading/quick-selector"
-import { TRANSLATIONS } from "@/lib/bible-api"
+import { getAllTranslations, getVerseText } from "@/lib/bible-api"
 import { motion, AnimatePresence } from "framer-motion"
 
 const HIGHLIGHT_COLORS = [
@@ -16,6 +16,29 @@ const HIGHLIGHT_COLORS = [
     { id: "blue", class: "bg-blue-500/30", border: "border-blue-500/50" },
     { id: "pink", class: "bg-pink-500/30", border: "border-pink-500/50" },
     { id: "purple", class: "bg-purple-500/30", border: "border-purple-500/50" },
+]
+
+const PALETTES: Array<{
+    id: PaletteType
+    label: string
+    light: { bg: string; text: string; accent: string; border: string }
+    dark:  { bg: string; text: string; accent: string; border: string }
+}> = [
+    { id: 'things',   label: 'Munich',    light: { bg:'#f5f5f0', text:'#1d1d1f', accent:'#007aff', border:'#d1d1d6' }, dark: { bg:'#1c1c1e', text:'#f5f5f7', accent:'#0a84ff', border:'#3a3a3c' } },
+    { id: 'standard', label: 'Standard',  light: { bg:'#fdfdfd', text:'#1a1a1a', accent:'#1a1a1a', border:'#e5e5e5' }, dark: { bg:'#18181b', text:'#ededed', accent:'#ededed', border:'#27272a' } },
+    { id: 'sepia',    label: 'Sepia',     light: { bg:'#f8f4e5', text:'#433422', accent:'#433422', border:'#dcd6c6' }, dark: { bg:'#1f1812', text:'#d4c5b0', accent:'#d4c5b0', border:'#3d3024' } },
+    { id: 'solarized',label: 'Solarized', light: { bg:'#fdf6e3', text:'#657b83', accent:'#b58900', border:'#d3cbb7' }, dark: { bg:'#002b36', text:'#839496', accent:'#b58900', border:'#073642' } },
+    { id: 'midnight', label: 'Midnight',  light: { bg:'#f1f5f9', text:'#334155', accent:'#0f172a', border:'#94a3b8' }, dark: { bg:'#0f172a', text:'#e2e8f0', accent:'#38bdf8', border:'#334155' } },
+    { id: 'lavender', label: 'Lavender',  light: { bg:'#f3e8ff', text:'#581c87', accent:'#9333ea', border:'#c084fc' }, dark: { bg:'#11001c', text:'#e9d5ff', accent:'#c084fc', border:'#581c87' } },
+    { id: 'rose',     label: 'Rose',      light: { bg:'#fff1f2', text:'#881337', accent:'#be123c', border:'#fda4af' }, dark: { bg:'#1c0208', text:'#ffe4e6', accent:'#fb7185', border:'#881337' } },
+    { id: 'terminal', label: 'Terminal',  light: { bg:'#ffffff', text:'#003300', accent:'#008800', border:'#33cc33' }, dark: { bg:'#0c0c0c', text:'#00ff41', accent:'#00ff41', border:'#003300' } },
+    { id: 'oled',     label: 'OLED',      light: { bg:'#ffffff', text:'#000000', accent:'#000000', border:'#e4e4e7' }, dark: { bg:'#000000', text:'#ffffff', accent:'#ffffff', border:'#27272a' } },
+]
+
+// [chapter, verse] pairs for the appearance preview
+const PSALM_REFS: Array<[number, number]> = [
+    [23, 1], [27, 1], [34, 8], [46, 10], [91, 2],
+    [100, 4], [119, 105], [121, 1], [139, 14], [16, 11],
 ]
 
 import { useEffect, useState } from "react"
@@ -45,6 +68,21 @@ export default function SettingsPage() {
     } = useReadingPreferences()
 
 
+    const [translations, setTranslations] = useState<{ id: string; name: string; abbreviation?: string }[]>([])
+    const [previewVerse, setPreviewVerse] = useState<string>('')
+    const [psalmRef] = useState<[number, number]>(() => PSALM_REFS[Math.floor(Math.random() * PSALM_REFS.length)])
+
+    useEffect(() => {
+        getAllTranslations().then(setTranslations)
+    }, [])
+
+    useEffect(() => {
+        setPreviewVerse('')
+        getVerseText('Psalms', psalmRef[0], psalmRef[1], bibleVersion)
+            .then(setPreviewVerse)
+            .catch(() => setPreviewVerse('The LORD is my shepherd; I shall not want.'))
+    }, [bibleVersion, psalmRef])
+
     // User State for Preferences
     const [user, setUser] = useState<any>(null);
     const supabase = createClient();
@@ -73,13 +111,13 @@ export default function SettingsPage() {
     )
 
     // Helper for setting row
-    const SettingRow = ({ label, description, children }: { label: string, description?: string, children: React.ReactNode }) => (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2">
+    const SettingRow = ({ label, description, children, stack = false }: { label: string, description?: string, children: React.ReactNode, stack?: boolean }) => (
+        <div className={cn("py-2", stack ? "space-y-2" : "flex flex-col sm:flex-row sm:items-center justify-between gap-4")}>
             <div className="space-y-0.5">
                 <label className="text-sm font-medium font-mono text-foreground/90">{label}</label>
                 {description && <p className="text-[10px] text-muted-foreground font-mono">{description}</p>}
             </div>
-            <div className="flex-shrink-0">
+            <div className={stack ? "w-full" : "flex-shrink-0"}>
                 {children}
             </div>
         </div>
@@ -122,7 +160,7 @@ export default function SettingsPage() {
                     <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
                         SETTINGS
                     </h1>
-                    <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
+                    <p className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider">
                         customize your reading experience
                     </p>
                 </div>
@@ -144,130 +182,108 @@ export default function SettingsPage() {
 
                 {/* APPEARANCE */}
                 <Section title="Appearance">
-                    <SettingRow label="Theme" description="choose your preferred color scheme">
-                        <div className="flex gap-3">
-                            {/* Light Theme Card */}
-                            <button
-                                onClick={() => setTheme('light')}
-                                className={cn(
-                                    "group relative w-20 h-16 rounded-[2px] border overflow-hidden transition-all duration-200",
-                                    theme === 'light'
-                                        ? "ring-1 ring-inset ring-primary border-transparent scale-105"
-                                        : "border-border/50 hover:border-border hover:scale-102"
-                                )}
-                            >
-                                {/* Mini preview */}
-                                <div className="absolute inset-0 bg-[#fafafa]">
-                                    <div className="absolute top-1 left-1 right-1 h-2 bg-[#e5e5e5] rounded-sm" />
-                                    <div className="absolute top-4 left-1 w-4 h-1.5 bg-[#3b82f6] rounded-sm" />
-                                    <div className="absolute top-6 left-1 right-1 h-1 bg-[#d4d4d4] rounded-sm" />
-                                    <div className="absolute top-8 left-1 right-2 h-1 bg-[#d4d4d4] rounded-sm" />
-                                    <div className="absolute top-10 left-1 right-3 h-1 bg-[#d4d4d4] rounded-sm" />
-                                </div>
-                                <div className="absolute bottom-0 inset-x-0 bg-[#e5e5e5]/80 py-0.5 flex items-center justify-center gap-1">
-                                    <Sun className="h-2 w-2 text-[#737373]" />
-                                    <span className="text-[8px] font-mono text-[#737373]">light</span>
-                                </div>
-                            </button>
+                    {(() => {
+                        const activePalette = PALETTES.find(p => p.id === palette) ?? PALETTES[0]
+                        const c = theme === 'dark' ? activePalette.dark : activePalette.light
+                        const previewFontFamily = (() => {
+                            switch (fontFamily) {
+                                case "sans":  return "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif"
+                                case "mono":  return "var(--font-geist-mono), ui-monospace, monospace"
+                                case "pixel": return "var(--font-nunito), ui-rounded, sans-serif"
+                                case "serif":
+                                default: return "Merriweather, Georgia, ui-serif, serif"
+                            }
+                        })()
+                        return (
+                            <div className="border border-border/40 rounded-[4px] overflow-hidden">
 
-                            {/* Dark Theme Card */}
-                            <button
-                                onClick={() => setTheme('dark')}
-                                className={cn(
-                                    "group relative w-20 h-16 rounded-[2px] border overflow-hidden transition-all duration-200",
-                                    theme === 'dark'
-                                        ? "ring-1 ring-inset ring-primary border-transparent scale-105"
-                                        : "border-border/50 hover:border-border hover:scale-102"
-                                )}
-                            >
-                                {/* Mini preview */}
-                                <div className="absolute inset-0 bg-[#171717]">
-                                    <div className="absolute top-1 left-1 right-1 h-2 bg-[#262626] rounded-sm" />
-                                    <div className="absolute top-4 left-1 w-4 h-1.5 bg-[#60a5fa] rounded-sm" />
-                                    <div className="absolute top-6 left-1 right-1 h-1 bg-[#404040] rounded-sm" />
-                                    <div className="absolute top-8 left-1 right-2 h-1 bg-[#404040] rounded-sm" />
-                                    <div className="absolute top-10 left-1 right-3 h-1 bg-[#404040] rounded-sm" />
-                                </div>
-                                <div className="absolute bottom-0 inset-x-0 bg-[#262626]/80 py-0.5 flex items-center justify-center gap-1">
-                                    <Moon className="h-2 w-2 text-[#a3a3a3]" />
-                                    <span className="text-[8px] font-mono text-[#a3a3a3]">dark</span>
-                                </div>
-                            </button>
-
-                            {/* Auto Theme Card */}
-                            <button
-                                onClick={() => setTheme('system')}
-                                className={cn(
-                                    "group relative w-20 h-16 rounded-[2px] border overflow-hidden transition-all duration-200",
-                                    theme === 'system'
-                                        ? "ring-1 ring-inset ring-primary border-transparent scale-105"
-                                        : "border-border/50 hover:border-border hover:scale-102"
-                                )}
-                            >
-                                {/* Split preview - light/dark */}
-                                <div className="absolute inset-0">
-                                    {/* Left half - light */}
-                                    <div className="absolute inset-y-0 left-0 w-1/2 bg-[#fafafa]">
-                                        <div className="absolute top-1 left-1 right-0.5 h-2 bg-[#e5e5e5] rounded-sm" />
-                                        <div className="absolute top-4 left-1 w-3 h-1.5 bg-[#3b82f6] rounded-sm" />
-                                        <div className="absolute top-6 left-1 right-0.5 h-1 bg-[#d4d4d4] rounded-sm" />
-                                        <div className="absolute top-8 left-1 right-1 h-1 bg-[#d4d4d4] rounded-sm" />
-                                    </div>
-                                    {/* Right half - dark */}
-                                    <div className="absolute inset-y-0 right-0 w-1/2 bg-[#171717]">
-                                        <div className="absolute top-1 left-0.5 right-1 h-2 bg-[#262626] rounded-sm" />
-                                        <div className="absolute top-4 right-1 w-3 h-1.5 bg-[#60a5fa] rounded-sm" />
-                                        <div className="absolute top-6 left-0.5 right-1 h-1 bg-[#404040] rounded-sm" />
-                                        <div className="absolute top-8 left-1 right-1 h-1 bg-[#404040] rounded-sm" />
-                                    </div>
-                                </div>
-                                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-r from-[#e5e5e5]/80 to-[#262626]/80 py-0.5 flex items-center justify-center gap-1">
-                                    <Monitor className="h-2 w-2 text-[#737373]" />
-                                    <span className="text-[8px] font-mono text-[#737373]">auto</span>
-                                </div>
-                            </button>
-                        </div>
-                    </SettingRow>
-
-                    <SettingRow label="Color Palette" description="accent colors and tones">
-                        <div className="flex flex-wrap gap-2">
-                            {[
-                                { id: 'standard', bg: '#18181b', accent: '#3b82f6', muted: '#27272a', text: '#fafafa' },
-                                { id: 'terminal', bg: '#0d1117', accent: '#39d353', muted: '#161b22', text: '#c9d1d9' },
-                                { id: 'solarized', bg: '#002b36', accent: '#268bd2', muted: '#073642', text: '#839496' },
-                                { id: 'sepia', bg: '#f4ecd8', accent: '#8b7355', muted: '#e8dcc8', text: '#5c4a32' },
-                                { id: 'midnight', bg: '#0f0f23', accent: '#ffff66', muted: '#10101a', text: '#cccccc' },
-                                { id: 'lavender', bg: '#1a1a2e', accent: '#b4a7d6', muted: '#16162a', text: '#e0d8ef' },
-                                { id: 'rose', bg: '#1f1a1a', accent: '#f472b6', muted: '#2a1f1f', text: '#fce7f3' },
-                                { id: 'oled', bg: '#000000', accent: '#ffffff', muted: '#0a0a0a', text: '#e5e5e5' },
-                            ].map((p) => (
-                                <button
-                                    key={p.id}
-                                    onClick={() => setPalette(p.id as PaletteType)}
-                                    title={p.id}
-                                    className={cn(
-                                        "w-10 h-12 rounded-[2px] overflow-hidden p-1 flex flex-col gap-1 transition-all duration-300 hover:scale-105 active:scale-95 border",
-                                        palette === p.id
-                                            ? "ring-1 ring-inset ring-primary border-transparent"
-                                            : "border-transparent opacity-60 hover:opacity-100"
-                                    )}
-                                    style={{ backgroundColor: p.bg }}
-                                >
-                                    {/* Header - book/chapter */}
-                                    <div className="flex items-center justify-center gap-0.5 pb-0.5" style={{ borderBottom: `0.5px solid ${p.muted}` }}>
-                                        <div className="h-0.5 w-4 rounded-full" style={{ backgroundColor: p.accent }} />
+                                    {/* 1. Live preview — Bible text only, no chrome */}
+                                    <div className="px-6 pt-5 pb-5" style={{ backgroundColor: c.bg }}>
+                                        <div style={{ color: c.accent, fontSize: '8px', fontFamily: 'monospace', opacity: 0.55, marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                                            Psalm {psalmRef[0]}:{psalmRef[1]}
+                                        </div>
+                                        {previewVerse ? (
+                                            <p style={{ color: c.text, fontSize: '15px', lineHeight: 1.65, opacity: 0.90, fontFamily: previewFontFamily, margin: 0 }}>
+                                                {previewVerse}
+                                            </p>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', paddingTop: '2px' }}>
+                                                <div style={{ height: '3px', borderRadius: '9999px', backgroundColor: c.text, opacity: 0.65 }} />
+                                                <div style={{ height: '3px', borderRadius: '9999px', backgroundColor: c.text, opacity: 0.50, width: '88%' }} />
+                                                <div style={{ height: '3px', borderRadius: '9999px', backgroundColor: c.text, opacity: 0.50 }} />
+                                                <div style={{ height: '3px', borderRadius: '9999px', backgroundColor: c.text, opacity: 0.38, width: '75%' }} />
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {/* Verse lines */}
-                                    <div className="flex-1 flex flex-col justify-start gap-0.5">
-                                        <div className="h-0.5 w-full rounded-full opacity-60" style={{ backgroundColor: p.text }} />
-                                        <div className="h-0.5 w-5/6 rounded-full opacity-40" style={{ backgroundColor: p.text }} />
-                                        <div className="h-0.5 w-full rounded-full opacity-40" style={{ backgroundColor: p.text }} />
+                                    {/* 2. Theme strip */}
+                                    <div className="flex border-t border-border/30">
+                                        {([
+                                            { id: 'light',  label: 'light', Icon: Sun     },
+                                            { id: 'dark',   label: 'dark',  Icon: Moon    },
+                                            { id: 'system', label: 'auto',  Icon: Monitor },
+                                        ] as const).map(({ id, label, Icon }, i) => (
+                                            <button
+                                                key={id}
+                                                onClick={() => setTheme(id)}
+                                                className={cn(
+                                                    "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] font-mono transition-colors",
+                                                    i > 0 && "border-l border-border/30",
+                                                    theme === id
+                                                        ? "bg-primary/8 text-foreground"
+                                                        : "text-muted-foreground hover:text-foreground hover:bg-muted/20"
+                                                )}
+                                            >
+                                                <Icon className="h-3 w-3" />
+                                                {label}
+                                            </button>
+                                        ))}
                                     </div>
-                                </button>
-                            ))}
-                        </div>
-                    </SettingRow>
+
+                                    {/* 3. Palette swatches */}
+                                    <div className="border-t border-border/30 p-3 flex flex-wrap gap-x-3 gap-y-3">
+                                        {PALETTES.map(p => {
+                                            const sc = theme === 'dark' ? p.dark : p.light
+                                            return (
+                                                <button key={p.id} onClick={() => setPalette(p.id)}
+                                                    className="flex flex-col items-center gap-1 group outline-none">
+                                                    <div
+                                                        className={cn(
+                                                            "w-11 h-14 rounded-[3px] overflow-hidden transition-all duration-150",
+                                                            palette === p.id
+                                                                ? "ring-[1.5px] ring-primary scale-105"
+                                                                : "opacity-55 hover:opacity-100 hover:scale-[1.03]"
+                                                        )}
+                                                        style={{ backgroundColor: sc.bg, border: `1px solid ${sc.border}` }}
+                                                    >
+                                                        {/* Top bar with accent */}
+                                                        <div className="h-[9px] flex items-center px-1" style={{ borderBottom: `0.5px solid ${sc.border}` }}>
+                                                            <div className="h-[2px] w-4 rounded-full" style={{ backgroundColor: sc.accent }} />
+                                                        </div>
+                                                        {/* Text lines */}
+                                                        <div className="px-1 pt-1.5 flex flex-col gap-[3px]">
+                                                            <div className="h-[1.5px] rounded-full"       style={{ backgroundColor: sc.text, opacity: 0.80 }} />
+                                                            <div className="h-[1.5px] rounded-full w-5/6" style={{ backgroundColor: sc.text, opacity: 0.55 }} />
+                                                            <div className="h-[1.5px] rounded-full"       style={{ backgroundColor: sc.text, opacity: 0.55 }} />
+                                                            <div className="h-[1.5px] rounded-full w-4/5" style={{ backgroundColor: sc.text, opacity: 0.40 }} />
+                                                            <div className="h-[1.5px] rounded-full w-5/6" style={{ backgroundColor: sc.text, opacity: 0.35 }} />
+                                                            <div className="h-[1.5px] rounded-full"       style={{ backgroundColor: sc.text, opacity: 0.30 }} />
+                                                        </div>
+                                                    </div>
+                                                    <span className={cn(
+                                                        "text-[8px] font-mono leading-none transition-colors",
+                                                        palette === p.id ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                                                    )}>
+                                                        {p.label}
+                                                    </span>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+
+                            </div>
+                        )
+                    })()}
                 </Section>
 
                 {/* READING */}
@@ -275,13 +291,13 @@ export default function SettingsPage() {
                     <SettingRow label="Default Version" description="preferred Bible translation">
                         <QuickSelector
                             value={bibleVersion}
-                            items={TRANSLATIONS}
+                            items={translations}
                             onSelect={setBibleVersion}
                             icon={<Languages className="h-3 w-3" />}
                             placeholder="Select version..."
                             displayFormat="name"
-                            popoverWidth="w-[300px]"
-                            className="w-[200px]"
+                            popoverWidth="w-[320px]"
+                            className="w-[280px]"
                         />
                     </SettingRow>
 

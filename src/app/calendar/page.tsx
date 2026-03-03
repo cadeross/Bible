@@ -173,7 +173,7 @@ function DayDetail({ day, onClose }: { day: LiturgicalDay; onClose: () => void }
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1.5 min-w-0">
-                    <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground/50">
+                    <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground/60">
                         {formattedDate}
                     </div>
                     <h3 className="text-lg font-semibold text-foreground/90 leading-snug">
@@ -192,7 +192,7 @@ function DayDetail({ day, onClose }: { day: LiturgicalDay; onClose: () => void }
             <div className="grid grid-cols-2 gap-4">
                 {/* Rank */}
                 <div className="space-y-1">
-                    <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/40">
+                    <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground/60">
                         Rank
                     </div>
                     <div className="text-sm text-foreground/80">
@@ -206,7 +206,7 @@ function DayDetail({ day, onClose }: { day: LiturgicalDay; onClose: () => void }
 
                 {/* Color */}
                 <div className="space-y-1">
-                    <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/40">
+                    <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground/60">
                         Liturgical Color
                     </div>
                     <div className="flex items-center gap-2">
@@ -217,7 +217,7 @@ function DayDetail({ day, onClose }: { day: LiturgicalDay; onClose: () => void }
 
                 {/* Season */}
                 <div className="space-y-1">
-                    <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/40">
+                    <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground/60">
                         Season
                     </div>
                     <div className="text-sm text-foreground/80">
@@ -227,7 +227,7 @@ function DayDetail({ day, onClose }: { day: LiturgicalDay; onClose: () => void }
 
                 {/* Cycle */}
                 <div className="space-y-1">
-                    <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/40">
+                    <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground/60">
                         Cycle
                     </div>
                     <div className="text-sm text-foreground/80">
@@ -301,10 +301,10 @@ function CalendarDayCell({
                 )} />
                 {rankPriority >= 4 && isCurrentMonth && (
                     <span className={cn(
-                        "ml-auto text-[8px] font-mono uppercase tracking-wider px-1 py-0.5 rounded",
+                        "ml-auto text-[10px] font-mono uppercase tracking-wider px-1 py-0.5 rounded",
                         rankPriority >= 5
                             ? "bg-primary/10 text-primary font-semibold"
-                            : "text-muted-foreground/50"
+                            : "text-muted-foreground/70"
                     )}>
                         {rankPriority >= 5 ? 'Sol' : 'Feast'}
                     </span>
@@ -360,7 +360,7 @@ function MobileListItem({
         >
             {/* Date Column */}
             <div className="flex flex-col items-center w-10 shrink-0">
-                <span className="text-[9px] font-mono uppercase text-muted-foreground/50">
+                <span className="text-[10px] font-mono uppercase text-muted-foreground/60">
                     {dayName}
                 </span>
                 <span className={cn(
@@ -385,13 +385,13 @@ function MobileListItem({
                     {day.name}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] font-mono text-muted-foreground/40">
+                    <span className="text-[10px] font-mono text-muted-foreground/60">
                         {day.rank}
                     </span>
                     {day.season && (
                         <>
                             <span className="text-muted-foreground/20">·</span>
-                            <span className="text-[10px] font-mono text-muted-foreground/40">
+                            <span className="text-[10px] font-mono text-muted-foreground/60">
                                 {day.season}
                             </span>
                         </>
@@ -540,7 +540,7 @@ export default function CalendarPage() {
                     {!isCurrentMonth && (
                         <button
                             onClick={goToToday}
-                            className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50 hover:text-primary transition-colors px-3 py-2 rounded-[2px] hover:bg-muted/40 hidden sm:block"
+                            className="text-xs font-mono uppercase tracking-wider text-muted-foreground/70 hover:text-primary transition-colors px-3 py-2 rounded-[2px] hover:bg-muted/40 hidden sm:block"
                         >
                             Today
                         </button>
@@ -575,7 +575,7 @@ export default function CalendarPage() {
                             {DAY_LABELS.map(label => (
                                 <div
                                     key={label}
-                                    className="text-center text-[10px] font-mono uppercase tracking-wider text-muted-foreground/40 py-2"
+                                    className="text-center text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60 py-2"
                                 >
                                     {label}
                                 </div>

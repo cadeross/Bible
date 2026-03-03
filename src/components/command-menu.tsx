@@ -7,6 +7,7 @@ import { BOOK_LIST } from "@/lib/bible-api"
 import { Search, CornerDownLeft, PanelTop } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useNavMode } from "@/contexts/nav-mode"
+import { useReadingPreferences } from "@/contexts/reading-preferences"
 
 export function CommandMenu() {
     const [open, setOpen] = React.useState(false)
@@ -14,6 +15,7 @@ export function CommandMenu() {
     const [selectedIndex, setSelectedIndex] = React.useState(0)
     const router = useRouter()
     const { navMode, toggleNavMode } = useNavMode()
+    const { bibleVersion } = useReadingPreferences()
 
     React.useEffect(() => {
         const handleOpen = () => {
@@ -81,7 +83,7 @@ export function CommandMenu() {
                     label: `Go to ${matchedBook} ${secondPart}`,
                     action: () => {
                         const [chapter, verse] = secondPart.split(":")
-                        let url = `/read/${matchedBook}/${chapter}`
+                        let url = `/read/${matchedBook}/${chapter}?translation=${bibleVersion}`
                         if (verse) url += `#verse-${verse}`
                         router.push(url)
                         setOpen(false)
@@ -96,7 +98,7 @@ export function CommandMenu() {
             id: b,
             label: b,
             action: () => {
-                router.push(`/read/${b}/1`)
+                router.push(`/read/${b}/1?translation=${bibleVersion}`)
                 setOpen(false)
             }
         }))

@@ -20,18 +20,21 @@ export function StatsOverview() {
             // Fetch Highlights count
             const { count: highlightCount } = await supabase
                 .from('highlights')
-                .select('*', { count: 'exact', head: true });
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', session.user.id);
 
-            // Fetch generic user_stats (if we had them implemented fully, for now we mock based on other data or just use highlight count as valid data point)
-            // Ideally we'd have a user_stats table. Let's assume user_stats exists from our migration.
-            const { data: userStats } = await supabase
-                .from('user_stats')
-                .select('*')
-                .single();
+            // Aggregate stats from reading_history
+            const { data: historyRows } = await supabase
+                .from('reading_history')
+                .select('words_read, book, chapter')
+                .eq('user_id', session.user.id);
+
+            const totalWords = historyRows?.reduce((sum, r) => sum + (r.words_read || 0), 0) ?? 0;
+            const uniqueChapters = new Set(historyRows?.map(r => `${r.book}-${r.chapter}`)).size;
 
             setStats({
-                words: userStats?.words_read || 0,
-                chapters: userStats?.chapters_read || 0,
+                words: totalWords,
+                chapters: uniqueChapters,
                 highlights: highlightCount || 0
             });
         };
@@ -61,7 +64,7 @@ export function StatsOverview() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
             {statItems.map((stat) => (
                 <div key={stat.label} className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2 text-primary/50 text-xs font-mono">
+                    <div className="flex items-center gap-2 text-primary/70 text-xs font-mono">
                         {stat.icon}
                         <span>{stat.label}</span>
                     </div>

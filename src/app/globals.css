@@ -12,6 +12,8 @@
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-border: var(--border);
+  --color-heart: var(--heart, var(--primary));
+  --color-bookmark: var(--bookmark, var(--primary));
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-serif), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
@@ -536,6 +538,40 @@
   --border: #27272a;
 }
 
+/* --- THINGS 3 --- */
+[data-palette='things'] {
+  --background: #f5f5f0;       /* warm paper white */
+  --foreground: #1d1d1f;       /* Apple charcoal */
+  --primary: #007aff;          /* iOS blue */
+  --primary-foreground: #ffffff;
+  --muted: #e9e9ed;
+  --muted-foreground: #8e8e93; /* iOS system gray */
+  --accent: #e5e5ea;
+  --accent-foreground: #1d1d1f;
+  --card: #ffffff;
+  --card-foreground: #1d1d1f;
+  --border: #d1d1d6;
+  --heart: #ff3b30;            /* iOS system red */
+  --bookmark: #ffcc00;         /* iOS system yellow */
+}
+
+[data-theme='dark'][data-palette='things'],
+[data-palette='things'][data-theme='dark'] {
+  --background: #1c1c1e;       /* iOS dark system */
+  --foreground: #f5f5f7;
+  --primary: #0a84ff;          /* iOS dark blue */
+  --primary-foreground: #1c1c1e;
+  --muted: #2c2c2e;
+  --muted-foreground: #8e8e93;
+  --accent: #3a3a3c;
+  --accent-foreground: #f5f5f7;
+  --card: #2c2c2e;
+  --card-foreground: #f5f5f7;
+  --border: #3a3a3c;
+  --heart: #ff453a;            /* iOS dark system red */
+  --bookmark: #ffd60a;         /* iOS dark system yellow */
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    VERSE PULSE ANIMATION - For shared verse highlights
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -571,3 +607,34 @@
   animation: verse-pulse 3s ease-out forwards;
   border-radius: 4px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FOCUS VISIBLE - Reading components interactive element focus rings
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Verse pulse color variants matching highlight palette */
+@keyframes verse-pulse-green {
+  0%   { background-color: rgba(34, 197, 94, 0.4);  box-shadow: 0 0 20px rgba(34, 197, 94, 0.4), 0 0 40px rgba(34, 197, 94, 0.2); }
+  50%  { background-color: rgba(34, 197, 94, 0.3);  box-shadow: 0 0 25px rgba(34, 197, 94, 0.4), 0 0 50px rgba(34, 197, 94, 0.2); }
+  100% { background-color: transparent; box-shadow: none; }
+}
+@keyframes verse-pulse-blue {
+  0%   { background-color: rgba(59, 130, 246, 0.4);  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4), 0 0 40px rgba(59, 130, 246, 0.2); }
+  50%  { background-color: rgba(59, 130, 246, 0.3);  box-shadow: 0 0 25px rgba(59, 130, 246, 0.4), 0 0 50px rgba(59, 130, 246, 0.2); }
+  100% { background-color: transparent; box-shadow: none; }
+}
+@keyframes verse-pulse-pink {
+  0%   { background-color: rgba(236, 72, 153, 0.4);  box-shadow: 0 0 20px rgba(236, 72, 153, 0.4), 0 0 40px rgba(236, 72, 153, 0.2); }
+  50%  { background-color: rgba(236, 72, 153, 0.3);  box-shadow: 0 0 25px rgba(236, 72, 153, 0.4), 0 0 50px rgba(236, 72, 153, 0.2); }
+  100% { background-color: transparent; box-shadow: none; }
+}
+@keyframes verse-pulse-purple {
+  0%   { background-color: rgba(168, 85, 247, 0.4);  box-shadow: 0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.2); }
+  50%  { background-color: rgba(168, 85, 247, 0.3);  box-shadow: 0 0 25px rgba(168, 85, 247, 0.4), 0 0 50px rgba(168, 85, 247, 0.2); }
+  100% { background-color: transparent; box-shadow: none; }
+}
+
+.animate-verse-pulse-green  { animation: verse-pulse-green  3s ease-out forwards; border-radius: 4px; }
+.animate-verse-pulse-blue   { animation: verse-pulse-blue   3s ease-out forwards; border-radius: 4px; }
+.animate-verse-pulse-pink   { animation: verse-pulse-pink   3s ease-out forwards; border-radius: 4px; }
+.animate-verse-pulse-purple { animation: verse-pulse-purple 3s ease-out forwards; border-radius: 4px; }

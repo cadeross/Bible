@@ -59,7 +59,7 @@ export default function LibraryPage() {
         fetchData();
     }, []);
 
-    const { fontFamily, isLoaded: preferencesLoaded } = useReadingPreferences();
+    const { fontFamily, bibleVersion, isLoaded: preferencesLoaded } = useReadingPreferences();
     const getFontClass = () => {
         if (!preferencesLoaded) return "font-serif";
         switch (fontFamily) {
@@ -289,7 +289,7 @@ export default function LibraryPage() {
                     <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
                         LIBRARY
                     </h1>
-                    <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
+                    <p className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider">
                         your collection of verses and wisdom
                     </p>
                 </div>
@@ -363,7 +363,7 @@ export default function LibraryPage() {
                                                 <div className="space-y-2">
                                                     <div className="flex items-center justify-between">
                                                         <Link
-                                                            href={`/read/${highlight.book}/${highlight.chapter}?translation=dra`}
+                                                            href={`/read/${highlight.book}/${highlight.chapter}?translation=${bibleVersion}`}
                                                             className="text-[10px] font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2 font-mono"
                                                         >
                                                             <span className={cn(
@@ -376,7 +376,7 @@ export default function LibraryPage() {
                                                             )} />
                                                             {highlight.book} {highlight.chapter}:{highlight.verse}{highlight.verseEnd > highlight.verse ? `-${highlight.verseEnd}` : ''}
                                                         </Link>
-                                                        <span className="text-[10px] text-muted-foreground/50 font-mono">
+                                                        <span className="text-[10px] text-muted-foreground/60 font-mono">
                                                             {new Date(highlight.created_at).toLocaleDateString()}
                                                         </span>
                                                     </div>
@@ -426,14 +426,14 @@ export default function LibraryPage() {
                                                             <StickyNote className="h-3 w-3" />
                                                             {note.book} {note.chapter}:{note.verse}
                                                         </span>
-                                                        <span className="text-[10px] text-muted-foreground/50 font-mono">
+                                                        <span className="text-[10px] text-muted-foreground/60 font-mono">
                                                             {new Date(note.created_at).toLocaleDateString()}
                                                         </span>
                                                     </div>
                                                     <p className="text-sm leading-relaxed text-foreground/90 font-sans line-clamp-3">
                                                         {note.note}
                                                     </p>
-                                                    <p className="text-xs text-muted-foreground/40 font-serif italic line-clamp-1">
+                                                    <p className="text-xs text-muted-foreground/60 font-serif italic line-clamp-1">
                                                         "{note.content}"
                                                     </p>
                                                     <div className="flex items-center justify-end gap-2 pt-1">

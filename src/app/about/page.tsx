@@ -39,7 +39,7 @@ export default function AboutPage() {
                     <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
                         ABOUT
                     </h1>
-                    <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
+                    <p className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider">
                         the story behind openwrit
                     </p>
                 </div>
@@ -120,7 +120,7 @@ export default function AboutPage() {
 
             {/* Footer */}
             <div className="pt-8 border-t border-border/30 text-center">
-                <p className="text-[10px] text-muted-foreground font-mono opacity-50">
+                <p className="text-xs text-muted-foreground/70 font-mono">
                     made with ❤️ for readers everywhere
                 </p>
             </div>

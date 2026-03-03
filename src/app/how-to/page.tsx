@@ -60,7 +60,7 @@ export default function HowToPage() {
                     <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
                         HOW TO USE
                     </h1>
-                    <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
+                    <p className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider">
                         get the most out of openwrit
                     </p>
                 </div>
@@ -148,7 +148,7 @@ export default function HowToPage() {
                         <Step n={5}>Share a verse or selection as a direct link using the share button in the annotation menu.</Step>
                         <Step n={6}>View all your highlights and notes in your <Link href="/library" className="text-primary hover:underline underline-offset-4">Library</Link>.</Step>
                     </ol>
-                    <p className="text-xs font-mono text-muted-foreground/50">
+                    <p className="text-xs font-mono text-muted-foreground/60">
                         Highlights and notes are saved locally and sync across devices when signed in.
                     </p>
                 </Section>

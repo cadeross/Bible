@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { SPRING_FAST } from "@/lib/animation";
 import {
     Tooltip,
     TooltipContent,
@@ -16,6 +18,7 @@ interface CustomHeatmapProps {
 export function CustomHeatmap({ data }: CustomHeatmapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [columns, setColumns] = useState(0);
+    const [hoveredDate, setHoveredDate] = useState<string | null>(null);
 
     // Update number of columns based on width
     useEffect(() => {
@@ -123,12 +126,23 @@ export function CustomHeatmap({ data }: CustomHeatmapProps) {
                         <Tooltip key={day.dateStr}>
                             <TooltipTrigger asChild>
                                 <div
+                                    onMouseEnter={() => !day.isFuture && setHoveredDate(day.dateStr)}
+                                    onMouseLeave={() => setHoveredDate(null)}
                                     className={cn(
-                                        "w-[10px] h-[10px] rounded-[1px] transition-all duration-200 cursor-default",
-                                        "hover:ring-1 hover:ring-ring hover:ring-offset-1 hover:ring-offset-background",
-                                        day.isFuture ? "opacity-0 pointer-events-none" : getColor(day.minutes)
+                                        "w-[10px] h-[10px] cursor-default flex items-center justify-center",
+                                        day.isFuture && "opacity-0 pointer-events-none"
                                     )}
-                                />
+                                >
+                                    <motion.div
+                                        animate={hoveredDate === day.dateStr ? { scale: 1.5 } : { scale: 1 }}
+                                        transition={SPRING_FAST}
+                                        style={{ pointerEvents: "none" }}
+                                        className={cn(
+                                            "w-[10px] h-[10px] rounded-[1px]",
+                                            day.isFuture ? "" : getColor(day.minutes)
+                                        )}
+                                    />
+                                </div>
                             </TooltipTrigger>
                             {!day.isFuture && (
                                 <TooltipContent

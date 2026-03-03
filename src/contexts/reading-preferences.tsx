@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 
 export type FontType = "sans" | "serif" | "mono" | "pixel"
-export type PaletteType = "standard" | "terminal" | "solarized" | "sepia" | "midnight" | "lavender" | "rose" | "oled"
+export type PaletteType = "standard" | "terminal" | "solarized" | "sepia" | "midnight" | "lavender" | "rose" | "oled" | "things"
 
 export interface ReadingPreferences {
     fontSize: number
@@ -58,7 +58,7 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
                     const parsed = JSON.parse(saved)
 
                     // Validate palette (migration for legacy/removed themes like 'forest')
-                    const validPalettes: PaletteType[] = ["standard", "terminal", "solarized", "sepia", "midnight", "lavender", "rose", "oled"];
+                    const validPalettes: PaletteType[] = ["standard", "terminal", "solarized", "sepia", "midnight", "lavender", "rose", "oled", "things"];
                     if (parsed.palette && !validPalettes.includes(parsed.palette)) {
                         parsed.palette = "standard";
                     }
@@ -118,6 +118,20 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
             {children}
         </ReadingPreferencesContext.Provider>
     )
+}
+
+// Synchronous helper to read bibleVersion from localStorage before React renders.
+// Use this in navigation handlers where the context may not yet be available.
+export function getStoredBibleVersion(): string {
+    if (typeof window === "undefined") return defaultPreferences.bibleVersion
+    try {
+        const saved = localStorage.getItem("reading-preferences")
+        if (saved) {
+            const parsed = JSON.parse(saved)
+            if (parsed.bibleVersion) return parsed.bibleVersion
+        }
+    } catch {}
+    return defaultPreferences.bibleVersion
 }
 
 export function useReadingPreferences() {

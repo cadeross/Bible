@@ -51,11 +51,11 @@ export function ActivityHeatmap() {
     return (
         <div className="flex flex-col gap-4 w-full">
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-primary/40 text-xs font-mono">
+                <div className="flex items-center gap-2 text-primary/60 text-xs font-mono">
                     <Flame className="h-4 w-4" />
                     <span>activity</span>
                 </div>
-                <div className="text-xs font-mono text-muted-foreground/50">
+                <div className="text-xs font-mono text-muted-foreground/60">
                     365 days
                 </div>
             </div>
@@ -98,7 +98,7 @@ export function ActivityHeatmap() {
             </TooltipProvider>
 
             {/* Legend */}
-            <div className="flex items-center justify-end gap-2 text-[10px] font-mono text-muted-foreground/40 mt-2">
+            <div className="flex items-center justify-end gap-2 text-[10px] font-mono text-muted-foreground/60 mt-2">
                 <span>less</span>
                 <div className="flex gap-1">
                     <div className="w-2 h-2 bg-muted/20 rounded-[1px]" />

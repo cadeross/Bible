@@ -100,7 +100,7 @@ export function NotePanel({
         >
             {/* Header / Verse Info */}
             <div className="space-y-4">
-                <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/50">
+                <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/60">
                     note
                 </p>
                 <h2 className={cn("text-xl text-foreground tracking-tight", fontClass)}>
@@ -131,7 +131,7 @@ export function NotePanel({
                     placeholder="Write your thoughts…"
                     className={cn(
                         "w-full h-full bg-transparent border-0 resize-none py-2",
-                        "text-base md:text-lg text-foreground/90 placeholder:text-muted-foreground/30",
+                        "text-base md:text-lg text-foreground/90 placeholder:text-muted-foreground/40",
                         "leading-loose",
                         fontClass,
                         "focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none focus:outline-0",
@@ -169,7 +169,7 @@ export function NotePanel({
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0 }}
                                     transition={{ duration: 0.2 }}
-                                    className="flex items-center gap-1.5 text-muted-foreground/40"
+                                    className="flex items-center gap-1.5 text-muted-foreground/60"
                                 >
                                     <motion.span
                                         initial={{ scale: 0.5, opacity: 0 }}
@@ -200,7 +200,7 @@ export function NotePanel({
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="text-muted-foreground/30 hidden sm:inline-block"
+                                className="text-muted-foreground/50 hidden sm:inline-block"
                             >
                                 {wordCount} {wordCount === 1 ? "word" : "words"}
                             </motion.span>

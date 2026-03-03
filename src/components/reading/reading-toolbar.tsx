@@ -79,9 +79,10 @@ interface ReadingToolbarProps {
     currentBook?: string
     currentChapter?: number
     currentTranslation?: string
+    hasSectionTitles?: boolean
 }
 
-export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, currentTranslation = "dra" }: ReadingToolbarProps) {
+export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, currentTranslation = "dra", hasSectionTitles = false }: ReadingToolbarProps) {
     const router = useRouter()
     const {
         isLoaded,
@@ -136,7 +137,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
             suppressHydrationWarning
             onClick={() => setFontFamily(font)}
             className={cn(
-                "px-3 py-1 text-xs transition-colors hover:text-foreground/80 cursor-pointer",
+                "px-3 py-1 text-xs transition-colors hover:text-foreground/80 cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
                 isLoaded && fontFamily === font ? "text-primary font-bold" : "text-muted-foreground"
             )}
         >
@@ -223,8 +224,8 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                         suppressHydrationWarning
                         onClick={() => setShowVerseNumbers(!showVerseNumbers)}
                         className={cn(
-                            "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer",
-                            (!isLoaded || showVerseNumbers) ? "text-primary" : "text-muted-foreground/50"
+                            "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                            (!isLoaded || showVerseNumbers) ? "text-primary" : "text-muted-foreground/60"
                         )}
                     >
                         <Hash className="h-3 w-3" />
@@ -235,39 +236,43 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                         suppressHydrationWarning
                         onClick={() => setRedLetters(!redLetters)}
                         className={cn(
-                            "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer",
-                            (!isLoaded || redLetters) ? "text-red-500" : "text-muted-foreground/50"
+                            "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                            (!isLoaded || redLetters) ? "text-red-500" : "text-muted-foreground/60"
                         )}
                     >
                         <Palette className="h-3 w-3" />
                         <span>red letters</span>
                     </button>
 
-                    <button
-                        suppressHydrationWarning
-                        onClick={() => setShowTitles(!showTitles)}
-                        className={cn(
-                            "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer",
-                            isLoaded && showTitles ? "text-primary" : "text-muted-foreground/50"
-                        )}
-                    >
-                        <Heading className="h-3 w-3" />
-                        <span>titles</span>
-                    </button>
+                    {hasSectionTitles && (
+                        <button
+                            suppressHydrationWarning
+                            onClick={() => setShowTitles(!showTitles)}
+                            className={cn(
+                                "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                                isLoaded && showTitles ? "text-primary" : "text-muted-foreground/60"
+                            )}
+                        >
+                            <Heading className="h-3 w-3" />
+                            <span>titles</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Size Slider (simplified as stepped controls for now) */}
                 <div className="flex items-center gap-2 pl-4 border-l border-border/50">
                     <button
                         onClick={() => setFontSize(Math.max(12, fontSize - 2))}
-                        className="text-muted-foreground hover:text-foreground cursor-pointer"
+                        aria-label="Decrease font size"
+                        className="text-muted-foreground hover:text-foreground cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                     >
                         -
                     </button>
                     <span suppressHydrationWarning className="text-xs w-8 text-center text-muted-foreground">{isLoaded ? fontSize : 18}px</span>
                     <button
                         onClick={() => setFontSize(Math.min(32, fontSize + 2))}
-                        className="text-muted-foreground hover:text-foreground cursor-pointer"
+                        aria-label="Increase font size"
+                        className="text-muted-foreground hover:text-foreground cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                     >
                         +
                     </button>

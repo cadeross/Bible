@@ -173,7 +173,7 @@ export function QuickSelector({
                                             onClick={() => handleSelect(item.id, item.name)}
                                             onMouseEnter={() => setHighlightedIndex(index)}
                                             className={cn(
-                                                "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none transition-colors",
+                                                "relative flex w-full cursor-default select-none items-center rounded-[2px] px-2 py-1.5 text-xs outline-none transition-colors",
                                                 index === highlightedIndex
                                                     ? "bg-primary text-primary-foreground"
                                                     : "text-foreground hover:bg-muted/50",
