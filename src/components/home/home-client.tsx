@@ -99,7 +99,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
       }).format(new Date())
     )
 
-    const updateSeen = localStorage.getItem("openwrit-v1-update-seen")
+    const updateSeen = localStorage.getItem("openwrit-v1.0.1-update-seen")
     if (!updateSeen) {
       setShowUpdateMessage(true)
     }
@@ -311,23 +311,23 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16, transition: { duration: 0.18 } }}
           transition={{ type: "spring", stiffness: 320, damping: 26, delay: 0.8 }}
-          className="fixed bottom-28 md:bottom-8 right-4 md:right-8 z-[200] w-64 bg-background border border-border/50 shadow-[0_8px_32px_rgba(0,0,0,0.14)] rounded-[2px] overflow-hidden"
+          className="fixed bottom-28 md:bottom-8 right-4 md:right-8 z-[200] w-72 bg-background border border-border/50 shadow-[0_8px_32px_rgba(0,0,0,0.14)] rounded-[2px] overflow-hidden"
         >
           {/* Accent line */}
           <div className="h-px w-full bg-primary/40" />
 
           <div className="px-4 py-3.5 space-y-3">
             {/* Header row */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0 mt-[4px]" />
                 <span className="text-[10px] font-mono text-primary uppercase tracking-[0.3em] font-bold">
-                  v1.0 released
+                  Munich theme + faster loading
                 </span>
               </div>
               <button
                 onClick={() => {
-                  localStorage.setItem('openwrit-v1-update-seen', 'true');
+                  localStorage.setItem('openwrit-v1.0.1-update-seen', 'true');
                   setShowUpdateMessage(false);
                 }}
                 className="text-muted-foreground/30 hover:text-foreground transition-colors -mr-0.5 p-0.5"
@@ -339,14 +339,14 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
 
             {/* Description */}
             <p className="text-[10px] font-mono text-muted-foreground/60 leading-relaxed">
-              highlights, red letter text, command search, and a new reading experience.
+              new Munich default theme, redesigned palette picker, improved loading times, and bug fixes.
             </p>
 
             {/* CTA */}
             <Link
               href="/updates"
-              onClick={() => localStorage.setItem('openwrit-v1-update-seen', 'true')}
-              className="group flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/40 hover:text-primary transition-colors uppercase tracking-[0.2em]"
+              onClick={() => localStorage.setItem('openwrit-v1.0.1-update-seen', 'true')}
+              className="group flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/60 hover:text-primary transition-colors uppercase tracking-[0.2em]"
             >
               <span>see changelog</span>
               <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
@@ -379,7 +379,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
             {liturgyLabel && (
               <Link
                 href="/calendar"
-                className="text-[10px] font-mono text-muted-foreground/60 hover:text-foreground transition-colors inline-block"
+                className="text-xs font-mono text-muted-foreground/70 hover:text-foreground transition-colors inline-block"
               >
                 <span className="truncate max-w-[300px] md:max-w-[500px] block uppercase tracking-wider">
                   {liturgyLabel}
@@ -396,7 +396,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
                   href="/profile"
                   className="group flex items-center gap-2.5 px-4 py-2 rounded-[2px] border border-border/30 bg-secondary/5 hover:bg-secondary/10 hover:border-foreground/20 transition-all duration-300"
                 >
-                  <Heart className="h-3.5 w-3.5 text-primary/60 group-hover:text-primary transition-colors" />
+                  <Heart className="h-3.5 w-3.5 text-heart/60 group-hover:text-heart transition-colors" />
                   <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">
                     {streakDays} day streak
                   </span>
@@ -404,10 +404,10 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
               )}
               {continueReading && (
                 <Link
-                  href={`/read/${encodeURIComponent(continueReading.book)}/${continueReading.chapter}`}
+                  href={`/read/${encodeURIComponent(continueReading.book)}/${continueReading.chapter}?translation=${bibleVersion}`}
                   className="group flex items-center gap-2.5 px-4 py-2 rounded-[2px] border border-border/30 bg-secondary/5 hover:bg-secondary/10 hover:border-foreground/20 transition-all duration-300"
                 >
-                  <BookOpen className="h-3.5 w-3.5 text-primary/60 group-hover:text-primary transition-colors" />
+                  <BookOpen className="h-3.5 w-3.5 text-bookmark/60 group-hover:text-bookmark transition-colors" />
                   <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">
                     resume {continueReading.book} {continueReading.chapter}
                   </span>
@@ -428,7 +428,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
             <DailyReadings data={dailyReadings} />
           ) : (
             <div className="w-full max-w-[720px] mx-auto flex flex-col items-center justify-center gap-3 py-16 text-center">
-              <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground/40">
+              <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground/60">
                 · readings unavailable ·
               </span>
               <p className="text-xs font-mono text-muted-foreground/50 max-w-[280px] leading-relaxed">
@@ -438,7 +438,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
                 href="https://bible.usccb.org/daily-bible-reading"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] font-mono text-muted-foreground/30 hover:text-primary transition-colors uppercase tracking-wider mt-1"
+                className="text-[10px] font-mono text-muted-foreground/60 hover:text-primary transition-colors uppercase tracking-wider mt-1"
               >
                 usccb.org ↗
               </a>

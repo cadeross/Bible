@@ -1,6 +1,6 @@
 "use client"
 
-import { History, BookOpen, Palette, Languages, Navigation, User, Church } from "lucide-react"
+import { History, BookOpen, Palette, Languages, Navigation, User, Church, Wrench, Zap } from "lucide-react"
 import { motion } from "framer-motion"
 
 const Section = ({ title, icon: Icon, children }: { title: string, icon: React.ElementType, children: React.ReactNode }) => (
@@ -17,11 +17,11 @@ const Section = ({ title, icon: Icon, children }: { title: string, icon: React.E
 
 const FeatureGroup = ({ label, items }: { label: string, items: string[] }) => (
     <div className="space-y-2">
-        <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground/50">{label}</p>
+        <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground/60">{label}</p>
         <ul className="space-y-2">
             {items.map((item, i) => (
-                <li key={i} className="flex items-center gap-2.5 text-sm font-mono text-muted-foreground leading-relaxed">
-                    <span className="w-1 h-1 rounded-full bg-primary/40 shrink-0" />
+                <li key={i} className="flex items-start gap-2.5 text-sm font-mono text-muted-foreground leading-relaxed">
+                    <span className="w-1 h-1 rounded-full bg-primary/40 shrink-0 mt-[9px]" />
                     {item}
                 </li>
             ))}
@@ -43,7 +43,7 @@ export default function UpdatesPage() {
                     <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
                         UPDATES
                     </h1>
-                    <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
+                    <p className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider">
                         version history and changelog
                     </p>
                 </div>
@@ -51,7 +51,67 @@ export default function UpdatesPage() {
 
             <div className="grid gap-12">
 
-                {/* Version header */}
+                {/* Version 1.0.1 */}
+                <div className="flex items-center gap-4">
+                    <span className="font-mono text-lg font-bold text-primary">v1.0.1</span>
+                    <span className="text-xs text-muted-foreground/50 font-mono">Mar 2026</span>
+                    <div className="flex-1 h-px bg-border/30" />
+                </div>
+
+                <Section title="Personalization" icon={Palette}>
+                    <FeatureGroup
+                        label="Themes"
+                        items={[
+                            "New Munich palette added and set as the default, replacing Standard.",
+                            "Completely redesigned theme and palette picker with a live preview of your Bible text.",
+                        ]}
+                    />
+                    <FeatureGroup
+                        label="Legibility"
+                        items={[
+                            "Full legibility audit across all text in the app.",
+                            "Improved contrast, sizing, and spacing throughout for a more comfortable reading experience.",
+                        ]}
+                    />
+                </Section>
+
+                <Section title="Profile" icon={User}>
+                    <FeatureGroup
+                        label="Stats"
+                        items={[
+                            "Time read, chapters, and words now show this week's activity instead of all-time totals.",
+                            "Week-over-week comparison is now accurate: current week vs. the previous seven days.",
+                        ]}
+                    />
+                </Section>
+
+                <Section title="Performance" icon={Zap}>
+                    <FeatureGroup
+                        label="Daily readings"
+                        items={[
+                            "Mass readings are now pre-fetched on the server and cached hourly, with improved loading times across the app.",
+                            "If the USCCB is temporarily unreachable, the last successful reading is shown rather than an empty screen.",
+                        ]}
+                    />
+                </Section>
+
+                <Section title="Fixes" icon={Wrench}>
+                    <FeatureGroup
+                        label="Reading"
+                        items={[
+                            "Chapter navigation no longer causes a full page reload. Transitions are now handled entirely client-side.",
+                        ]}
+                    />
+                    <FeatureGroup
+                        label="General"
+                        items={[
+                            "Fixed a favicon flash on initial load where the wrong icon briefly appeared before switching to the correct theme-aware version.",
+                            "Resolved a hydration mismatch in the reading view that could cause a flicker on first render.",
+                        ]}
+                    />
+                </Section>
+
+                {/* Version 1.0.0 */}
                 <div className="flex items-center gap-4">
                     <span className="font-mono text-lg font-bold text-primary">v1.0.0</span>
                     <span className="text-xs text-muted-foreground/50 font-mono">initial release</span>
@@ -64,12 +124,12 @@ export default function UpdatesPage() {
                         items={[
                             "Clean, distraction-free reading view with smooth chapter transitions.",
                             "Focus mode (Alt+F) hides all chrome for an uninterrupted reading experience.",
-                            "Adjustable font family — sans, serif, mono, and round.",
+                            "Adjustable font family: sans, serif, mono, and round.",
                             "Adjustable font size from 12px to 32px.",
                             "Adjustable line height for comfortable long-form reading.",
                             "Section titles and headings displayed inline with the text.",
                             "Verse numbers can be toggled on or off.",
-                            "Keyboard navigation — arrow keys to move between chapters.",
+                            "Keyboard navigation with arrow keys to move between chapters.",
                         ]}
                     />
                     <FeatureGroup
@@ -96,9 +156,9 @@ export default function UpdatesPage() {
                     <FeatureGroup
                         label="Available versions"
                         items={[
-                            "New Revised Standard Version, Catholic Edition (NRSVCE) — default, full deuterocanon.",
-                            "Douay-Rheims 1899 American Edition (DRA) — full Catholic canon, served locally.",
-                            "Bíblia da CNBB (CNBB) — Portuguese Catholic Bible.",
+                            "New Revised Standard Version, Catholic Edition (NRSVCE), default, full deuterocanon.",
+                            "Douay-Rheims 1899 American Edition (DRA), full Catholic canon, served locally.",
+                            "Bíblia da CNBB (CNBB), Portuguese Catholic Bible.",
                             "World English Bible (WEB)",
                             "King James Version (KJV)",
                             "American Standard Version (ASV)",

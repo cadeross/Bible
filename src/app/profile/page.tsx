@@ -68,7 +68,10 @@ export default function ProfilePage() {
         streak: 0,
         highestStreak: 0,
         highlights: 0,
-        timeSeconds: 0
+        timeSeconds: 0,
+        weekTimeSeconds: 0,
+        weekWords: 0,
+        weekChapters: 0
     });
 
     // Heatmap State
@@ -230,13 +233,45 @@ export default function ProfilePage() {
                     highestStreak = Math.max(highestStreak, currentStreakCount);
                 }
 
+                // Calculate Previous Period Stats (Last 7 days vs Previous 7 days)
+                const now = new Date();
+                let last7Words = 0, prev7Words = 0;
+                let last7Chapters = new Set(), prev7Chapters = new Set();
+                let last7Time = 0, prev7Time = 0;
+
+                history.forEach((h: any) => {
+                    const completedAt = new Date(h.completed_at);
+                    const daysDiff = Math.floor((now.getTime() - completedAt.getTime()) / (1000 * 60 * 60 * 24));
+                    const chapterKey = `${h.book}-${h.chapter}`;
+                    const duration = h.duration_seconds || 60;
+
+                    if (daysDiff < 7) {
+                        last7Words += h.words_read || 0;
+                        last7Chapters.add(chapterKey);
+                        last7Time += duration;
+                    } else if (daysDiff < 14) {
+                        prev7Words += h.words_read || 0;
+                        prev7Chapters.add(chapterKey);
+                        prev7Time += duration;
+                    }
+                });
+
                 setStats({
                     words: totalWords,
                     chapters: uniqueChapters.size,
                     streak: streak,
                     highestStreak: highestStreak,
                     highlights: highlights.length,
-                    timeSeconds: totalTime
+                    timeSeconds: totalTime,
+                    weekTimeSeconds: last7Time,
+                    weekWords: last7Words,
+                    weekChapters: last7Chapters.size
+                });
+
+                setPrevStats({
+                    words: prev7Words,
+                    chapters: prev7Chapters.size,
+                    timeSeconds: prev7Time
                 });
 
                 // Set Activity Map for Heatmap
@@ -278,35 +313,6 @@ export default function ProfilePage() {
                         minutes: Math.round(seconds / 60)
                     }));
                 setBookData(sortedBooks.slice(0, 10)); // Show top 10 books
-
-                // Calculate Previous Period Stats (Last 7 days vs Previous 7 days)
-                const now = new Date();
-                let last7Words = 0, prev7Words = 0;
-                let last7Chapters = new Set(), prev7Chapters = new Set();
-                let last7Time = 0, prev7Time = 0;
-
-                history.forEach((h: any) => {
-                    const completedAt = new Date(h.completed_at);
-                    const daysDiff = Math.floor((now.getTime() - completedAt.getTime()) / (1000 * 60 * 60 * 24));
-                    const chapterKey = `${h.book}-${h.chapter}`;
-                    const duration = h.duration_seconds || 60;
-
-                    if (daysDiff < 7) {
-                        last7Words += h.words_read || 0;
-                        last7Chapters.add(chapterKey);
-                        last7Time += duration;
-                    } else if (daysDiff < 14) {
-                        prev7Words += h.words_read || 0;
-                        prev7Chapters.add(chapterKey);
-                        prev7Time += duration;
-                    }
-                });
-
-                setPrevStats({
-                    words: prev7Words,
-                    chapters: prev7Chapters.size,
-                    timeSeconds: prev7Time
-                });
             }
             setLoading(false);
         };
@@ -442,7 +448,7 @@ export default function ProfilePage() {
                                 <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
                                     {user.user_metadata?.username || "USER"}
                                 </h1>
-                                <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
+                                <p className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider">
                                     {user.email} • joined {new Date(user.created_at).toLocaleDateString()}
                                 </p>
                             </div>
@@ -458,7 +464,7 @@ export default function ProfilePage() {
                                 setEditEmail(user.email || "");
                                 setIsEditing(true);
                             }}
-                            className="h-8 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-[2px] border border-border/30 bg-secondary/5 hover:border-foreground/20"
+                            className="h-8 text-xs uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-[2px] border border-border/30 bg-secondary/5 hover:border-foreground/20"
                         >
                             <PenLine className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity" /> EDIT PROFILE
                         </Button>
@@ -483,19 +489,19 @@ export default function ProfilePage() {
 
                             const kpis = [
                                 {
-                                    label: "time read",
-                                    value: formatTime(stats.timeSeconds),
-                                    change: calcChange(stats.timeSeconds, prevStats.timeSeconds)
+                                    label: "time",
+                                    value: formatTime(stats.weekTimeSeconds),
+                                    change: calcChange(stats.weekTimeSeconds, prevStats.timeSeconds)
                                 },
                                 {
                                     label: "chapters",
-                                    value: stats.chapters.toLocaleString(),
-                                    change: calcChange(stats.chapters, prevStats.chapters)
+                                    value: stats.weekChapters.toLocaleString(),
+                                    change: calcChange(stats.weekChapters, prevStats.chapters)
                                 },
                                 {
                                     label: "words read",
-                                    value: stats.words > 1000 ? `${(stats.words / 1000).toFixed(1)}K` : stats.words.toLocaleString(),
-                                    change: calcChange(stats.words, prevStats.words)
+                                    value: stats.weekWords > 1000 ? `${(stats.weekWords / 1000).toFixed(1)}K` : stats.weekWords.toLocaleString(),
+                                    change: calcChange(stats.weekWords, prevStats.words)
                                 },
                                 {
                                     label: "streak",
@@ -521,7 +527,7 @@ export default function ProfilePage() {
                                         </div>
                                     )}
                                     {stat.isStreak && (
-                                        <p className="text-[10px] text-muted-foreground/60 font-mono">
+                                        <p className="text-xs text-muted-foreground/70 font-mono">
                                             {stats.streak === stats.highestStreak && stats.streak > 0
                                                 ? '✨ personal best!'
                                                 : `best: ${stats.highestStreak} days`}
