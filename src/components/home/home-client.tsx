@@ -338,8 +338,8 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
             </div>
 
             {/* Description */}
-            <p className="text-[10px] font-mono text-muted-foreground/60 leading-relaxed">
-              new Munich default theme, redesigned palette picker, improved loading times, and bug fixes.
+            <p className="text-xs text-muted-foreground/80 leading-relaxed">
+              New Munich default theme, redesigned palette picker, improved loading times, and bug fixes.
             </p>
 
             {/* CTA */}
