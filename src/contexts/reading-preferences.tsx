@@ -39,7 +39,7 @@ const defaultPreferences: ReadingPreferences = {
     redLetters: true,
     showTitles: true,
     defaultHighlightColor: "yellow",
-    palette: "standard",
+    palette: "things",
     bibleVersion: "nrsvce",
 }
 

@@ -275,9 +275,9 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                     {activeChapter && activeSection && (
                         <motion.div
                             key={activeSection.id}
-                            initial={{ opacity: 0, filter: "blur(8px)", y: 10 }}
-                            animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                            exit={{ opacity: 0, filter: "blur(8px)", y: -10 }}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.5, ease: "easeInOut" }}
                             className="space-y-8"
                         >
