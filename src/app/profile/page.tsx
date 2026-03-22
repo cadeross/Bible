@@ -6,7 +6,9 @@ import { createClient } from "@/lib/supabase/client";
 import { AuthTabs } from "@/components/auth/auth-tabs";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { User, LogOut, Cloud, Activity, Palette, Camera, PenLine } from "lucide-react";
+import { User, LogOut, Cloud, Activity, Palette, Camera, PenLine, X } from "lucide-react";
+import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { getHistory, getAllHighlights, ReadingHistory, getProfile, uploadAvatar } from "@/lib/persistence";
 import { motion } from "framer-motion";
@@ -403,76 +405,104 @@ export default function ProfilePage() {
                         />
                     </div>
                     <div className="space-y-1">
-                        {isEditing ? (
-                            <form
-                                onSubmit={(e) => { e.preventDefault(); handleUpdateProfile(); }}
-                                className="flex flex-col gap-2 items-center"
-                            >
-                                <input
-                                    type="text"
-                                    value={editUsername}
-                                    onChange={(e) => setEditUsername(e.target.value)}
-                                    placeholder="Username"
-                                    className="bg-transparent border border-border/30 rounded-[2px] px-2 py-1 text-sm font-bold tracking-widest uppercase text-muted-foreground text-center focus:outline-none focus:border-primary/50"
-                                    disabled={isSaving}
-                                />
-                                <input
-                                    type="email"
-                                    value={editEmail}
-                                    onChange={(e) => setEditEmail(e.target.value)}
-                                    placeholder="Email"
-                                    className="bg-transparent border border-border/30 rounded-[2px] px-2 py-1 text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider text-center focus:outline-none focus:border-primary/50"
-                                    disabled={isSaving}
-                                />
-                                <div className="flex gap-2 mt-1">
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        onClick={() => setIsEditing(false)}
-                                        disabled={isSaving}
-                                        className="h-6 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-foreground px-2"
-                                    >
-                                        CANCEL
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        disabled={isSaving}
-                                        className="h-6 text-[10px] uppercase tracking-widest font-mono bg-primary text-primary-foreground hover:bg-primary/90 px-3 rounded-[2px]"
-                                    >
-                                        {isSaving ? "SAVING..." : "SAVE"}
-                                    </Button>
-                                </div>
-                            </form>
-                        ) : (
-                            <div className="flex flex-col items-center gap-1 group/edit">
-                                <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                                    {user.user_metadata?.username || "USER"}
-                                </h1>
-                                <p className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider">
-                                    {user.email} • joined {new Date(user.created_at).toLocaleDateString()}
-                                </p>
-                            </div>
-                        )}
+                        <div className="flex flex-col items-center gap-1">
+                            <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                                {user.user_metadata?.username || "USER"}
+                            </h1>
+                            <p className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider">
+                                {user.email} • joined {new Date(user.created_at).toLocaleDateString()}
+                            </p>
+                        </div>
                     </div>
                 </div>
                 <div className="mt-2 text-center flex justify-center gap-2">
-                    {!isEditing && (
-                        <Button
-                            variant="ghost"
-                            onClick={() => {
-                                setEditUsername(user.user_metadata?.username || "");
-                                setEditEmail(user.email || "");
-                                setIsEditing(true);
-                            }}
-                            className="h-8 text-xs uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-[2px] border border-border/30 bg-secondary/5 hover:border-foreground/20"
-                        >
-                            <PenLine className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity" /> EDIT PROFILE
-                        </Button>
-                    )}
+                    <Button
+                        variant="ghost"
+                        onClick={() => {
+                            setEditUsername(user.user_metadata?.username || "");
+                            setEditEmail(user.email || "");
+                            setIsEditing(true);
+                        }}
+                        className="h-8 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-[2px] border border-border/30 bg-secondary/5 hover:border-foreground/20"
+                    >
+                        <PenLine className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity" /> EDIT PROFILE
+                    </Button>
                     <Button variant="ghost" onClick={handleSignOut} className="h-8 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-[2px] border border-border/30 bg-secondary/5 hover:border-foreground/20">
                         <LogOut className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity" /> SIGN OUT
                     </Button>
                 </div>
+
+                {/* Edit Profile Dialog */}
+                <Dialog open={isEditing} onOpenChange={(open) => { if (!open) setIsEditing(false); }}>
+                    <DialogContent className="max-w-[400px] bg-background border border-border/40 rounded-[2px] p-0 gap-0 font-mono [&>button:last-child]:hidden">
+                        <div className="px-6 py-4 border-b border-border/30 flex flex-row items-center justify-between">
+                            <DialogTitle className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-mono font-normal leading-none">
+                                Edit Profile
+                            </DialogTitle>
+                            <DialogClose className="text-muted-foreground/50 hover:text-foreground transition-colors leading-none">
+                                <X className="h-3.5 w-3.5" />
+                                <span className="sr-only">Close</span>
+                            </DialogClose>
+                        </div>
+                        <form onSubmit={(e) => { e.preventDefault(); handleUpdateProfile(); }} className="px-6 py-6 space-y-5">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit-username" className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70 font-mono">
+                                    Username
+                                </Label>
+                                <div className="relative group">
+                                    <User className="absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary/60 transition-colors" />
+                                    <input
+                                        id="edit-username"
+                                        type="text"
+                                        value={editUsername}
+                                        onChange={(e) => setEditUsername(e.target.value)}
+                                        placeholder="username"
+                                        autoComplete="username"
+                                        disabled={isSaving}
+                                        className="w-full pl-6 pr-0 py-2.5 bg-transparent border-0 border-b border-border/50 font-mono text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/60 transition-colors"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit-email" className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70 font-mono">
+                                    Email
+                                </Label>
+                                <div className="relative group">
+                                    <svg className="absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary/60 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                                    <input
+                                        id="edit-email"
+                                        type="email"
+                                        value={editEmail}
+                                        onChange={(e) => setEditEmail(e.target.value)}
+                                        placeholder="name@email.com"
+                                        autoComplete="email"
+                                        disabled={isSaving}
+                                        className="w-full pl-6 pr-0 py-2.5 bg-transparent border-0 border-b border-border/50 font-mono text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/60 transition-colors"
+                                    />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground/40 pt-0.5">changing your email requires confirmation from both addresses</p>
+                            </div>
+                            <div className="flex items-center justify-end gap-2 pt-2">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => setIsEditing(false)}
+                                    disabled={isSaving}
+                                    className="h-9 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-foreground hover:bg-transparent px-4 rounded-[2px]"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={isSaving}
+                                    className="h-9 text-[10px] uppercase tracking-widest font-mono bg-primary text-primary-foreground hover:bg-primary/90 px-5 rounded-[2px]"
+                                >
+                                    {isSaving ? "Saving..." : "Save changes"}
+                                </Button>
+                            </div>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <div className="grid gap-12">
@@ -516,7 +546,7 @@ export default function ProfilePage() {
                                     <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{stat.label}</p>
                                     <p className="text-2xl font-mono font-bold text-primary">
                                         {stat.isStreak ? `${stat.value}` : stat.value}
-                                        {stat.isStreak && <span className="text-sm font-normal text-muted-foreground ml-1">days</span>}
+                                        {stat.isStreak && <span className="text-sm font-normal text-muted-foreground ml-1">{stat.value === 1 ? 'day' : 'days'}</span>}
                                     </p>
                                     {stat.change !== null && (
                                         <div className="flex items-center gap-1">

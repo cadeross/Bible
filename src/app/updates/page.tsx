@@ -51,6 +51,51 @@ export default function UpdatesPage() {
 
             <div className="grid gap-12">
 
+                {/* Version 1.0.2 */}
+                <div className="flex items-center gap-4">
+                    <span className="font-mono text-lg font-bold text-primary">v1.0.2</span>
+                    <span className="text-xs text-muted-foreground/50 font-mono">Mar 2026</span>
+                    <div className="flex-1 h-px bg-border/30" />
+                </div>
+
+                <Section title="Account" icon={User}>
+                    <FeatureGroup
+                        label="Password reset"
+                        items={[
+                            "Forgot your password? You can now request a reset link directly from the login page.",
+                            "A secure reset email is sent to your address with a one-time link to set a new password.",
+                            "After resetting, you are automatically signed in and returned to the app.",
+                        ]}
+                    />
+                </Section>
+
+                <Section title="Profile" icon={User}>
+                    <FeatureGroup
+                        label="Edit profile"
+                        items={[
+                            "Editing your username and email now opens in a clean modal dialog instead of replacing your profile header inline.",
+                            "Dialog entrance and exit animations are smoother and faster.",
+                        ]}
+                    />
+                    <FeatureGroup
+                        label="Stats"
+                        items={[
+                            "Reading streak now correctly reads \"1 day\" instead of \"1 days\".",
+                        ]}
+                    />
+                </Section>
+
+                <Section title="Fixes" icon={Wrench}>
+                    <FeatureGroup
+                        label="Navigation"
+                        items={[
+                            "Active nav tab in the Munich theme now renders with a blue icon and theme-aware text — white in dark mode, dark foreground in light mode.",
+                            "Hover effects across the header, footer, and mobile nav are now visually consistent.",
+                            "Footer links for How To and Updates now highlight correctly when those pages are active.",
+                        ]}
+                    />
+                </Section>
+
                 {/* Version 1.0.1 */}
                 <div className="flex items-center gap-4">
                     <span className="font-mono text-lg font-bold text-primary">v1.0.1</span>

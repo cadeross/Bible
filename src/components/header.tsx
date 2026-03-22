@@ -90,16 +90,16 @@ export function Header() {
                         <Link
                             key={item.name}
                             href={item.href}
-                            className={cn(
-                                "flex items-center gap-2 transition-colors group",
-                                active ? "text-primary" : "hover:text-primary"
-                            )}
+                            className="flex items-center gap-2 transition-colors group"
                         >
                             <Icon className={cn(
                                 "h-3 w-3 transition-opacity",
-                                active ? "opacity-100" : "opacity-60 group-hover:opacity-100"
+                                active ? "text-primary opacity-100" : "opacity-60 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white"
                             )} />
-                            <span className="pb-px">{item.name}</span>
+                            <span className={cn(
+                                "pb-px",
+                                active ? "text-foreground dark:text-white" : "group-hover:text-foreground dark:group-hover:text-white"
+                            )}>{item.name}</span>
                         </Link>
                     )
                 })}
@@ -114,16 +114,16 @@ export function Header() {
                         <Link
                             key={item.name}
                             href={item.href}
-                            className={cn(
-                                "flex items-center gap-2 transition-colors group",
-                                active ? "text-primary" : "hover:text-primary"
-                            )}
+                            className="flex items-center gap-2 transition-colors group"
                         >
                             <Icon className={cn(
                                 "h-3 w-3 transition-opacity",
-                                active ? "opacity-100" : "opacity-60 group-hover:opacity-100"
+                                active ? "text-primary opacity-100" : "opacity-60 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white"
                             )} />
-                            <span className="pb-px">{item.name}</span>
+                            <span className={cn(
+                                "pb-px",
+                                active ? "text-foreground dark:text-white" : "group-hover:text-foreground dark:group-hover:text-white"
+                            )}>{item.name}</span>
                         </Link>
                     )
                 })}

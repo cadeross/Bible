@@ -11,6 +11,11 @@
       "sourceType": "github",
       "computedHash": "6ba2c955bee6ab3e9c7781b2553e3574b4c9ec35e539437d0831bfe368de8550"
     },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "computedHash": "d31e234f0c90694a670222cdd1dafa853e051d7066beda389f1097c22dadd461"
+    },
     "framer-motion-animator": {
       "source": "patricio0312rev/skills",
       "sourceType": "github",
@@ -25,6 +30,11 @@
       "source": "bobmatnyc/claude-mpm-skills",
       "sourceType": "github",
       "computedHash": "ce264ac6f9cbeba1fd354d4b34eac7f3758d630aabaf4b59a836e3db980c8486"
+    },
+    "seo-meta-optimizer": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "a81a92d779f4ad30a9198c3c77d1914d57a2fd99f460227d67a7cc36b72fafb7"
     },
     "supabase-postgres-best-practices": {
       "source": "supabase/agent-skills",

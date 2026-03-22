@@ -30,23 +30,18 @@ export function MobileNav() {
                         <Link
                             key={tab.name}
                             href={tab.href}
-                            className={cn(
-                                "group relative flex flex-col items-center justify-center gap-1.5 w-full h-full transition-colors duration-200",
-                                isActive
-                                    ? "text-primary"
-                                    : "text-muted-foreground hover:text-foreground"
-                            )}
+                            className="group relative flex flex-col items-center justify-center gap-1.5 w-full h-full transition-colors duration-200"
                         >
                             <Icon
                                 className={cn(
                                     "h-5 w-5 relative z-10 transition-transform duration-200",
-                                    isActive && "scale-110"
+                                    isActive ? "text-primary scale-110" : "text-muted-foreground group-hover:text-foreground"
                                 )}
                                 strokeWidth={1.5}
                             />
                             <span className={cn(
                                 "text-[10px] font-mono tracking-tight relative z-10",
-                                isActive && "font-bold"
+                                isActive ? "text-foreground dark:text-white font-bold" : "text-muted-foreground group-hover:text-foreground"
                             )}>
                                 {tab.name}
                             </span>
