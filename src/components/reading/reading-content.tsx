@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { isRedLetterVerse } from "@/lib/red-letter-data"
 import { Highlight } from "@/lib/persistence"
-import { Trash2, StickyNote, Share2 } from "lucide-react"
+import { Trash2, StickyNote, Share2, Copy, Check } from "lucide-react"
 import { NotePanel } from "@/components/reading/note-dialog"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { SPRING_FAST } from "@/lib/animation"
@@ -409,6 +409,28 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
         window.getSelection()?.removeAllRanges()
     }
 
+    const [copyDone, setCopyDone] = React.useState(false)
+
+    const handleCopyVerse = async () => {
+        const versesToCopy = chapter.verses.filter(v => selectedVerses.includes(v.verse))
+            .sort((a, b) => a.verse - b.verse)
+        if (versesToCopy.length === 0) return
+
+        const text = versesToCopy.map(v => v.text).join(' ')
+        const firstVerse = versesToCopy[0].verse
+        const lastVerse = versesToCopy[versesToCopy.length - 1].verse
+        const verseRef = firstVerse === lastVerse ? `${firstVerse}` : `${firstVerse}-${lastVerse}`
+        const ref = `${bookName} ${chapterNum}:${verseRef}`
+
+        await navigator.clipboard.writeText(`"${text}" — ${ref}`)
+        setCopyDone(true)
+        setTimeout(() => {
+            setCopyDone(false)
+            setMenuOpen(false)
+            window.getSelection()?.removeAllRanges()
+        }, 1000)
+    }
+
     // Helper to get initial note content
     const getInitialNoteContent = () => {
         if (selectedVerses.length === 0) return ""
@@ -570,6 +592,16 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                             className="p-1.5 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary rounded-sm"
                         >
                             <StickyNote className="h-4 w-4" />
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleCopyVerse}
+                            aria-label="Copy verse"
+                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary rounded-sm"
+                        >
+                            {copyDone ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                         </motion.button>
 
                         <motion.button
