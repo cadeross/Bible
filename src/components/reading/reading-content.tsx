@@ -44,6 +44,14 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
     // Ref for the container to limit selection scope
     const containerRef = React.useRef<HTMLDivElement>(null)
 
+    // Drag-to-select state
+    const [isDragging, setIsDragging] = React.useState(false)
+    const [dragVerses, setDragVerses] = React.useState<number[]>([])
+    const [dragCursorPos, setDragCursorPos] = React.useState({ x: 0, y: 0 })
+    const dragStartVerseRef = React.useRef<number | null>(null)
+    const isDraggingRef = React.useRef(false) // ref mirror for use in event handlers
+    const wasDraggingRef = React.useRef(false) // survives through the click event
+
     // Log Reading History
     // Log Reading History (Time Tracking)
     const startTimeRef = React.useRef(Date.now());
@@ -118,8 +126,67 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
     // --- Interaction Handlers ---
 
+    // 0. Drag-to-select verses
+    const startDrag = (verseNum: number) => {
+        dragStartVerseRef.current = verseNum
+        isDraggingRef.current = false
+        setDragVerses([])
+    }
+
+    const updateDrag = (verseNum: number) => {
+        if (dragStartVerseRef.current === null || menuOpen) return
+        if (verseNum === dragStartVerseRef.current && !isDraggingRef.current) return
+
+        // Cancel long press once we start dragging across verses
+        if (!isDraggingRef.current) {
+            if (longPressTimeout.current) {
+                clearTimeout(longPressTimeout.current)
+                longPressTimeout.current = null
+            }
+            isDraggingRef.current = true
+            setIsDragging(true)
+        }
+
+        window.getSelection()?.removeAllRanges()
+
+        const start = dragStartVerseRef.current
+        const allNums = chapter.verses.map(v => v.verse)
+        const min = Math.min(start, verseNum)
+        const max = Math.max(start, verseNum)
+        setDragVerses(allNums.filter(n => n >= min && n <= max))
+    }
+
+    const finalizeDrag = (verseNum: number, e: React.MouseEvent) => {
+        if (isDraggingRef.current) {
+            const start = dragStartVerseRef.current!
+            const allNums = chapter.verses.map(v => v.verse)
+            const min = Math.min(start, verseNum)
+            const max = Math.max(start, verseNum)
+            const selected = allNums.filter(n => n >= min && n <= max)
+
+            if (selected.length > 1) {
+                wasDraggingRef.current = true
+                setSelectedVerses(selected)
+                setMenuPosition({ top: e.clientY, left: e.clientX })
+                setMenuOpen(true)
+                setLiveAnnouncement(`${selected.length} verses selected. Choose a highlight color or press 1–5.`)
+                if (window.navigator?.vibrate) window.navigator.vibrate(50)
+            }
+        }
+
+        dragStartVerseRef.current = null
+        isDraggingRef.current = false
+        setIsDragging(false)
+        setDragVerses([])
+    }
+
     // 1. Click -> Toggle Default Highlight
     const handleVerseClick = async (verseNum: number, verseText: string) => {
+        // Swallow click if it was the end of a drag-select
+        if (wasDraggingRef.current) {
+            wasDraggingRef.current = false
+            return
+        }
         const sel = window.getSelection()
         if (sel && sel.toString().length > 0) return
         if (menuOpen) return
@@ -191,52 +258,15 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
         if (window.navigator?.vibrate) window.navigator.vibrate(50)
     }
 
-    // 4. Text Selection -> Open Menu
+    // 4. Track cursor position during drag for the badge
     React.useEffect(() => {
-        const handleSelection = () => {
-            const selection = window.getSelection()
-            if (!selection || selection.isCollapsed) return
-            if (!containerRef.current?.contains(selection.anchorNode)) return
-
-            setTimeout(() => {
-                const sel = window.getSelection()
-                if (!sel || sel.isCollapsed) return
-
-                const range = sel.getRangeAt(0)
-                const verseNodes = containerRef.current?.querySelectorAll('[data-verse]')
-                const selectedIds: number[] = []
-
-                verseNodes?.forEach((node) => {
-                    if (sel.containsNode(node, true)) {
-                        const id = Number(node.getAttribute('data-verse'))
-                        if (id) selectedIds.push(id)
-                    }
-                })
-
-                if (selectedIds.length > 0) {
-                    const rect = range.getBoundingClientRect()
-                    if (rect.width > 0 && rect.height > 0) {
-                        setMenuPosition({
-                            top: rect.top,
-                            left: rect.left + rect.width / 2
-                        })
-                        setSelectedVerses(selectedIds)
-                        setMenuOpen(true)
-                        const wordCount = sel.toString().trim().split(/\s+/).length
-                        setLiveAnnouncement(`${wordCount} word${wordCount !== 1 ? 's' : ''} selected. Choose a highlight color or press 1–5.`)
-                    }
-                }
-            }, 10)
+        const onMouseMove = (e: MouseEvent) => {
+            if (isDraggingRef.current) {
+                setDragCursorPos({ x: e.clientX, y: e.clientY })
+            }
         }
-
-        const onMouseUp = () => handleSelection()
-        document.addEventListener('mouseup', onMouseUp)
-        document.addEventListener('touchend', onMouseUp)
-
-        return () => {
-            document.removeEventListener('mouseup', onMouseUp)
-            document.removeEventListener('touchend', onMouseUp)
-        }
+        document.addEventListener('mousemove', onMouseMove)
+        return () => document.removeEventListener('mousemove', onMouseMove)
     }, [])
 
     const applyColor = async (color: string) => {
@@ -517,6 +547,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 fontSize: `${isLoaded ? fontSize : 18}px`,
                 lineHeight: isLoaded ? lineHeight : 1.6,
                 fontFamily: fontFamilyStyle,
+                userSelect: 'none',
             }}
         >
             <Dialog
@@ -550,6 +581,25 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
             {/* Screen reader live region for selection feedback */}
             <div aria-live="polite" className="sr-only">{liveAnnouncement}</div>
+
+            {/* Drag selection count badge */}
+            <AnimatePresence>
+                {isDragging && dragVerses.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={SPRING_FAST}
+                        className="fixed z-50 pointer-events-none"
+                        style={{ top: dragCursorPos.y + 14, left: dragCursorPos.x + 14 }}
+                    >
+                        <div className="flex items-center gap-1.5 bg-foreground text-background text-[11px] font-mono font-medium px-2.5 py-1 rounded-full shadow-lg">
+                            <span>{dragVerses.length}</span>
+                            <span className="opacity-70">{dragVerses.length === 1 ? 'verse' : 'verses'}</span>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Elegant Floating Highlight Menu */}
             <AnimatePresence>
@@ -721,8 +771,16 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                             transition={{ delay: i * 0.002, duration: 0.2 }}
                                             data-verse={verse.verse}
                                             className={cn(
-                                                "inline cursor-pointer transition-colors duration-200 rounded px-[2px] -mx-[2px] relative",
+                                                "inline cursor-pointer transition-colors duration-150 rounded px-[2px] -mx-[2px] relative",
                                                 bgClass || "hover:bg-primary/5",
+                                                // Active drag selection — strong, obvious highlight
+                                                dragVerses.includes(verse.verse) && "bg-primary/30 ring-2 ring-primary/60 ring-inset",
+                                                // Persistent selection while menu is open
+                                                !dragVerses.length && menuOpen && selectedVerses.includes(verse.verse) && (
+                                                    bgClass
+                                                        ? "ring-2 ring-primary/60 ring-inset"
+                                                        : "bg-primary/15 ring-2 ring-primary/50 ring-inset"
+                                                ),
                                                 // Pulse animation for shared verses — use highlight color if present
                                                 pulsingVerses.includes(verse.verse) && (
                                                     highlight?.color === 'green' ? "animate-verse-pulse-green" :
@@ -738,9 +796,10 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                             onClick={() => handleVerseClick(verse.verse, verse.text)}
                                             // Right Click (Context Menu)
                                             onContextMenu={(e) => handleContextMenu(e, verse.verse)}
-                                            // Long Press Handlers (Menu)
-                                            onMouseDown={(e) => handleTouchStart(verse.verse, e)}
-                                            onMouseUp={handleTouchEnd}
+                                            // Drag-to-select + Long Press
+                                            onMouseDown={(e) => { handleTouchStart(verse.verse, e); startDrag(verse.verse) }}
+                                            onMouseEnter={() => updateDrag(verse.verse)}
+                                            onMouseUp={(e) => { handleTouchEnd(); finalizeDrag(verse.verse, e) }}
                                             onMouseLeave={handleTouchEnd}
                                             onTouchStart={(e) => handleTouchStart(verse.verse, e)}
                                             onTouchEnd={handleTouchEnd}

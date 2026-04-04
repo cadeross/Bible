@@ -47,7 +47,7 @@ export function Footer() {
             isFocusMode ? "opacity-0 hover:opacity-100" : "opacity-100"
         )}>
             {/* Left side: Socials & Support */}
-            <div className="flex gap-6 text-xs font-mono text-muted-foreground/50">
+            <div className="flex gap-6 text-xs font-mono text-muted-foreground">
 
                 <a
                     href="https://x.com/cadeross"
@@ -56,7 +56,7 @@ export function Footer() {
                     className="flex items-center gap-2 transition-colors group"
                 >
                     {/* Custom X Logo SVG - reduced size */}
-                    <svg role="img" viewBox="0 0 24 24" fill="currentColor" className="h-2.5 w-2.5 opacity-60 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white transition-opacity">
+                    <svg role="img" viewBox="0 0 24 24" fill="currentColor" className="h-2.5 w-2.5 opacity-85 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white transition-opacity">
                         <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
                     </svg>
                     <span className="pb-px group-hover:text-foreground dark:group-hover:text-white transition-colors">x.com</span>
@@ -74,35 +74,35 @@ export function Footer() {
                     rel="noreferrer"
                     className="flex items-center gap-2 transition-colors group"
                 >
-                    <Mail className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white transition-opacity" />
+                    <Mail className="h-3 w-3 opacity-85 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white transition-opacity" />
                     <span className="pb-px group-hover:text-foreground dark:group-hover:text-white transition-colors">contact</span>
                 </a>
 
             </div>
 
             {/* Right side: Theme & Version */}
-            <div className="flex gap-6 text-xs font-mono text-muted-foreground/50">
+            <div className="flex gap-6 text-xs font-mono text-muted-foreground">
                 {pathname?.startsWith("/read") && (
                     <button
                         onClick={toggleFocusMode}
                         className="flex items-center gap-2 transition-colors group"
                     >
                         {isFocusMode ? (
-                            <EyeOff className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white transition-opacity" />
+                            <EyeOff className="h-3 w-3 opacity-85 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white transition-opacity" />
                         ) : (
-                            <Eye className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white transition-opacity" />
+                            <Eye className="h-3 w-3 opacity-85 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white transition-opacity" />
                         )}
                         <span className="group-hover:text-foreground dark:group-hover:text-white transition-colors pb-px">focus</span>
                     </button>
                 )}
 
                 <Link href="/how-to" className="flex items-center gap-2 transition-colors group">
-                    <HelpCircle className={cn("h-3 w-3 transition-opacity", pathname === "/how-to" ? "text-primary opacity-100" : "opacity-60 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white")} />
+                    <HelpCircle className={cn("h-3 w-3 transition-opacity", pathname === "/how-to" ? "text-primary opacity-100" : "opacity-85 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white")} />
                     <span className={cn("pb-px", pathname === "/how-to" ? "text-foreground dark:text-white" : "group-hover:text-foreground dark:group-hover:text-white")}>how to</span>
                 </Link>
 
                 <Link href="/updates" className="flex items-center gap-2 transition-colors group">
-                    <GitBranch className={cn("h-3 w-3 transition-opacity", pathname === "/updates" ? "text-primary opacity-100" : "opacity-60 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white")} />
+                    <GitBranch className={cn("h-3 w-3 transition-opacity", pathname === "/updates" ? "text-primary opacity-100" : "opacity-85 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white")} />
                     <span className={cn("pb-px", pathname === "/updates" ? "text-foreground dark:text-white" : "group-hover:text-foreground dark:group-hover:text-white")}>v1.0.2</span>
                 </Link>
             </div>

@@ -26,7 +26,7 @@ export function Greeting() {
             <h1 className="text-3xl md:text-4xl font-mono font-bold text-primary tracking-tight">
                 welcome, {username}
             </h1>
-            <p className="font-mono text-sm text-muted-foreground/50">
+            <p className="font-mono text-sm text-muted-foreground">
                 {date || "..."}
             </p>
         </div>

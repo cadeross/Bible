@@ -25,8 +25,9 @@ export function AuthTabs({ onSuccess, showHomeLink = false }: { onSuccess?: () =
     const handleForgotPassword = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
+            redirectTo: `${siteUrl}/auth/callback?next=/auth/reset-password`,
         });
         setLoading(false);
         if (error) {
@@ -67,7 +68,27 @@ export function AuthTabs({ onSuccess, showHomeLink = false }: { onSuccess?: () =
             return;
         }
 
-        // 2. If Login failed, Try SignUp
+        // If sign-in failed with a clear auth error, don't fall through to sign-up
+        if (signInError) {
+            const msg = signInError.message.toLowerCase();
+            if (msg.includes("email not confirmed")) {
+                toast.error("Email not confirmed", {
+                    description: "Please check your inbox and confirm your email before signing in.",
+                });
+                setLoading(false);
+                return;
+            }
+            if (msg.includes("invalid login credentials") || msg.includes("invalid credentials")) {
+                // Could be wrong password OR account doesn't exist — fall through to sign-up attempt
+            } else {
+                // Any other auth error — surface it directly
+                toast.error("Sign in failed", { description: signInError.message });
+                setLoading(false);
+                return;
+            }
+        }
+
+        // 2. If Login failed, Try SignUp (user may be new)
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email,
             password,
@@ -87,7 +108,11 @@ export function AuthTabs({ onSuccess, showHomeLink = false }: { onSuccess?: () =
                 toast.error("Authentication failed", { description: signUpError.message });
             }
             setLoading(false);
-        } else if (signUpData.user) {
+        } else if (!signUpData.user) {
+            // Supabase returns null user (no error) when email is already pending confirmation
+            toast.message("Check your email", { description: "A confirmation link was already sent to this address. Please check your inbox or spam folder." });
+            setLoading(false);
+        } else {
             // Success: New User Created!
             // Try to proceed to onboarding
             if (signUpData.session) {

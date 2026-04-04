@@ -17,6 +17,8 @@ import { Suspense } from "react";
 import Loading from "./loading";
 import { PageGradients } from "@/components/ui/page-gradients";
 import { ThemeFavicon } from "@/components/theme-favicon";
+import { SiteStructuredData } from "@/components/seo/site-structured-data";
+import { BRAND_NAME, SITE_DESCRIPTION, getSiteUrl } from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,8 +45,67 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-  title: "OpenWrit",
-  description: "A modern, beautiful Bible reading experience.",
+  metadataBase: new URL(getSiteUrl()),
+  title: {
+    default: `${BRAND_NAME} | Bible Reading App`,
+    template: `%s | ${BRAND_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: BRAND_NAME,
+  alternates: {
+    canonical: "/",
+  },
+  keywords: [
+    "OpenWrit",
+    "Bible reading app",
+    "Catholic Bible",
+    "daily readings",
+    "Bible study",
+    "Scripture",
+    "liturgical calendar",
+  ],
+  openGraph: {
+    type: "website",
+    siteName: BRAND_NAME,
+    title: `${BRAND_NAME} | Bible Reading App`,
+    description: SITE_DESCRIPTION,
+    url: "/",
+    images: [
+      {
+        url: "/favicon-light.png",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: `${BRAND_NAME} | Bible Reading App`,
+    description: SITE_DESCRIPTION,
+    images: ["/favicon-light.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  icons: {
+    icon: [
+      {
+        media: "(prefers-color-scheme: light)",
+        url: "/favicon-light.png",
+      },
+      {
+        media: "(prefers-color-scheme: dark)",
+        url: "/favicon-dark.png",
+      },
+    ],
+    apple: "/favicon-light.png",
+  },
 };
 
 export const viewport: Viewport = {
@@ -68,6 +129,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${merriweather.variable} ${nunito.variable} antialiased min-h-screen flex flex-col`}
       >
+        <SiteStructuredData />
         <ThemeProvider
           attribute="data-theme"
           defaultTheme="system"

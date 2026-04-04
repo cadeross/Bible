@@ -24,7 +24,7 @@ const PALETTES: Array<{
     light: { bg: string; text: string; accent: string; border: string }
     dark:  { bg: string; text: string; accent: string; border: string }
 }> = [
-    { id: 'things',   label: 'Munich',    light: { bg:'#f5f5f0', text:'#1d1d1f', accent:'#007aff', border:'#d1d1d6' }, dark: { bg:'#1c1c1e', text:'#f5f5f7', accent:'#0a84ff', border:'#3a3a3c' } },
+    { id: 'things',   label: 'Munich',    light: { bg:'#ffffff', text:'#1d1d1f', accent:'#007aff', border:'#d1d1d6' }, dark: { bg:'#1c1c1e', text:'#f5f5f7', accent:'#0a84ff', border:'#3a3a3c' } },
     { id: 'standard', label: 'Standard',  light: { bg:'#fdfdfd', text:'#1a1a1a', accent:'#1a1a1a', border:'#e5e5e5' }, dark: { bg:'#18181b', text:'#ededed', accent:'#ededed', border:'#27272a' } },
     { id: 'sepia',    label: 'Sepia',     light: { bg:'#f8f4e5', text:'#433422', accent:'#433422', border:'#dcd6c6' }, dark: { bg:'#1f1812', text:'#d4c5b0', accent:'#d4c5b0', border:'#3d3024' } },
     { id: 'solarized',label: 'Solarized', light: { bg:'#fdf6e3', text:'#657b83', accent:'#b58900', border:'#d3cbb7' }, dark: { bg:'#002b36', text:'#839496', accent:'#b58900', border:'#073642' } },

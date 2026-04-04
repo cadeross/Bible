@@ -80,7 +80,7 @@ export function Header() {
             isFocusMode ? "opacity-0 hover:opacity-100" : "opacity-100"
         )}>
             {/* Left side: Logo & Main Nav */}
-            <div className="flex gap-6 text-xs font-mono text-muted-foreground/50">
+            <div className="flex gap-6 text-xs font-mono text-muted-foreground">
                 {/* Logo Removed */}
 
                 {navItems.map((item) => {
@@ -94,7 +94,7 @@ export function Header() {
                         >
                             <Icon className={cn(
                                 "h-3 w-3 transition-opacity",
-                                active ? "text-primary opacity-100" : "opacity-60 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white"
+                                active ? "text-primary opacity-100" : "opacity-85 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white"
                             )} />
                             <span className={cn(
                                 "pb-px",
@@ -106,7 +106,7 @@ export function Header() {
             </div>
 
             {/* Right side: User Tools */}
-            <div className="flex gap-6 text-xs font-mono text-muted-foreground/50">
+            <div className="flex gap-6 text-xs font-mono text-muted-foreground">
                 {rightItems.map((item) => {
                     const active = isActiveLink(item.href)
                     const Icon = item.icon
@@ -118,7 +118,7 @@ export function Header() {
                         >
                             <Icon className={cn(
                                 "h-3 w-3 transition-opacity",
-                                active ? "text-primary opacity-100" : "opacity-60 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white"
+                                active ? "text-primary opacity-100" : "opacity-85 group-hover:opacity-100 group-hover:text-foreground dark:group-hover:text-white"
                             )} />
                             <span className={cn(
                                 "pb-px",

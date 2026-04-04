@@ -565,12 +565,12 @@
 
 /* --- THINGS 3 --- */
 [data-palette='things'] {
-  --background: #f5f5f0;       /* warm paper white */
+  --background: #ffffff;       /* pure white */
   --foreground: #1d1d1f;       /* Apple charcoal */
   --primary: #007aff;          /* iOS blue */
   --primary-foreground: #ffffff;
   --muted: #e9e9ed;
-  --muted-foreground: #8e8e93; /* iOS system gray */
+  --muted-foreground: #6c6c72; /* stronger muted text for readability */
   --accent: #e5e5ea;
   --accent-foreground: #1d1d1f;
   --card: #ffffff;
@@ -587,7 +587,7 @@
   --primary: #0a84ff;          /* iOS dark blue */
   --primary-foreground: #1c1c1e;
   --muted: #2c2c2e;
-  --muted-foreground: #8e8e93;
+  --muted-foreground: #b0b0b7;
   --accent: #3a3a3c;
   --accent-foreground: #f5f5f7;
   --card: #2c2c2e;

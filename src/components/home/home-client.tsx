@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { BookOpen, Church, Clock, Heart, Share2, X } from "lucide-react"
+import { motion } from "framer-motion"
+import { BookOpen, Church, Clock, Heart, Share2 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -94,7 +94,6 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
   })
   const [mounted, setMounted] = useState(false)
   const [dailyContent, setDailyContent] = useState<DailyContent>(FALLBACK_CONTENT)
-  const [showUpdateMessage, setShowUpdateMessage] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [currentVerseSource, setCurrentVerseSource] = useState<string>("") // Track actual Bible version used
   const { fontFamily, bibleVersion } = useReadingPreferences()
@@ -110,11 +109,6 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
         day: "numeric"
       }).format(new Date())
     )
-
-    const updateSeen = localStorage.getItem("openwrit-v1.0.1-update-seen")
-    if (!updateSeen) {
-      setShowUpdateMessage(true)
-    }
 
     const loadData = async () => {
       const supabase = createClient()
@@ -310,66 +304,46 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
 
   if (!mounted) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="w-2 h-2 rounded-full bg-primary/30 animate-pulse" />
+      <div className="w-full max-w-[900px] mx-auto px-6 py-12 space-y-6">
+        <header className="space-y-3 text-center">
+          <p className="text-xs font-mono uppercase tracking-[0.35em] text-muted-foreground/70">
+            openwrit
+          </p>
+          <h1 className="text-2xl font-semibold text-foreground">
+            OpenWrit Bible Reading App
+          </h1>
+          <p className="text-sm text-muted-foreground max-w-[680px] mx-auto leading-relaxed">
+            Read Scripture with clarity and focus. Explore daily readings, follow the liturgical calendar,
+            and continue your Bible reading journey chapter by chapter.
+          </p>
+        </header>
+
+        <nav className="flex flex-wrap justify-center gap-3 text-xs font-mono uppercase tracking-wide">
+          <Link
+            href="/read/Genesis/1"
+            className="px-4 py-2 rounded-[2px] border border-border/40 hover:border-foreground/30 hover:bg-secondary/10 transition-colors"
+          >
+            start reading
+          </Link>
+          <Link
+            href="/calendar"
+            className="px-4 py-2 rounded-[2px] border border-border/40 hover:border-foreground/30 hover:bg-secondary/10 transition-colors"
+          >
+            liturgical calendar
+          </Link>
+          <Link
+            href="/how-to"
+            className="px-4 py-2 rounded-[2px] border border-border/40 hover:border-foreground/30 hover:bg-secondary/10 transition-colors"
+          >
+            how to use openwrit
+          </Link>
+        </nav>
       </div>
     )
   }
 
   return (
     <>
-    {/* Floating update announcement */}
-    <AnimatePresence>
-      {showUpdateMessage && (
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 16, transition: { duration: 0.18 } }}
-          transition={{ type: "spring", stiffness: 320, damping: 26, delay: 0.8 }}
-          className="fixed bottom-28 md:bottom-8 right-4 md:right-8 z-[200] w-72 bg-background border border-border/50 shadow-[0_8px_32px_rgba(0,0,0,0.14)] rounded-[2px] overflow-hidden"
-        >
-          {/* Accent line */}
-          <div className="h-px w-full bg-primary/40" />
-
-          <div className="px-4 py-3.5 space-y-3">
-            {/* Header row */}
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0 mt-[4px]" />
-                <span className="text-[10px] font-mono text-primary uppercase tracking-[0.3em] font-bold">
-                  Munich theme + faster loading
-                </span>
-              </div>
-              <button
-                onClick={() => {
-                  localStorage.setItem('openwrit-v1.0.1-update-seen', 'true');
-                  setShowUpdateMessage(false);
-                }}
-                className="text-muted-foreground/30 hover:text-foreground transition-colors -mr-0.5 p-0.5"
-                title="Dismiss"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-
-            {/* Description */}
-            <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              New Munich default theme, redesigned palette picker, improved loading times, and bug fixes.
-            </p>
-
-            {/* CTA */}
-            <Link
-              href="/updates"
-              onClick={() => localStorage.setItem('openwrit-v1.0.1-update-seen', 'true')}
-              className="group flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/60 hover:text-primary transition-colors uppercase tracking-[0.2em]"
-            >
-              <span>see changelog</span>
-              <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-            </Link>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
     <motion.div
       className="w-full max-w-[900px] mx-auto px-6 py-12 space-y-12"
       variants={containerVariants}
@@ -378,7 +352,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
     >
       {/* Header */}
       <motion.div variants={itemVariants} className="mb-12">
-        <div className="flex flex-col items-center text-center gap-4 opacity-70 hover:opacity-100 transition-opacity">
+        <div className="flex flex-col items-center text-center gap-4 opacity-95 hover:opacity-100 transition-opacity">
           {/*
           {navMode === 'classic' && (
             <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60 w-full justify-center">
@@ -394,7 +368,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
             {liturgyLabel && (
               <Link
                 href="/calendar"
-                className="text-xs font-mono text-muted-foreground/70 hover:text-foreground transition-colors inline-block"
+                className="text-xs font-mono text-muted-foreground hover:text-foreground transition-colors inline-block"
               >
                 <span className="truncate max-w-[300px] md:max-w-[500px] block uppercase tracking-wider">
                   {liturgyLabel}
@@ -437,7 +411,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
                   <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">
                     resume {continueReading.book} {continueReading.chapter}
                   </span>
-                  <span className="text-[10px] text-muted-foreground/50 opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all">
+                  <span className="text-[10px] text-muted-foreground/80 opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all">
                     →
                   </span>
                 </Link>
@@ -454,17 +428,17 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
             <DailyReadings data={dailyReadings} />
           ) : (
             <div className="w-full max-w-[720px] mx-auto flex flex-col items-center justify-center gap-3 py-16 text-center">
-              <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground/60">
+              <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">
                 · readings unavailable ·
               </span>
-              <p className="text-xs font-mono text-muted-foreground/50 max-w-[280px] leading-relaxed">
+              <p className="text-xs font-mono text-muted-foreground max-w-[280px] leading-relaxed">
                 today&apos;s readings could not be loaded. check back shortly or visit usccb.org directly.
               </p>
               <a
                 href="https://bible.usccb.org/daily-bible-reading"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] font-mono text-muted-foreground/60 hover:text-primary transition-colors uppercase tracking-wider mt-1"
+                className="text-[10px] font-mono text-muted-foreground hover:text-primary transition-colors uppercase tracking-wider mt-1"
               >
                 usccb.org ↗
               </a>

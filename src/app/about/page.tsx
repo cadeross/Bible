@@ -102,18 +102,20 @@ export default function AboutPage() {
                     </p>
                     <div className="flex flex-wrap gap-4">
                         <Link
-                            href="/features"
+                            href="/updates"
                             className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-[2px] font-mono text-sm hover:bg-primary/90 transition-colors"
                         >
                             <Sparkles className="w-4 h-4" />
-                            Vote on features
+                            See product updates
                         </Link>
-                        <Link
-                            href="/contact"
+                        <a
+                            href="https://form.typeform.com/to/b26fjWPA"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 px-4 py-2 bg-secondary/30 text-muted-foreground rounded-[2px] font-mono text-sm hover:bg-secondary/50 transition-colors"
                         >
                             Say hello
-                        </Link>
+                        </a>
                     </div>
                 </Section>
             </div>

@@ -1,7 +1,7 @@
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 
 export const metadata = {
-    title: "Setup | Bible",
+    title: "Setup | OpenWrit",
     description: "Configure your reading experience."
 };
 

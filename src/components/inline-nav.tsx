@@ -86,14 +86,14 @@ export function InlineNav() {
                 <div className="flex items-center justify-between">
                     {/* Left: OPENWRIT + animated nav links */}
                     <div
-                        className="flex items-center gap-3 md:gap-5 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground/50 pr-24"
+                        className="flex items-center gap-3 md:gap-5 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground pr-24"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                     >
                         <Link
                             href="/"
                             className={cn(
-                                "flex items-center gap-3 transition-colors hover:text-primary tracking-[0.45em] text-muted-foreground/60",
+                                "flex items-center gap-3 transition-colors hover:text-primary tracking-[0.45em] text-muted-foreground",
                                 pathname === "/" && "text-primary"
                             )}
                         >
@@ -106,7 +106,7 @@ export function InlineNav() {
                                         animate={{ opacity: 1, width: "auto", x: 0 }}
                                         exit={{ opacity: 0, width: 0, x: -8 }}
                                         transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-                                        className="text-muted-foreground/40 overflow-hidden whitespace-nowrap"
+                                        className="text-muted-foreground/80 overflow-hidden whitespace-nowrap"
                                     >
                                         &nbsp;/ {breadcrumb}
                                     </motion.span>
@@ -139,9 +139,9 @@ export function InlineNav() {
                                             delay: (arr.length - 1 - i) * 0.04,
                                             ease: [0.55, 0.06, 0.68, 0.19],
                                         },
-                                    }}
-                                >
-                                    <span className="text-muted-foreground/20">·</span>
+                                }}
+                            >
+                                    <span className="text-muted-foreground/45">·</span>
                                     <Link
                                         href={link.href}
                                         className="transition-colors hover:text-primary whitespace-nowrap"
@@ -154,10 +154,10 @@ export function InlineNav() {
                     </div>
 
                     {/* Right: utility nav */}
-                    <div className="hidden sm:flex items-center gap-3 md:gap-5 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground/50">
+                    <div className="hidden sm:flex items-center gap-3 md:gap-5 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">
                         {rightLinks.filter(link => !isActive(link.href)).map((link, i) => (
                             <span key={link.name} className="flex items-center gap-3 md:gap-5">
-                                {i > 0 && <span className="text-muted-foreground/20">·</span>}
+                                {i > 0 && <span className="text-muted-foreground/45">·</span>}
                                 <Link
                                     href={link.href}
                                     className="transition-colors hover:text-primary"

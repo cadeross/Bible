@@ -21,12 +21,12 @@ export function ContentFooter() {
             "w-full transition-all duration-500 mt-16",
             isReadPage && isFocusMode && "opacity-0 pointer-events-none"
         )}>
-            <div className="flex items-center justify-between py-6 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground/40">
+            <div className="flex items-center justify-between py-6 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">
                 {/* Left: links */}
                 <div className="flex items-center gap-3 md:gap-5 flex-wrap">
                     {footerLinks.map((link, i) => (
                         <span key={link.name} className="flex items-center gap-3 md:gap-5">
-                            {i > 0 && <span className="text-muted-foreground/20">·</span>}
+                            {i > 0 && <span className="text-muted-foreground/45">·</span>}
                             {link.external ? (
                                 <a
                                     href={link.href}

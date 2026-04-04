@@ -36,9 +36,27 @@ function parseVerseParam(v?: string): number[] {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { book, chapter } = await params;
     const bookTitle = decodeURIComponent(book);
+    const path = `/read/${encodeURIComponent(bookTitle)}/${chapter}`;
+    const title = `${bookTitle} ${chapter} Bible Chapter`;
+    const description = `Read ${bookTitle} chapter ${chapter} on OpenWrit with a focused, distraction-free Bible reading experience.`;
+
     return {
-        title: `${bookTitle} ${chapter} - OpenWrit`,
-        description: `Read ${bookTitle} chapter ${chapter} on OpenWrit.`,
+        title,
+        description,
+        alternates: {
+            canonical: path,
+        },
+        openGraph: {
+            title: `${title} | OpenWrit`,
+            description,
+            url: path,
+            type: "article",
+        },
+        twitter: {
+            card: "summary",
+            title: `${title} | OpenWrit`,
+            description,
+        },
     };
 }
 
