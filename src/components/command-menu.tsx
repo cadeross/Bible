@@ -7,7 +7,6 @@ import { parseReferenceJump } from "@/lib/reference-jump"
 import { OPEN_COMMAND_MENU_EVENT } from "@/lib/open-command-menu"
 import type { BibleSearchVerse } from "@/app/api/bible-search/route"
 import { CornerDownLeft } from "lucide-react"
-import { useNavMode } from "@/contexts/nav-mode"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import {
     CommandDialog,
@@ -17,7 +16,6 @@ import {
     CommandInput,
     CommandItem,
     CommandList,
-    CommandSeparator,
 } from "@/components/ui/command"
 
 function isTypingInField(el: EventTarget | null): boolean {
@@ -42,7 +40,6 @@ export function CommandMenu() {
     const [searchSource, setSearchSource] = React.useState<string | null>(null)
     const openRef = React.useRef(open)
     const router = useRouter()
-    const { navMode, toggleNavMode, inlineNavLayout, toggleInlineNavLayout } = useNavMode()
     const { bibleVersion, isLoaded } = useReadingPreferences()
 
     React.useEffect(() => {
@@ -144,37 +141,6 @@ export function CommandMenu() {
         }))
     }, [input, router, bibleVersion, handleOpenChange])
 
-    const systemCommands = React.useMemo(() => {
-        const commands = [
-            {
-                id: "toggle-nav",
-                label: navMode === "classic" ? "Switch to inline navigation" : "Switch to classic navigation",
-                action: () => {
-                    toggleNavMode()
-                    handleOpenChange(false)
-                },
-            },
-            ...(navMode === "inline"
-                ? [
-                      {
-                          id: "inline-layout",
-                          label:
-                              inlineNavLayout === "full"
-                                  ? "Inline nav: minimal layout (read · library · search)"
-                                  : "Inline nav: full layout",
-                          action: () => {
-                              toggleInlineNavLayout()
-                              handleOpenChange(false)
-                          },
-                      },
-                  ]
-                : []),
-        ]
-        if (!input.trim()) return commands
-        const f = input.toLowerCase()
-        return commands.filter((c) => c.label.toLowerCase().includes(f))
-    }, [input, navMode, toggleNavMode, toggleInlineNavLayout, inlineNavLayout, handleOpenChange])
-
     const jumpFromParser = React.useMemo(() => {
         if (!jumpTarget || !input.trim()) return null
         const { book, chapter, verse } = jumpTarget
@@ -193,13 +159,11 @@ export function CommandMenu() {
     const hasJumpRow = Boolean(jumpFromParser)
     const hasBooks = bookItems.length > 0
     const hasVerses = verses.length > 0
-    const hasCommands = systemCommands.length > 0
     const showEmptyHint =
         input.trim().length > 0 &&
         !hasJumpRow &&
         !hasBooks &&
         !hasVerses &&
-        !hasCommands &&
         !searchLoading
 
     return (
@@ -262,26 +226,13 @@ export function CommandMenu() {
                         </CommandGroup>
                     )}
 
-                    {hasCommands && (
-                        <>
-                            {(hasJumpRow || hasBooks || hasVerses) && <CommandSeparator />}
-                            <CommandGroup heading="Commands">
-                                {systemCommands.map((c) => (
-                                    <CommandItem key={c.id} value={`cmd-${c.id}`} onSelect={c.action}>
-                                        {c.label}
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
-                        </>
-                    )}
-
                     {showEmptyHint && <CommandEmpty>No matches. Try a book name or reference (e.g. John 3:16).</CommandEmpty>}
 
                     {!input.trim() && (
                         <div className="border-t border-border/30 bg-muted/15 px-3 py-2.5 text-center text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">
                             <div>Type anywhere to search · ⌘K</div>
                             <div className="mt-1 normal-case tracking-normal text-muted-foreground/50">
-                                Jump · full-text (with API key) · nav layout
+                                Jump · full-text (with API key)
                             </div>
                         </div>
                     )}

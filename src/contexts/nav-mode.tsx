@@ -1,83 +1,49 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect } from "react"
+import React, { createContext, useContext, useEffect } from "react"
 
 type NavMode = "classic" | "inline"
 
-/** Full = current multi-row inline nav; minimal = earlier style, read/library/search on the right only */
+/** Full = multi-row inline nav; minimal = compact read · library · search row */
 export type InlineNavLayout = "full" | "minimal"
+
+/**
+ * Change these in code to preview other layouts. Classic header/footer/mobile-nav
+ * and full inline nav remain implemented; they are not exposed in the UI.
+ */
+export const DEFAULT_NAV_MODE: NavMode = "inline"
+export const DEFAULT_INLINE_NAV_LAYOUT: InlineNavLayout = "minimal"
 
 interface NavModeContextType {
     navMode: NavMode
-    toggleNavMode: () => void
-    setNavMode: (mode: NavMode) => void
     inlineNavLayout: InlineNavLayout
-    setInlineNavLayout: (layout: InlineNavLayout) => void
-    toggleInlineNavLayout: () => void
 }
 
 const NavModeContext = createContext<NavModeContextType | undefined>(undefined)
 
-const STORAGE_KEY = "openwrit-nav-mode"
-const INLINE_LAYOUT_KEY = "openwrit-inline-nav-layout"
+function clearLegacyNavStorage() {
+    if (typeof window === "undefined") return
+    try {
+        localStorage.removeItem("openwrit-nav-mode")
+        localStorage.removeItem("openwrit-nav-mode-v2")
+        localStorage.removeItem("openwrit-inline-nav-layout")
+        localStorage.removeItem("openwrit-inline-nav-layout-v2")
+    } catch {
+        /* ignore */
+    }
+}
 
 export function NavModeProvider({ children }: { children: React.ReactNode }) {
-    const [navMode, setNavModeState] = useState<NavMode>("inline")
-    const [inlineNavLayout, setInlineNavLayoutState] = useState<InlineNavLayout>("full")
-    const [isLoaded, setIsLoaded] = useState(false)
-
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            const saved = localStorage.getItem(STORAGE_KEY)
-            if (saved === "classic" || saved === "inline") {
-                setNavModeState(saved)
-            }
-            const savedLayout = localStorage.getItem(INLINE_LAYOUT_KEY)
-            if (savedLayout === "full" || savedLayout === "minimal") {
-                setInlineNavLayoutState(savedLayout)
-            }
-            setIsLoaded(true)
-        }
+        clearLegacyNavStorage()
     }, [])
 
-    useEffect(() => {
-        if (isLoaded) {
-            localStorage.setItem(STORAGE_KEY, navMode)
-        }
-    }, [navMode, isLoaded])
-
-    useEffect(() => {
-        if (isLoaded) {
-            localStorage.setItem(INLINE_LAYOUT_KEY, inlineNavLayout)
-        }
-    }, [inlineNavLayout, isLoaded])
-
-    const toggleNavMode = () => {
-        setNavModeState(prev => prev === "classic" ? "inline" : "classic")
+    const value: NavModeContextType = {
+        navMode: DEFAULT_NAV_MODE,
+        inlineNavLayout: DEFAULT_INLINE_NAV_LAYOUT,
     }
 
-    const setNavMode = (mode: NavMode) => setNavModeState(mode)
-
-    const setInlineNavLayout = (layout: InlineNavLayout) => setInlineNavLayoutState(layout)
-
-    const toggleInlineNavLayout = () => {
-        setInlineNavLayoutState((prev) => (prev === "full" ? "minimal" : "full"))
-    }
-
-    return (
-        <NavModeContext.Provider
-            value={{
-                navMode,
-                toggleNavMode,
-                setNavMode,
-                inlineNavLayout,
-                setInlineNavLayout,
-                toggleInlineNavLayout,
-            }}
-        >
-            {children}
-        </NavModeContext.Provider>
-    )
+    return <NavModeContext.Provider value={value}>{children}</NavModeContext.Provider>
 }
 
 export function useNavMode() {

@@ -14,7 +14,7 @@ const STORAGE_KEY = "openwrit-reading-tips-seen"
 const TIPS: { keys: string; desc: string }[] = [
     { keys: "← / →", desc: "Previous or next chapter (when not typing in a field)" },
     { keys: "⌥ F (Alt+F)", desc: "Toggle focus mode for distraction-free reading" },
-    { keys: "⌘ K / Ctrl+K", desc: "Command palette: jump, search verse text, and nav shortcuts" },
+    { keys: "⌘ K / Ctrl+K", desc: "Command palette: jump to a reference and search verse text" },
     { keys: "Type", desc: "Start typing on most pages to open the palette with that letter" },
     { keys: "Select text", desc: "Drag or double-click verses to highlight, copy, or share" },
 ]
