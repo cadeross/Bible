@@ -48,7 +48,7 @@ test.describe("Highlights", () => {
         expect(await reading.isHighlightMenuVisible()).toBe(true)
 
         await reading.closeHighlightMenu()
-        await expect(page.locator('[role="toolbar"][aria-label="Highlight options"]')).not.toBeVisible()
+        await expect(page.getByRole("menu", { name: "Highlight options" })).not.toBeVisible()
     })
 
     test("Highlight persists on page reload (localStorage)", async ({ page }) => {
@@ -77,7 +77,7 @@ test.describe("Highlights", () => {
 
         // Then remove it
         await reading.longPressVerse(1)
-        await page.getByRole("button", { name: /remove highlight/i }).click()
+        await page.getByRole("menuitem", { name: /remove highlight/i }).click()
 
         const verse = page.locator("[data-verse='1']")
         const className = await verse.getAttribute("class")
@@ -90,14 +90,13 @@ test.describe("Highlights", () => {
 
         await reading.longPressVerse(1)
 
-        const toolbar = page.locator('[role="toolbar"][aria-label="Highlight options"]')
-        await expect(toolbar).toBeVisible()
+        const menu = page.getByRole("menu", { name: "Highlight options" })
+        await expect(menu).toBeVisible()
 
-        // Check color buttons have aria-labels
-        await expect(page.getByRole("button", { name: "Highlight yellow" })).toBeVisible()
-        await expect(page.getByRole("button", { name: "Add note" })).toBeVisible()
-        await expect(page.getByRole("button", { name: "Share verse" })).toBeVisible()
-        await expect(page.getByRole("button", { name: "Remove highlight" })).toBeVisible()
+        await expect(page.getByRole("menuitem", { name: /highlight yellow/i })).toBeVisible()
+        await expect(page.getByRole("menuitem", { name: "Note" })).toBeVisible()
+        await expect(page.getByRole("menuitem", { name: "Share" })).toBeVisible()
+        await expect(page.getByRole("menuitem", { name: /remove highlight/i })).toBeVisible()
     })
 
     test("Selecting text shows word count announcement in live region", async ({ page }) => {

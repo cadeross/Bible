@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 // I should install these: npm install class-variance-authority @radix-ui/react-slot
 
 const buttonVariants = cva(
-    "inline-flex items-center justify-center whitespace-nowrap rounded-[2px] text-sm font-medium ring-offset-background transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
+    "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
     {
         variants: {
             variant: {

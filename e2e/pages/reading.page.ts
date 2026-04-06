@@ -19,11 +19,11 @@ export class ReadingPage {
     async longPressVerse(verseNum: number) {
         const verse = this.page.locator(`[data-verse="${verseNum}"]`)
         await verse.dispatchEvent("contextmenu")
-        await this.page.waitForSelector('[role="toolbar"][aria-label="Highlight options"]')
+        await this.page.getByRole("menu", { name: "Highlight options" }).waitFor({ state: "visible" })
     }
 
     async applyHighlightColor(color: "yellow" | "green" | "blue" | "pink" | "purple") {
-        await this.page.getByRole("button", { name: `Highlight ${color}` }).click()
+        await this.page.getByRole("menuitem", { name: new RegExp(`highlight ${color}`, "i") }).click()
     }
 
     async nextChapter() {
@@ -40,7 +40,7 @@ export class ReadingPage {
     }
 
     async isHighlightMenuVisible() {
-        return this.page.locator('[role="toolbar"][aria-label="Highlight options"]').isVisible()
+        return this.page.getByRole("menu", { name: "Highlight options" }).isVisible()
     }
 
     async closeHighlightMenu() {

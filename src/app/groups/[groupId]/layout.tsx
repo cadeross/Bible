@@ -5,32 +5,29 @@ import { useParams } from "next/navigation";
 import { fetchGroup, fetchMyMembership, type Group, type GroupMember } from "@/lib/groups";
 import { GroupHeader } from "@/components/groups/group-header";
 import { GroupTabs } from "@/components/groups/group-tabs";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@clerk/nextjs";
 import { GroupContext } from "@/contexts/group-context";
 
 export default function GroupLayout({ children }: { children: React.ReactNode }) {
     const { groupId } = useParams<{ groupId: string }>();
+    const { isLoaded, isSignedIn, userId } = useAuth();
     const [group, setGroup] = useState<Group | null>(null);
     const [membership, setMembership] = useState<GroupMember | null>(null);
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!isLoaded) return;
         const load = async () => {
-            const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
-            setCurrentUserId(session?.user.id ?? null);
-
             const [g, m] = await Promise.all([
                 fetchGroup(groupId),
-                session ? fetchMyMembership(groupId) : Promise.resolve(null),
+                isSignedIn ? fetchMyMembership(groupId) : Promise.resolve(null),
             ]);
             setGroup(g);
             setMembership(m);
             setLoading(false);
         };
-        load();
-    }, [groupId]);
+        void load();
+    }, [groupId, isLoaded, isSignedIn]);
 
     const isAdmin = membership?.role === "admin" && membership?.status === "active";
 
@@ -52,12 +49,12 @@ export default function GroupLayout({ children }: { children: React.ReactNode })
     }
 
     return (
-        <GroupContext.Provider value={{ group, membership, currentUserId, isAdmin, onMembershipChange: setMembership }}>
+        <GroupContext.Provider value={{ group, membership, currentUserId: userId ?? null, isAdmin, onMembershipChange: setMembership }}>
             <div className="min-h-screen pt-20 pb-32 px-6 max-w-2xl mx-auto">
                 <GroupHeader
                     group={group}
                     membership={membership}
-                    currentUserId={currentUserId}
+                    currentUserId={userId ?? null}
                     onMembershipChange={setMembership}
                 />
                 <div className="mt-4 mb-6">

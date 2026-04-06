@@ -36,16 +36,14 @@ test.describe("Accessibility", () => {
 
         await reading.longPressVerse(1)
 
-        const toolbar = page.locator('[role="toolbar"][aria-label="Highlight options"]')
-        await expect(toolbar).toBeVisible()
+        const menu = page.getByRole("menu", { name: "Highlight options" })
+        await expect(menu).toBeVisible()
 
-        // Tab into the toolbar — first focusable element is the yellow color button
-        await page.keyboard.press("Tab")
-        const focused = page.locator(":focus")
-        await expect(focused).toBeVisible()
+        await page.keyboard.press("ArrowDown")
+        await expect(page.locator(":focus")).toHaveAttribute("role", "menuitem")
     })
 
-    test("All interactive elements in toolbar have focus-visible styles", async ({ page }) => {
+    test("Reader chrome controls have focus-visible styles", async ({ page }) => {
         const reading = new ReadingPage(page)
         await reading.goto("Genesis", 1)
 

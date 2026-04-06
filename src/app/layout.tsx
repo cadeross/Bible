@@ -13,12 +13,15 @@ import { FocusProvider } from "@/contexts/focus-mode";
 import { NavModeProvider } from "@/contexts/nav-mode";
 import { NavModeGate } from "@/components/nav-mode-gate";
 // import { Agentation } from "agentation";
-import { Suspense } from "react";
+import { Suspense, type CSSProperties } from "react";
 import Loading from "./loading";
 import { PageGradients } from "@/components/ui/page-gradients";
 import { ThemeFavicon } from "@/components/theme-favicon";
 import { SiteStructuredData } from "@/components/seo/site-structured-data";
 import { BRAND_NAME, SITE_DESCRIPTION, getSiteUrl } from "@/lib/seo";
+import { AppConvexProvider } from "@/components/convex-client-provider";
+import { DatabaseMaintenanceBanner } from "@/components/database-maintenance-banner";
+import { DATABASE_MAINTENANCE_BANNER_ENABLED } from "@/lib/database-maintenance";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -125,10 +128,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      style={
+        DATABASE_MAINTENANCE_BANNER_ENABLED
+          ? ({
+              // Reserve space before the client measures the real banner height (avoids header covering the strip).
+              ["--maintenance-banner-height"]: "3.25rem",
+            } as CSSProperties)
+          : undefined
+      }
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${merriweather.variable} ${nunito.variable} antialiased min-h-screen flex flex-col`}
       >
+        <AppConvexProvider>
         <SiteStructuredData />
         <ThemeProvider
           attribute="data-theme"
@@ -136,6 +151,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <DatabaseMaintenanceBanner />
           <ReadingPreferencesProvider>
             <NavModeProvider>
               <ThemeFavicon />
@@ -161,7 +177,7 @@ export default function RootLayout({
                   position="bottom-right"
                   style={{ zIndex: 9999 }}
                   toastOptions={{
-                    className: "font-mono text-xs !bg-background text-foreground border-border/30 border shadow-[0_4px_16px_rgba(0,0,0,0.08)] rounded-[2px] px-6 py-4 gap-4 opacity-100",
+                    className: "font-mono text-xs !bg-background text-foreground border-border/30 border shadow-[0_4px_16px_rgba(0,0,0,0.08)] rounded-lg px-6 py-4 gap-4 opacity-100",
                     descriptionClassName: "text-muted-foreground",
                     actionButtonStyle: {
                       backgroundColor: "hsl(var(--primary))",
@@ -192,6 +208,7 @@ export default function RootLayout({
             </NavModeProvider>
           </ReadingPreferencesProvider>
         </ThemeProvider>
+        </AppConvexProvider>
       </body>
     </html>
   );

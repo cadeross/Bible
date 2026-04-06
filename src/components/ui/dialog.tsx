@@ -42,14 +42,14 @@ const DialogContent = React.forwardRef<
                 // Base layout — centered, the CSS keyframes handle translate(-50%, -50%)
                 "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4",
                 // Styling
-                "border border-border/30 bg-background p-6 shadow-[0_8px_32px_rgba(0,0,0,0.12)] sm:rounded-[2px]",
+                "border border-border/30 bg-background p-6 shadow-[0_8px_32px_rgba(0,0,0,0.12)] sm:rounded-lg",
                 // Animation is handled by globals.css [data-radix-dialog-content] keyframes
                 className
             )}
             {...props}
         >
             {children}
-            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-[2px] opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
                 <X className="h-4 w-4" />
                 <span className="sr-only">Close</span>
             </DialogPrimitive.Close>

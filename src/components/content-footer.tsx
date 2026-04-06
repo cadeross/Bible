@@ -4,12 +4,14 @@ import Link from "next/link"
 import { useFocusMode } from "@/contexts/focus-mode"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { openCommandMenu } from "@/lib/open-command-menu"
 
 const footerLinks = [
-    { name: "x.com", href: "https://x.com/cadeross", external: true },
-    { name: "contact", href: "https://form.typeform.com/to/b26fjWPA", external: true },
-    { name: "how to", href: "/how-to" },
-]
+    { name: "x.com", href: "https://x.com/cadeross", external: true as const },
+    { name: "contact", href: "https://form.typeform.com/to/b26fjWPA", external: true as const },
+    { name: "search", palette: true as const },
+    { name: "how to", href: "/how-to", external: false as const },
+] as const
 
 export function ContentFooter() {
     const pathname = usePathname()
@@ -27,7 +29,15 @@ export function ContentFooter() {
                     {footerLinks.map((link, i) => (
                         <span key={link.name} className="flex items-center gap-3 md:gap-5">
                             {i > 0 && <span className="text-muted-foreground/45">·</span>}
-                            {link.external ? (
+                            {"palette" in link && link.palette ? (
+                                <button
+                                    type="button"
+                                    onClick={() => openCommandMenu()}
+                                    className="cursor-pointer border-none bg-transparent p-0 font-mono uppercase tracking-[0.3em] text-muted-foreground transition-colors hover:text-primary"
+                                >
+                                    {link.name}
+                                </button>
+                            ) : "external" in link && link.external ? (
                                 <a
                                     href={link.href}
                                     target="_blank"
@@ -36,14 +46,11 @@ export function ContentFooter() {
                                 >
                                     {link.name}
                                 </a>
-                            ) : (
-                                <Link
-                                    href={link.href}
-                                    className="hover:text-primary transition-colors"
-                                >
+                            ) : "href" in link ? (
+                                <Link href={link.href} className="hover:text-primary transition-colors">
                                     {link.name}
                                 </Link>
-                            )}
+                            ) : null}
                         </span>
                     ))}
                 </div>

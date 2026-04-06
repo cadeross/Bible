@@ -11,6 +11,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-border: var(--border);
   --color-heart: var(--heart, var(--primary));
   --color-bookmark: var(--bookmark, var(--primary));
@@ -297,6 +299,37 @@
 
 [data-state="closed"].fade-out-0 {
   animation: fadeOut 200ms ease-in;
+}
+
+/* Radix menus / popovers: opacity-only so Popper transform positioning is not clobbered */
+@keyframes owMenuFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes owMenuFadeOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+.ow-menu-surface[data-state="open"],
+.ow-menu-surface[data-state="delayed-open"],
+.ow-menu-surface[data-state="instant-open"] {
+  animation: owMenuFadeIn 125ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ow-menu-surface[data-state="closed"] {
+  animation: owMenuFadeOut 80ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -595,6 +628,13 @@
   --border: #3a3a3c;
   --heart: #ff453a;            /* iOS dark system red */
   --bookmark: #ffd60a;         /* iOS dark system yellow */
+}
+
+/* Opaque menu / popover surfaces (Tailwind bg-popover / text-popover-foreground) */
+:root {
+  --popover: var(--card);
+  --popover-foreground: var(--card-foreground);
+  --maintenance-banner-height: 0px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

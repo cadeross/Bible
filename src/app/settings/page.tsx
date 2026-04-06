@@ -42,7 +42,6 @@ const PSALM_REFS: Array<[number, number]> = [
 ]
 
 import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 
 export default function SettingsPage() {
@@ -83,20 +82,6 @@ export default function SettingsPage() {
             .catch(() => setPreviewVerse('The LORD is my shepherd; I shall not want.'))
     }, [bibleVersion, psalmRef])
 
-    // User State for Preferences
-    const [user, setUser] = useState<any>(null);
-    const supabase = createClient();
-
-    useEffect(() => {
-        const getUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            setUser(user);
-        };
-        getUser();
-    }, [supabase]);
-
-
-
     // Helper for section groups
     const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
         <div className="space-y-4">
@@ -128,7 +113,7 @@ export default function SettingsPage() {
         <button
             onClick={onClick}
             className={cn(
-                "group relative inline-flex items-center gap-2 px-3 py-1.5 rounded-[2px] transition-all text-xs font-mono select-none border border-transparent",
+                "group relative inline-flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-xs font-mono select-none border border-transparent",
                 active
                     ? "bg-muted/60 text-foreground/80 hover:bg-muted/80 hover:text-foreground"
                     : "bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -141,7 +126,7 @@ export default function SettingsPage() {
 
     // Group Button
     const ButtonGroup = ({ children }: { children: React.ReactNode }) => (
-        <div className="flex flex-wrap items-center gap-1 bg-secondary/20 p-1 rounded-[2px]">
+        <div className="flex flex-wrap items-center gap-1 bg-secondary/20 p-1 rounded-md">
             {children}
         </div>
     )
@@ -331,7 +316,7 @@ export default function SettingsPage() {
                     </SettingRow>
 
                     <SettingRow label="Font Size" description={`adjust text size (${fontSize}px)`}>
-                        <div className="flex items-center gap-4 bg-secondary/20 p-2 rounded-[2px]">
+                        <div className="flex items-center gap-4 bg-secondary/20 p-2 rounded-md">
                             <button
                                 onClick={() => setFontSize(Math.max(12, fontSize - 2))}
                                 className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground font-mono transition-colors"
@@ -376,7 +361,7 @@ export default function SettingsPage() {
                     </SettingRow>
 
                     <SettingRow label="Default Highlight" description="quick highlight color">
-                        <div className="flex items-center gap-2 bg-secondary/20 p-2 rounded-[2px]">
+                        <div className="flex items-center gap-2 bg-secondary/20 p-2 rounded-md">
                             <PenTool className="h-4 w-4 text-muted-foreground mr-2" />
                             {HIGHLIGHT_COLORS.map(c => (
                                 <button

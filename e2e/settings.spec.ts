@@ -1,11 +1,15 @@
-import { test, expect } from "@playwright/test"
+import { test, expect, type Page } from "@playwright/test"
 import { ReadingPage } from "./pages/reading.page"
 
 test.describe("Reading settings", () => {
     test.beforeEach(async ({ page }) => {
         await page.goto("/")
-        await page.evaluate(() => localStorage.removeItem("reading-preferences-v2"))
+        await page.evaluate(() => localStorage.removeItem("reading-preferences"))
     })
+
+    async function openAppearancePopover(page: Page) {
+        await page.getByRole("button", { name: /appearance and typography/i }).click()
+    }
 
     test("Font size increase button enlarges text", async ({ page }) => {
         const reading = new ReadingPage(page)
@@ -17,6 +21,7 @@ test.describe("Reading settings", () => {
             parseFloat(getComputedStyle(el).fontSize)
         )
 
+        await openAppearancePopover(page)
         // Click increase
         await page.getByRole("button", { name: /increase font size/i }).click()
 
@@ -30,6 +35,7 @@ test.describe("Reading settings", () => {
         const reading = new ReadingPage(page)
         await reading.goto("Genesis", 1)
 
+        await openAppearancePopover(page)
         // First increase to have room to decrease
         await page.getByRole("button", { name: /increase font size/i }).click()
 
@@ -38,6 +44,7 @@ test.describe("Reading settings", () => {
             parseFloat(getComputedStyle(el).fontSize)
         )
 
+        await openAppearancePopover(page)
         await page.getByRole("button", { name: /decrease font size/i }).click()
 
         const after = await container.evaluate((el) =>
@@ -50,14 +57,16 @@ test.describe("Reading settings", () => {
         const reading = new ReadingPage(page)
         await reading.goto("Genesis", 1)
 
+        await openAppearancePopover(page)
         await page.getByRole("button", { name: /increase font size/i }).click()
+        await openAppearancePopover(page)
         await page.getByRole("button", { name: /increase font size/i }).click()
 
         await page.reload()
         await page.waitForSelector("[data-verse]")
 
         // Font should still be enlarged — check localStorage
-        const prefs = await page.evaluate(() => localStorage.getItem("reading-preferences-v2"))
+        const prefs = await page.evaluate(() => localStorage.getItem("reading-preferences"))
         const parsed = JSON.parse(prefs || "{}")
         expect(parsed.fontSize).toBeGreaterThan(18)
     })
@@ -70,6 +79,7 @@ test.describe("Reading settings", () => {
         const sup = page.locator("[data-verse='1'] sup").first()
         await expect(sup).toBeVisible()
 
+        await openAppearancePopover(page)
         // Click numbers toggle
         await page.getByRole("button", { name: /numbers/i }).click()
 
@@ -100,13 +110,14 @@ test.describe("Reading settings", () => {
         const reading = new ReadingPage(page)
         await reading.goto("Genesis", 1)
 
+        await openAppearancePopover(page)
         // Change font to mono
         await page.getByRole("button", { name: "mono" }).click()
 
         await page.reload()
         await page.waitForSelector("[data-verse]")
 
-        const prefs = await page.evaluate(() => localStorage.getItem("reading-preferences-v2"))
+        const prefs = await page.evaluate(() => localStorage.getItem("reading-preferences"))
         const parsed = JSON.parse(prefs || "{}")
         expect(parsed.fontFamily).toBe("mono")
     })

@@ -80,7 +80,7 @@ export default function HowToPage() {
                     <p className="text-sm font-mono text-muted-foreground leading-relaxed">
                         Start typing from anywhere in the app to instantly open the command menu. You can navigate to any passage without touching the mouse.
                     </p>
-                    <div className="bg-secondary/10 border border-border/50 rounded-[2px] p-4 space-y-3 text-sm font-mono text-muted-foreground">
+                    <div className="bg-secondary/10 border border-border/50 rounded-md p-4 space-y-3 text-sm font-mono text-muted-foreground">
                         <div className="flex items-center gap-3">
                             <span className="text-primary shrink-0">→</span>
                             <span>Type a book name (e.g. <span className="text-foreground">Genesis</span>) to jump to it.</span>
@@ -106,7 +106,7 @@ export default function HowToPage() {
 
                 {/* KEYBOARD SHORTCUTS */}
                 <Section title="Keyboard Shortcuts" icon={Keyboard}>
-                    <div className="bg-secondary/10 border border-border/50 rounded-[2px] p-4 space-y-2">
+                    <div className="bg-secondary/10 border border-border/50 rounded-md p-4 space-y-2">
                         <Shortcut action="Next chapter" keys="→ Right Arrow" />
                         <Shortcut action="Previous chapter" keys="← Left Arrow" />
                         <Shortcut action="Toggle focus mode" keys={focusKey} />

@@ -213,7 +213,7 @@ export function NotePanel({
                     <motion.button
                         onClick={handleDeleteClick}
                         className={cn(
-                            "flex items-center gap-1.5 px-2 py-1 rounded-[2px] transition-colors cursor-pointer",
+                            "flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors cursor-pointer",
                             confirmDelete
                                 ? "text-destructive bg-destructive/10"
                                 : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/50"

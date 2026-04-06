@@ -3,22 +3,21 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getProfile } from "@/lib/persistence";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@clerk/nextjs";
 import { getStoredBibleVersion } from "@/contexts/reading-preferences";
 import Loading from "../loading";
 
 export default function ReadPage() {
     const router = useRouter();
+    const { isLoaded, isSignedIn } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        if (!isLoaded) return;
         const checkLastRead = async () => {
             const version = getStoredBibleVersion();
-            const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
 
-            if (session) {
-                // Try to get last read position from profile
+            if (isSignedIn) {
                 const profile = await getProfile();
                 if (profile?.last_read_book && profile?.last_read_chapter) {
                     router.replace(`/read/${encodeURIComponent(profile.last_read_book)}/${profile.last_read_chapter}?translation=${version}`);
@@ -26,12 +25,11 @@ export default function ReadPage() {
                 }
             }
 
-            // Default to Genesis 1 if no last read position
             router.replace(`/read/Genesis/1?translation=${version}`);
         };
 
-        checkLastRead();
-    }, [router]);
+        void checkLastRead();
+    }, [router, isLoaded, isSignedIn]);
 
     // Show loading state while checking
     return <Loading />;

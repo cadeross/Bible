@@ -151,7 +151,7 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                         onClick={handleBack}
                         disabled={isFirst}
                         className={cn(
-                            "gap-2 font-mono text-xs uppercase tracking-widest px-3 transition-all h-8 rounded-[2px] text-muted-foreground/80",
+                            "gap-2 font-mono text-xs uppercase tracking-widest px-3 transition-all h-8 rounded-md text-muted-foreground/80",
                             isFirst ? "opacity-0 pointer-events-none" : "hover:text-foreground hover:bg-secondary/40 hover:-translate-x-0.5"
                         )}
                     >
@@ -193,7 +193,7 @@ export function DailyReadings({ data }: DailyReadingsProps) {
 
                                     {/* Tooltip */}
                                     <div className={cn(
-                                        "absolute top-full mt-3 left-1/2 -translate-x-1/2 px-2.5 py-1.5 rounded-[2px] bg-popover/95 backdrop-blur-md border border-border/20 text-[10px] font-mono whitespace-nowrap opacity-0 transition-all duration-200 pointer-events-none z-50 shadow-[0_2px_8px_rgba(0,0,0,0.08)] translate-y-1 group-hover:translate-y-0",
+                                        "absolute top-full mt-3 left-1/2 -translate-x-1/2 px-2.5 py-1.5 rounded-lg bg-popover border border-border text-popover-foreground text-[10px] font-mono whitespace-nowrap opacity-0 transition-all duration-200 pointer-events-none z-50 shadow-[0_6px_20px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_28px_rgba(0,0,0,0.5)] translate-y-1 group-hover:translate-y-0",
                                         "group-hover:opacity-100"
                                     )}>
                                         {section.label}
@@ -212,7 +212,7 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                         variant="ghost"
                         size="sm"
                         className={cn(
-                            "gap-2 font-mono text-xs uppercase tracking-widest px-3 transition-all h-8 rounded-[2px] text-muted-foreground/80",
+                            "gap-2 font-mono text-xs uppercase tracking-widest px-3 transition-all h-8 rounded-md text-muted-foreground/80",
                             isLast
                                 ? "opacity-0 pointer-events-none"
                                 : "hover:text-foreground hover:bg-secondary/40 hover:translate-x-0.5"

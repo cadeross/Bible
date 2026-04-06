@@ -2,26 +2,25 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@clerk/nextjs";
 
 interface GroupAuthGateProps {
-    redirectTo: string;
-    children: React.ReactNode;
+  redirectTo: string;
+  children: React.ReactNode;
 }
 
 export function GroupAuthGate({ redirectTo, children }: GroupAuthGateProps) {
-    const router = useRouter();
+  const router = useRouter();
+  const { isLoaded, isSignedIn } = useAuth();
 
-    useEffect(() => {
-        const check = async () => {
-            const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                router.replace(`/auth/login?redirect_to=${encodeURIComponent(redirectTo)}`);
-            }
-        };
-        check();
-    }, [redirectTo, router]);
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      router.replace(
+        `/auth/login?redirect_url=${encodeURIComponent(redirectTo)}`
+      );
+    }
+  }, [isLoaded, isSignedIn, redirectTo, router]);
 
-    return <>{children}</>;
+  return <>{children}</>;
 }

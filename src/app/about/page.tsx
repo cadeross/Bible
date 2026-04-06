@@ -84,7 +84,7 @@ export default function AboutPage() {
                             { icon: Coffee, title: "Craft matters", description: "Details aren't details—they make the product." },
                             { icon: Code2, title: "Always improving", description: "We listen, learn, and iterate constantly." },
                         ].map((value) => (
-                            <div key={value.title} className="bg-secondary/10 border border-border/50 rounded-[2px] p-4 space-y-2">
+                            <div key={value.title} className="bg-secondary/10 border border-border/50 rounded-md p-4 space-y-2">
                                 <div className="flex items-center gap-2 text-primary">
                                     <value.icon className="h-4 w-4" />
                                     <span className="font-mono text-sm font-bold">{value.title}</span>
@@ -103,7 +103,7 @@ export default function AboutPage() {
                     <div className="flex flex-wrap gap-4">
                         <Link
                             href="/updates"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-[2px] font-mono text-sm hover:bg-primary/90 transition-colors"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md font-mono text-sm hover:bg-primary/90 transition-colors"
                         >
                             <Sparkles className="w-4 h-4" />
                             See product updates
@@ -112,7 +112,7 @@ export default function AboutPage() {
                             href="https://form.typeform.com/to/b26fjWPA"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-secondary/30 text-muted-foreground rounded-[2px] font-mono text-sm hover:bg-secondary/50 transition-colors"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-secondary/30 text-muted-foreground rounded-md font-mono text-sm hover:bg-secondary/50 transition-colors"
                         >
                             Say hello
                         </a>

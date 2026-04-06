@@ -2,114 +2,148 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { BOOK_LIST } from "@/lib/bible-api"
-import { Search, CornerDownLeft, PanelTop } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { parseReferenceJump } from "@/lib/reference-jump"
+import { OPEN_COMMAND_MENU_EVENT } from "@/lib/open-command-menu"
+import type { BibleSearchVerse } from "@/app/api/bible-search/route"
+import { CornerDownLeft } from "lucide-react"
 import { useNavMode } from "@/contexts/nav-mode"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
+import {
+    CommandDialog,
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+    CommandSeparator,
+} from "@/components/ui/command"
+
+function isTypingInField(el: EventTarget | null): boolean {
+    if (!el || !(el instanceof HTMLElement)) return false
+    if (el.isContentEditable) return true
+    const tag = el.tagName
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT"
+}
+
+function isPrintableKey(e: KeyboardEvent): boolean {
+    if (e.metaKey || e.ctrlKey || e.altKey) return false
+    if (e.key.length !== 1) return false
+    const c = e.key.charCodeAt(0)
+    return c >= 32 && c !== 127
+}
 
 export function CommandMenu() {
     const [open, setOpen] = React.useState(false)
     const [input, setInput] = React.useState("")
-    const [selectedIndex, setSelectedIndex] = React.useState(0)
+    const [verses, setVerses] = React.useState<BibleSearchVerse[]>([])
+    const [searchLoading, setSearchLoading] = React.useState(false)
+    const [searchSource, setSearchSource] = React.useState<string | null>(null)
+    const openRef = React.useRef(open)
     const router = useRouter()
-    const { navMode, toggleNavMode } = useNavMode()
-    const { bibleVersion } = useReadingPreferences()
+    const { navMode, toggleNavMode, inlineNavLayout, toggleInlineNavLayout } = useNavMode()
+    const { bibleVersion, isLoaded } = useReadingPreferences()
 
     React.useEffect(() => {
-        const handleOpen = () => {
-            setOpen(true)
+        openRef.current = open
+    }, [open])
+
+    const handleOpenChange = React.useCallback((next: boolean) => {
+        setOpen(next)
+        if (!next) {
             setInput("")
-            setSelectedIndex(0)
+            setVerses([])
+            setSearchSource(null)
+            setSearchLoading(false)
         }
-        window.addEventListener("open-command-menu", handleOpen as EventListener)
-        return () => window.removeEventListener("open-command-menu", handleOpen as EventListener)
+    }, [])
+
+    React.useEffect(() => {
+        const onPaletteOpen = (e: Event) => {
+            const detail = (e as CustomEvent<{ query?: string }>).detail
+            setInput(detail?.query ?? "")
+            setOpen(true)
+        }
+        window.addEventListener(OPEN_COMMAND_MENU_EVENT, onPaletteOpen as EventListener)
+        return () => window.removeEventListener(OPEN_COMMAND_MENU_EVENT, onPaletteOpen as EventListener)
     }, [])
 
     React.useEffect(() => {
         const down = (e: KeyboardEvent) => {
-            // Ignore if input/textarea is focused
-            if (
-                document.activeElement?.tagName === "INPUT" ||
-                document.activeElement?.tagName === "TEXTAREA" ||
-                (document.activeElement as HTMLElement).isContentEditable
-            ) {
+            const el = document.activeElement as HTMLElement | null
+            const inPaletteInput = el?.dataset?.openwritCommand === "input"
+
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+                e.preventDefault()
+                if (inPaletteInput) {
+                    handleOpenChange(false)
+                    return
+                }
+                if (isTypingInField(el)) return
+                const willOpen = !openRef.current
+                if (willOpen) setInput("")
+                handleOpenChange(willOpen)
                 return
             }
 
-            // Check if key is a single character letter/number/symbol and no modifiers
-            if (e.key && e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
-                if (!e.key.match(/^[a-zA-Z0-9]$/)) return;
+            if (openRef.current) return
 
-                e.preventDefault()
-                setOpen(true)
-                setInput((prev) => open ? prev : e.key)
-                if (!open) setInput(e.key)
-            }
+            if (isTypingInField(el)) return
 
-            // Allow Esc to close
-            if (e.key === "Escape") {
-                setOpen(false)
-            }
+            if (!isPrintableKey(e)) return
+
+            e.preventDefault()
+            setInput(e.key)
+            handleOpenChange(true)
         }
+
         document.addEventListener("keydown", down)
         return () => document.removeEventListener("keydown", down)
-    }, [open])
+    }, [handleOpenChange])
 
-    const suggestions = React.useMemo(() => {
-        if (!input) return []
-        const lower = input.toLowerCase()
-
-        // Check for "Book Chapter" pattern (e.g. "John 3" or "lev 4")
-        const parts = lower.split(" ")
-        const firstPart = parts[0]
-
-        // 1. Literal Book Matches (search anywhere in string)
-        const bookMatches = BOOK_LIST.filter(b => b.toLowerCase().includes(lower))
-
-        // 2. Smart Jump Logic
-        let jumpSuggestion = null
-
-        // Find if input starts with a book name (e.g. "lev" matches "Leviticus")
-        const matchedBook = BOOK_LIST.find(b => b.toLowerCase().startsWith(firstPart))
-
-        if (matchedBook) {
-            // Check for chapter number in second part
-            const secondPart = parts[1]
-            if (secondPart && secondPart.match(/^\d+(:?\d*)?$/)) {
-                jumpSuggestion = {
-                    id: "jump",
-                    label: `Go to ${matchedBook} ${secondPart}`,
-                    action: () => {
-                        const [chapter, verse] = secondPart.split(":")
-                        let url = `/read/${matchedBook}/${chapter}?translation=${bibleVersion}`
-                        if (verse) url += `#verse-${verse}`
-                        router.push(url)
-                        setOpen(false)
-                    }
-                }
-            } else if (!secondPart && !bookMatches.includes(matchedBook)) {
-                // If matchedBook is not in bookMatches
-            }
+    React.useEffect(() => {
+        const q = input.trim()
+        if (q.length < 2) {
+            setVerses([])
+            setSearchSource(null)
+            setSearchLoading(false)
+            return
         }
+        setSearchLoading(true)
+        const id = window.setTimeout(async () => {
+            try {
+                const params = new URLSearchParams({ q })
+                if (isLoaded && bibleVersion) params.set("translation", bibleVersion)
+                const res = await fetch(`/api/bible-search?${params}`)
+                const data = await res.json()
+                setVerses(data.verses ?? [])
+                setSearchSource(data.source ?? null)
+            } catch {
+                setVerses([])
+                setSearchSource("error")
+            } finally {
+                setSearchLoading(false)
+            }
+        }, 280)
+        return () => window.clearTimeout(id)
+    }, [input, bibleVersion, isLoaded])
 
-        const list = bookMatches.map(b => ({
+    const jumpTarget = React.useMemo(() => parseReferenceJump(input), [input])
+
+    const bookItems = React.useMemo(() => {
+        if (!input.trim()) return []
+        const lower = input.toLowerCase()
+        return BOOK_LIST.filter((b) => b.toLowerCase().includes(lower)).map((b) => ({
             id: b,
             label: b,
             action: () => {
-                router.push(`/read/${b}/1?translation=${bibleVersion}`)
-                setOpen(false)
-            }
+                router.push(`/read/${b}/1?translation=${bibleVersion || "web"}`)
+                handleOpenChange(false)
+            },
         }))
+    }, [input, router, bibleVersion, handleOpenChange])
 
-        if (jumpSuggestion) {
-            return [jumpSuggestion, ...list]
-        }
-        return list
-    }, [input, router])
-
-    // System commands (always available, filtered by input)
     const systemCommands = React.useMemo(() => {
         const commands = [
             {
@@ -117,120 +151,142 @@ export function CommandMenu() {
                 label: navMode === "classic" ? "Switch to inline navigation" : "Switch to classic navigation",
                 action: () => {
                     toggleNavMode()
-                    setOpen(false)
-                }
-            }
+                    handleOpenChange(false)
+                },
+            },
+            ...(navMode === "inline"
+                ? [
+                      {
+                          id: "inline-layout",
+                          label:
+                              inlineNavLayout === "full"
+                                  ? "Inline nav: minimal layout (read · library · search)"
+                                  : "Inline nav: full layout",
+                          action: () => {
+                              toggleInlineNavLayout()
+                              handleOpenChange(false)
+                          },
+                      },
+                  ]
+                : []),
         ]
-        if (!input) return commands
-        return commands.filter(c => c.label.toLowerCase().includes(input.toLowerCase()))
-    }, [input, navMode, toggleNavMode])
+        if (!input.trim()) return commands
+        const f = input.toLowerCase()
+        return commands.filter((c) => c.label.toLowerCase().includes(f))
+    }, [input, navMode, toggleNavMode, toggleInlineNavLayout, inlineNavLayout, handleOpenChange])
 
-    const allSuggestions = React.useMemo(() => {
-        return [...suggestions, ...systemCommands]
-    }, [suggestions, systemCommands])
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "ArrowDown") {
-            e.preventDefault()
-            setSelectedIndex(i => Math.min(allSuggestions.length - 1, i + 1))
-        } else if (e.key === "ArrowUp") {
-            e.preventDefault()
-            setSelectedIndex(i => Math.max(0, i - 1))
-        } else if (e.key === "Tab") {
-            e.preventDefault()
-            const item = allSuggestions[selectedIndex]
-            if (item && item.id !== "jump") {
-                setInput(item.label + " ")
-            }
-        } else if (e.key === "Enter") {
-            e.preventDefault()
-            const item = allSuggestions[selectedIndex]
-            if (item) {
-                item.action()
-            }
+    const jumpFromParser = React.useMemo(() => {
+        if (!jumpTarget || !input.trim()) return null
+        const { book, chapter, verse } = jumpTarget
+        const refLabel = verse ? `${book} ${chapter}:${verse}` : `${book} ${chapter}`
+        return {
+            label: `Open ${refLabel}`,
+            action: () => {
+                let url = `/read/${book}/${chapter}?translation=${bibleVersion || "web"}`
+                if (verse) url += `&v=${verse}`
+                router.push(url)
+                handleOpenChange(false)
+            },
         }
-    }
+    }, [jumpTarget, input, router, bibleVersion, handleOpenChange])
 
-    // Reset selection on input change
-    React.useEffect(() => {
-        setSelectedIndex(0)
-    }, [input])
+    const hasJumpRow = Boolean(jumpFromParser)
+    const hasBooks = bookItems.length > 0
+    const hasVerses = verses.length > 0
+    const hasCommands = systemCommands.length > 0
+    const showEmptyHint =
+        input.trim().length > 0 &&
+        !hasJumpRow &&
+        !hasBooks &&
+        !hasVerses &&
+        !hasCommands &&
+        !searchLoading
 
     return (
-        <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
-            <DialogPrimitive.Portal>
-                {/* Subtle Overlay with minimal blur */}
-                <DialogPrimitive.Overlay
-                    className="fixed inset-0 z-50 bg-background/20 backdrop-blur-[1px] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-                />
-
-                {/* Content Container */}
-                <DialogPrimitive.Content
-                    className={cn(
-                        "fixed left-[50%] top-[20%] z-50 w-full max-w-lg translate-x-[-50%] outline-none",
-                        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-                        "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-                        "data-[state=closed]:slide-out-to-top-[18%] data-[state=open]:slide-in-from-top-[18%]",
-                        "duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        <CommandDialog open={open} onOpenChange={handleOpenChange} hideClose>
+            <Command shouldFilter={false} value={input} onValueChange={setInput} loop>
+                <CommandInput placeholder="Book, reference, search text, or command…" />
+                <CommandList>
+                    {jumpFromParser && (
+                        <CommandGroup heading="Jump">
+                            <CommandItem value="__jump-parser" onSelect={jumpFromParser.action}>
+                                {jumpFromParser.label}
+                                <CornerDownLeft className="ml-auto h-3 w-3 shrink-0 opacity-50" aria-hidden />
+                            </CommandItem>
+                        </CommandGroup>
                     )}
-                >
-                    <DialogPrimitive.Title className="sr-only">Command Menu</DialogPrimitive.Title>
-                    {/* Monkeytype Style: Solid/Flat, Monospace, Sharp corners */}
-                    <div className="bg-background border border-border/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-[2px] overflow-hidden">
-                        <div className="flex items-center px-4 py-1">
-                            <Search className="mr-3 h-4 w-4 opacity-40" />
-                            <input
-                                className="flex h-12 w-full rounded-[2px] bg-transparent py-3 text-lg outline-none placeholder:text-muted-foreground/30 disabled:cursor-not-allowed disabled:opacity-50 font-mono tracking-wide"
-                                placeholder="type to jump..."
-                                value={input}
-                                autoFocus
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                            />
-                            {/* Visual Hint */}
-                            <div className="hidden sm:flex items-center gap-1 text-[10px] font-mono font-medium text-muted-foreground/30 border border-primary/10 rounded px-1.5 py-0.5">
-                                ESC
+
+                    {hasBooks && (
+                        <CommandGroup heading="Books">
+                            {bookItems.map((item) => (
+                                <CommandItem key={item.id} value={`book-${item.id}`} onSelect={item.action}>
+                                    {item.label}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    )}
+
+                    {(searchLoading || hasVerses || (searchSource === "no-api-key" && input.trim().length >= 2)) && (
+                        <CommandGroup heading="Verse text">
+                            {searchLoading && (
+                                <CommandItem value="__loading" disabled>
+                                    Searching…
+                                </CommandItem>
+                            )}
+                            {!searchLoading && searchSource === "no-api-key" && (
+                                <CommandItem value="__no-key" disabled>
+                                    Add API_BIBLE_KEY for full-text search; jump and books still work.
+                                </CommandItem>
+                            )}
+                            {!searchLoading &&
+                                verses.map((v, i) => (
+                                    <CommandItem
+                                        key={`${v.reference}-${i}`}
+                                        value={`verse-${i}-${v.reference}`}
+                                        onSelect={() => {
+                                            const j = parseReferenceJump(v.reference)
+                                            if (j) {
+                                                let url = `/read/${j.book}/${j.chapter}?translation=${bibleVersion || "web"}`
+                                                if (j.verse) url += `&v=${j.verse}`
+                                                router.push(url)
+                                            }
+                                            handleOpenChange(false)
+                                        }}
+                                    >
+                                        <span className="flex min-w-0 flex-col gap-0.5 text-left">
+                                            <span className="truncate font-medium text-primary">{v.reference}</span>
+                                            <span className="line-clamp-2 text-muted-foreground">{v.text}</span>
+                                        </span>
+                                    </CommandItem>
+                                ))}
+                        </CommandGroup>
+                    )}
+
+                    {hasCommands && (
+                        <>
+                            {(hasJumpRow || hasBooks || hasVerses) && <CommandSeparator />}
+                            <CommandGroup heading="Commands">
+                                {systemCommands.map((c) => (
+                                    <CommandItem key={c.id} value={`cmd-${c.id}`} onSelect={c.action}>
+                                        {c.label}
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </>
+                    )}
+
+                    {showEmptyHint && <CommandEmpty>No matches. Try a book name or reference (e.g. John 3:16).</CommandEmpty>}
+
+                    {!input.trim() && (
+                        <div className="border-t border-border/30 bg-muted/15 px-3 py-2.5 text-center text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">
+                            <div>Type anywhere to search · ⌘K</div>
+                            <div className="mt-1 normal-case tracking-normal text-muted-foreground/50">
+                                Jump · full-text (with API key) · nav layout
                             </div>
                         </div>
-
-                        {allSuggestions.length > 0 && (
-                            <div className="max-h-[300px] overflow-y-auto border-t border-primary/5">
-                                {allSuggestions.map((item, index) => (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => item.action()}
-                                        onMouseEnter={() => setSelectedIndex(index)}
-                                        className={cn(
-                                            "flex w-full items-center justify-between px-4 py-2 text-sm outline-none transition-all duration-75 font-mono",
-                                            index === selectedIndex
-                                                ? "bg-primary text-primary-foreground"
-                                                : "text-muted-foreground hover:bg-muted/50"
-                                        )}
-                                    >
-                                        <span className={cn("truncate", index === selectedIndex ? "font-bold" : "font-medium")}>
-                                            {item.label}
-                                        </span>
-                                        {index === selectedIndex && (
-                                            <CornerDownLeft className="h-3 w-3 opacity-70" />
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-
-                        {allSuggestions.length === 0 && input && (
-                            <div className="p-4 text-center text-xs font-mono text-muted-foreground/60">
-                                No results.
-                            </div>
-                        )}
-                        {!input && (
-                            <div className="p-2 bg-muted/20 text-[10px] text-center text-muted-foreground/40 font-mono tracking-widest uppercase border-t border-dashed border-primary/5">
-                                command palette
-                            </div>
-                        )}
-                    </div>
-                </DialogPrimitive.Content>
-            </DialogPrimitive.Portal>
-        </DialogPrimitive.Root>
+                    )}
+                </CommandList>
+            </Command>
+        </CommandDialog>
     )
 }

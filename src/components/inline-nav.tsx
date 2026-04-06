@@ -1,174 +1,217 @@
 "use client"
 
+import type { MouseEvent, ReactNode } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useFocusMode } from "@/contexts/focus-mode"
-import { useEffect, useState, useRef } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { motion, AnimatePresence } from "framer-motion"
-
-// Route-to-breadcrumb mapping
-const BREADCRUMBS: Record<string, string> = {
-    "/": "",
-    "/read": "read",
-    "/library": "library",
-    "/calendar": "liturgical calendar",
-    "/profile": "profile",
-    "/settings": "settings",
-    "/how-to": "how to",
-    "/features": "features",
-    "/updates": "updates",
-}
-
-function getBreadcrumb(pathname: string): string {
-    if (BREADCRUMBS[pathname] !== undefined) return BREADCRUMBS[pathname]
-    for (const [route, label] of Object.entries(BREADCRUMBS)) {
-        if (route !== "/" && pathname.startsWith(route)) return label
-    }
-    return ""
-}
-
-const navLinks = [
-    { name: "read", href: "/read" },
-    { name: "library", href: "/library" },
-]
-
-const rightLinks = [
-    { name: "profile", href: "/profile" },
-]
+import { useNavMode } from "@/contexts/nav-mode"
+import { useAuth, useUser } from "@clerk/nextjs"
+import { useQuery } from "convex/react"
+import { api } from "../../convex/_generated/api"
+import { Search, Command, Settings, BookOpen, Library, User, Home } from "lucide-react"
+import { openCommandMenu } from "@/lib/open-command-menu"
 
 export function InlineNav() {
-    const pathname = usePathname()
+    const pathname = usePathname() || "/"
+    const { inlineNavLayout } = useNavMode()
     const { isFocusMode } = useFocusMode()
-    const isReadPage = pathname?.startsWith("/read")
-    const breadcrumb = getBreadcrumb(pathname || "/")
-    const [username, setUsername] = useState<string | null>(null)
-    const [isHovered, setIsHovered] = useState(false)
-    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-    useEffect(() => {
-        const supabase = createClient()
-        const getUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user?.user_metadata?.username) {
-                setUsername(user.user_metadata.username)
-            }
-        }
-        getUser()
-    }, [])
+    const isReadPage = pathname.startsWith("/read")
+    const { isSignedIn } = useAuth()
+    const { user } = useUser()
+    const profile = useQuery(
+        api.profiles.getMyProfile,
+        isSignedIn ? {} : "skip"
+    )
+    const username =
+        profile?.username ?? user?.username ?? user?.firstName ?? null
 
     const isActive = (href: string) => {
         if (href === "/") return pathname === "/"
-        return pathname?.startsWith(href)
+        return pathname.startsWith(href)
     }
 
-    const handleMouseEnter = () => {
-        if (hoverTimeoutRef.current) {
-            clearTimeout(hoverTimeoutRef.current)
-            hoverTimeoutRef.current = null
-        }
-        setIsHovered(true)
-    }
+    const profileLabel = username || "Profile"
 
-    const handleMouseLeave = () => {
-        hoverTimeoutRef.current = setTimeout(() => {
-            setIsHovered(false)
-        }, 200)
-    }
+    const navShell = (children: ReactNode) => (
+        <nav
+            className={cn(
+                "w-full transition-opacity duration-500",
+                isReadPage && isFocusMode && "pointer-events-none opacity-0"
+            )}
+            aria-label="Primary"
+        >
+            {children}
+        </nav>
+    )
 
-    return (
-        <nav className={cn(
-            "w-full transition-all duration-500",
-            isReadPage && isFocusMode && "opacity-0 pointer-events-none"
-        )}>
-            <div className="pb-6 mb-2">
-                <div className="flex items-center justify-between">
-                    {/* Left: OPENWRIT + animated nav links */}
-                    <div
-                        className="flex items-center gap-3 md:gap-5 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground pr-24"
-                        onMouseEnter={handleMouseEnter}
-                        onMouseLeave={handleMouseLeave}
+    if (inlineNavLayout === "minimal") {
+        return navShell(
+            <div className="pb-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <Link
+                        href="/"
+                        className={cn(
+                            "inline-flex shrink-0 items-center gap-3 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground transition-colors hover:text-primary",
+                            pathname === "/" && "text-primary"
+                        )}
                     >
+                        <span className="h-px w-8 shrink-0 bg-border" />
+                        <span className="tracking-[0.45em]">openwrit</span>
+                    </Link>
+
+                    <div className="flex min-w-0 flex-wrap items-center gap-3 md:gap-5 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">
                         <Link
-                            href="/"
+                            href="/read"
                             className={cn(
-                                "flex items-center gap-3 transition-colors hover:text-primary tracking-[0.45em] text-muted-foreground",
-                                pathname === "/" && "text-primary"
+                                "transition-colors hover:text-primary whitespace-nowrap",
+                                isActive("/read") && "text-primary"
                             )}
                         >
-                            <span className="h-px w-8 bg-border" />
-                            <span>openwrit</span>
-                            <AnimatePresence>
-                                {pathname !== "/" && (
-                                    <motion.span
-                                        initial={{ opacity: 0, width: 0, x: -8 }}
-                                        animate={{ opacity: 1, width: "auto", x: 0 }}
-                                        exit={{ opacity: 0, width: 0, x: -8 }}
-                                        transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-                                        className="text-muted-foreground/80 overflow-hidden whitespace-nowrap"
-                                    >
-                                        &nbsp;/ {breadcrumb}
-                                    </motion.span>
-                                )}
-                            </AnimatePresence>
+                            read
                         </Link>
-
-                        <AnimatePresence>
-                            {isHovered && navLinks.filter(link => !isActive(link.href)).map((link, i, arr) => (
-                                <motion.span
-                                    key={link.name}
-                                    className="flex items-center gap-3 md:gap-5 overflow-hidden"
-                                    initial={{ opacity: 0, width: 0, x: -8 }}
-                                    animate={{
-                                        opacity: 1,
-                                        width: "auto",
-                                        x: 0,
-                                        transition: {
-                                            duration: 0.3,
-                                            delay: i * 0.06,
-                                            ease: [0.25, 0.46, 0.45, 0.94],
-                                        },
-                                    }}
-                                    exit={{
-                                        opacity: 0,
-                                        width: 0,
-                                        x: -8,
-                                        transition: {
-                                            duration: 0.2,
-                                            delay: (arr.length - 1 - i) * 0.04,
-                                            ease: [0.55, 0.06, 0.68, 0.19],
-                                        },
-                                }}
-                            >
-                                    <span className="text-muted-foreground/45">·</span>
-                                    <Link
-                                        href={link.href}
-                                        className="transition-colors hover:text-primary whitespace-nowrap"
-                                    >
-                                        {link.name}
-                                    </Link>
-                                </motion.span>
-                            ))}
-                        </AnimatePresence>
-                    </div>
-
-                    {/* Right: utility nav */}
-                    <div className="hidden sm:flex items-center gap-3 md:gap-5 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">
-                        {rightLinks.filter(link => !isActive(link.href)).map((link, i) => (
-                            <span key={link.name} className="flex items-center gap-3 md:gap-5">
-                                {i > 0 && <span className="text-muted-foreground/45">·</span>}
-                                <Link
-                                    href={link.href}
-                                    className="transition-colors hover:text-primary"
-                                >
-                                    {link.name === "profile" && username ? username : link.name}
-                                </Link>
-                            </span>
-                        ))}
+                        <span className="text-muted-foreground/45">·</span>
+                        <Link
+                            href="/library"
+                            className={cn(
+                                "transition-colors hover:text-primary whitespace-nowrap",
+                                isActive("/library") && "text-primary"
+                            )}
+                        >
+                            library
+                        </Link>
+                        <span className="text-muted-foreground/45">·</span>
+                        <button
+                            type="button"
+                            aria-label="Open search palette"
+                            onClick={() => openCommandMenu()}
+                            className="flex items-center justify-center p-1 transition-colors hover:text-primary"
+                        >
+                            <Search className="h-3.5 w-3.5 opacity-80" strokeWidth={1.5} />
+                        </button>
+                        <span className="text-muted-foreground/45">·</span>
+                        <Link
+                            href="/profile"
+                            aria-label={profileLabel}
+                            className={cn(
+                                "flex items-center justify-center p-1 transition-colors hover:text-primary",
+                                isActive("/profile") && "text-primary"
+                            )}
+                        >
+                            <User className="h-3.5 w-3.5 opacity-80" strokeWidth={1.5} />
+                        </Link>
                     </div>
                 </div>
             </div>
-        </nav>
+        )
+    }
+
+    const primaryLinks = [
+        { kind: "route" as const, name: "home", href: "/", icon: Home },
+        { kind: "route" as const, name: "read", href: "/read", icon: BookOpen },
+        { kind: "route" as const, name: "library", href: "/library", icon: Library },
+        { kind: "palette" as const, name: "search", icon: Search },
+    ] as const
+
+    const utilityLinks = [
+        { name: "command", href: "#", icon: Command, onClick: (e: MouseEvent) => { e.preventDefault(); openCommandMenu() } },
+        { name: "settings", href: "/settings", icon: Settings },
+    ] as const
+
+    return navShell(
+        <div className="flex flex-col gap-4 pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <Link
+                    href="/"
+                    className={cn(
+                        "inline-flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.35em] text-muted-foreground transition-colors hover:text-primary",
+                        pathname === "/" && "text-primary"
+                    )}
+                >
+                    <span className="h-px w-6 shrink-0 bg-border" />
+                    <span className="whitespace-nowrap">openwrit</span>
+                </Link>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-1 gap-y-2 border-b border-border/15 pb-3">
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-0.5 gap-y-1 sm:gap-x-1">
+                    {primaryLinks.map((link) => {
+                        const Icon = link.icon
+                        if (link.kind === "palette") {
+                            return (
+                                <button
+                                    key={link.name}
+                                    type="button"
+                                    onClick={() => openCommandMenu()}
+                                    className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                                >
+                                    <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" strokeWidth={1.5} />
+                                    <span>{link.name}</span>
+                                </button>
+                            )
+                        }
+                        const active = isActive(link.href)
+                        return (
+                            <Link
+                                key={link.name}
+                                href={link.href}
+                                className={cn(
+                                    "inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors",
+                                    active
+                                        ? "bg-muted/60 text-foreground"
+                                        : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                                )}
+                            >
+                                <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" strokeWidth={1.5} />
+                                <span>{link.name}</span>
+                            </Link>
+                        )
+                    })}
+                    <Link
+                        href="/profile"
+                        aria-label={profileLabel}
+                        className={cn(
+                            "inline-flex items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground",
+                            isActive("/profile") && "bg-muted/60 text-foreground"
+                        )}
+                    >
+                        <User className="h-3.5 w-3.5 opacity-70" strokeWidth={1.5} />
+                    </Link>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-0.5 border-t border-border/10 pt-2 sm:border-t-0 sm:pt-0">
+                    {utilityLinks.map((link) => {
+                        const Icon = link.icon
+                        if (link.name === "command") {
+                            return (
+                                <button
+                                    key={link.name}
+                                    type="button"
+                                    onClick={link.onClick}
+                                    className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                                >
+                                    <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" strokeWidth={1.5} />
+                                    <span className="hidden sm:inline">⌘K</span>
+                                </button>
+                            )
+                        }
+                        return (
+                            <Link
+                                key={link.name}
+                                href={link.href}
+                                className={cn(
+                                    "inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors",
+                                    isActive(link.href)
+                                        ? "bg-muted/60 text-foreground"
+                                        : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                                )}
+                            >
+                                <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" strokeWidth={1.5} />
+                                <span>{link.name}</span>
+                            </Link>
+                        )
+                    })}
+                </div>
+            </div>
+        </div>
     )
 }

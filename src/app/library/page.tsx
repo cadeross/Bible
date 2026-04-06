@@ -12,41 +12,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BIBLE_BOOKS } from "@/lib/bible-data";
 import Loading from "../loading";
 import { useReadingPreferences } from "@/contexts/reading-preferences";
+import { useAuth } from "@clerk/nextjs";
 
 interface GroupedHighlight extends Highlight {
     verseEnd: number;
 }
 
 export default function LibraryPage() {
+    const { isLoaded, isSignedIn } = useAuth();
     const [rawHighlights, setRawHighlights] = useState<Highlight[]>([]);
     const [wisdom, setWisdom] = useState<SavedWisdom[]>([]);
     const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            const [highlightsData, wisdomData] = await Promise.all([
-                getAllHighlights(),
-                getAllWisdom()
-            ]);
-            setRawHighlights(highlightsData);
-            setWisdom(wisdomData);
-            setLoading(false);
-        };
-
-        fetchData();
-    }, []);
-
-
-
     const [isGuest, setIsGuest] = useState(false);
 
     useEffect(() => {
+        if (!isLoaded) return;
         const fetchData = async () => {
-            const { createClient } = await import("@/lib/supabase/client");
-            const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
-            setIsGuest(!session);
-
+            setIsGuest(!isSignedIn);
             const [highlightsData, wisdomData] = await Promise.all([
                 getAllHighlights(),
                 getAllWisdom()
@@ -56,8 +38,8 @@ export default function LibraryPage() {
             setLoading(false);
         };
 
-        fetchData();
-    }, []);
+        void fetchData();
+    }, [isLoaded, isSignedIn]);
 
     const { fontFamily, bibleVersion, isLoaded: preferencesLoaded } = useReadingPreferences();
     const getFontClass = () => {
@@ -295,7 +277,7 @@ export default function LibraryPage() {
                 </div>
 
                 {/* Custom Fluid Toggle */}
-                <div className="flex p-1 border border-border/30 rounded-[2px] mt-2">
+                <div className="flex p-1 border border-border/30 rounded-md mt-2">
                     {[
                         { id: 'highlights', count: groupedHighlights.length, icon: PenTool },
                         { id: 'notes', count: notes.length, icon: StickyNote }
@@ -325,7 +307,7 @@ export default function LibraryPage() {
             <div className="space-y-8">
                 {/* Guest Banner */}
                 {isGuest && (
-                    <div className="bg-secondary/10 border border-border/30 rounded-[2px] p-3 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="bg-secondary/10 border border-border/30 rounded-md p-3 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
                         <div className="flex items-center gap-3">
                             <div className="h-2 w-2 rounded-full bg-yellow-500/50 animate-pulse" />
                             <p className="text-xs font-mono text-muted-foreground">
@@ -358,7 +340,7 @@ export default function LibraryPage() {
                                         {groupedHighlights.map((highlight, idx) => (
                                             <div
                                                 key={highlight.id || idx}
-                                                className="group relative block p-4 rounded-[2px] bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20"
+                                                className="group relative block p-4 rounded-md bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20"
                                             >
                                                 <div className="space-y-2">
                                                     <div className="flex items-center justify-between">
@@ -386,7 +368,7 @@ export default function LibraryPage() {
                                                         </p>
                                                         <button
                                                             onClick={() => handleShareNote(highlight)}
-                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-[2px] text-muted-foreground hover:text-foreground transition-all shrink-0"
+                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-all shrink-0"
                                                             title="Share Highlight"
                                                         >
                                                             <Share2 className="h-3.5 w-3.5" />
@@ -415,7 +397,7 @@ export default function LibraryPage() {
                                         {notes.map((note) => (
                                             <div
                                                 key={note.id}
-                                                className="group relative block p-4 rounded-[2px] bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20 cursor-pointer"
+                                                className="group relative block p-4 rounded-md bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20 cursor-pointer"
                                                 onClick={() => handleEditNote(note)}
                                             >
                                                 <div className="space-y-2">
@@ -439,7 +421,7 @@ export default function LibraryPage() {
                                                     <div className="flex items-center justify-end gap-2 pt-1">
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleShareNote(note) }}
-                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-[2px] text-muted-foreground hover:text-foreground transition-all"
+                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-all"
                                                             title="Share Note"
                                                         >
                                                             <Share2 className="h-3.5 w-3.5" />

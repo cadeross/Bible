@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
+import { getConvexHttp } from "@/lib/convex/http";
+import { api } from "../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -99,7 +100,7 @@ const StepNav = ({
         <Button
             onClick={onNext}
             disabled={nextDisabled || loading}
-            className="gap-2 text-xs font-mono uppercase tracking-[0.15em] h-10 px-6 rounded-[2px] cursor-pointer"
+            className="gap-2 text-xs font-mono uppercase tracking-[0.15em] h-10 px-6 rounded-md cursor-pointer"
         >
             {loading ? "saving..." : nextLabel} <ChevronRight className="w-3.5 h-3.5" />
         </Button>
@@ -119,7 +120,7 @@ const StepDots = ({ steps, currentIndex }: { steps: Step[]; currentIndex: number
                 <div
                     key={s}
                     className={cn(
-                        "rounded-[2px] transition-all duration-300",
+                        "rounded-md transition-all duration-300",
                         i === innerIndex
                             ? "w-6 h-1.5 bg-primary"
                             : i < innerIndex
@@ -139,7 +140,6 @@ export function OnboardingFlow() {
     const [loading, setLoading] = useState(false);
     const [devMode, setDevMode] = useState(false);
     const router = useRouter();
-    const supabase = createClient();
 
     // Identity
     const [username, setUsername] = useState("");
@@ -170,17 +170,21 @@ export function OnboardingFlow() {
 
         const timer = setTimeout(async () => {
             setCheckingUsername(true);
-            const { data } = await supabase
-                .from("profiles")
-                .select("username")
-                .eq("username", username.toLowerCase())
-                .maybeSingle();
+            try {
+                const client = getConvexHttp();
+                const available = await client.query(
+                    api.profiles.isUsernameAvailable,
+                    { username: username.toLowerCase() }
+                );
+                setUsernameAvailable(available);
+            } catch {
+                setUsernameAvailable(null);
+            }
             setCheckingUsername(false);
-            setUsernameAvailable(data === null);
         }, 500);
 
         return () => clearTimeout(timer);
-    }, [username]);
+    }, [username, devMode]);
 
     // Filtered versions
     const filteredVersions = useMemo(() => {
@@ -209,25 +213,14 @@ export function OnboardingFlow() {
             return;
         }
 
-        const { error } = await supabase.auth.updateUser({
-            data: {
-                username,
-                daily_verse_emails: false,
-                is_onboarded: true,
-                onboarded_at: new Date().toISOString()
-            }
-        });
-
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            await supabase
-                .from("profiles")
-                .update({ username: username.toLowerCase() })
-                .eq("id", user.id);
-        }
-
-        if (error) {
-            toast.error("Failed to save profile", { description: error.message });
+        try {
+            const client = getConvexHttp();
+            await client.mutation(api.profiles.completeOnboarding, {
+                username: username.toLowerCase(),
+            });
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Failed to save profile";
+            toast.error("Failed to save profile", { description: msg });
             setLoading(false);
             return;
         }
@@ -353,7 +346,7 @@ export function OnboardingFlow() {
                                                 key={opt.value}
                                                 onClick={() => setTheme(opt.value)}
                                                 className={cn(
-                                                    "flex flex-col items-center justify-center p-3 rounded-[2px] border border-border/20 transition-all duration-200 h-16 cursor-pointer",
+                                                    "flex flex-col items-center justify-center p-3 rounded-md border border-border/20 transition-all duration-200 h-16 cursor-pointer",
                                                     theme === opt.value
                                                         ? 'bg-primary/10 border-primary/50 text-primary'
                                                         : 'bg-secondary/5 border-border/30 text-muted-foreground hover:bg-secondary/10 hover:border-border/60'
@@ -385,7 +378,7 @@ export function OnboardingFlow() {
                                                 // @ts-ignore
                                                 onClick={() => setPalette(opt.value)}
                                                 className={cn(
-                                                    "flex flex-col items-center justify-center p-2 rounded-[2px] border border-border/20 transition-all duration-200 h-16 group cursor-pointer",
+                                                    "flex flex-col items-center justify-center p-2 rounded-md border border-border/20 transition-all duration-200 h-16 group cursor-pointer",
                                                     palette === opt.value
                                                         ? 'border-primary/50 shadow-sm'
                                                         : 'border-border/20 hover:border-border/50'
@@ -419,7 +412,7 @@ export function OnboardingFlow() {
                                                 // @ts-ignore
                                                 onClick={() => setFontFamily(opt.value)}
                                                 className={cn(
-                                                    "flex flex-col items-center justify-center p-2 rounded-[2px] border border-border/20 transition-all duration-200 h-16 cursor-pointer",
+                                                    "flex flex-col items-center justify-center p-2 rounded-md border border-border/20 transition-all duration-200 h-16 cursor-pointer",
                                                     fontFamily === opt.value
                                                         ? 'bg-primary/10 border-primary/50 text-primary'
                                                         : 'bg-secondary/5 border-border/30 text-muted-foreground hover:bg-secondary/10 hover:border-border/60'
@@ -439,7 +432,7 @@ export function OnboardingFlow() {
                                     preview
                                     <span className="text-muted-foreground/30">• {currentPassage.reference}</span>
                                 </Label>
-                                <div className="p-6 rounded-[2px] border border-border/20 bg-card/30 flex-1 overflow-y-auto">
+                                <div className="p-6 rounded-md border border-border/20 bg-card/30 flex-1 overflow-y-auto">
                                     <div
                                         className={cn("text-sm leading-[1.9]", getFontClass(fontFamily))}
                                         style={{ fontFamily: fontFamily === 'sans' ? 'var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif' : undefined }}
@@ -513,7 +506,7 @@ export function OnboardingFlow() {
                                             key={v.id}
                                             onClick={() => setBibleVersion(v.id)}
                                             className={cn(
-                                                "flex items-center justify-between p-3 rounded-[2px] border border-border/20 transition-all duration-200 text-left cursor-pointer",
+                                                "flex items-center justify-between p-3 rounded-md border border-border/20 transition-all duration-200 text-left cursor-pointer",
                                                 bibleVersion === v.id
                                                     ? 'bg-primary/10 border-primary/50 text-primary'
                                                     : 'bg-secondary/5 border-border/20 text-muted-foreground hover:bg-secondary/10 hover:border-border/50'

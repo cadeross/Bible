@@ -6,32 +6,29 @@ import { motion } from "framer-motion";
 import { Plus, Search } from "lucide-react";
 import { fetchPublicGroups, fetchMyGroups, type Group } from "@/lib/groups";
 import { GroupCard } from "@/components/groups/group-card";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@clerk/nextjs";
 import { SPRING_FAST } from "@/lib/animation";
 
 export default function GroupsPage() {
+    const { isLoaded, isSignedIn } = useAuth();
     const [publicGroups, setPublicGroups] = useState<Group[]>([]);
     const [myGroups, setMyGroups] = useState<Group[]>([]);
     const [query, setQuery] = useState("");
     const [loading, setLoading] = useState(true);
-    const [isSignedIn, setIsSignedIn] = useState(false);
 
     useEffect(() => {
+        if (!isLoaded) return;
         const load = async () => {
-            const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
-            setIsSignedIn(!!session);
-
             const [pub, mine] = await Promise.all([
                 fetchPublicGroups(),
-                session ? fetchMyGroups() : Promise.resolve([]),
+                isSignedIn ? fetchMyGroups() : Promise.resolve([]),
             ]);
             setPublicGroups(pub);
             setMyGroups(mine);
             setLoading(false);
         };
-        load();
-    }, []);
+        void load();
+    }, [isLoaded, isSignedIn]);
 
     const filtered = publicGroups.filter((g) =>
         g.name.toLowerCase().includes(query.toLowerCase()) ||

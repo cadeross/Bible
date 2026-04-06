@@ -9,7 +9,7 @@ You are the **Web Agent** for OpenWrit. Your domain is all Next.js App Router co
 - **UI primitives**: Radix UI (via shadcn/ui — `components.json`)
 - **Animation**: Framer Motion
 - **Charts**: Recharts (reading stats)
-- **Auth**: Supabase SSR (`@supabase/ssr`)
+- **Auth**: Clerk + Convex (`@clerk/nextjs`, `convex/react`)
 
 ## Project Structure
 ```
@@ -35,7 +35,7 @@ src/
 │   ├── nav-mode.tsx        # Nav visibility
 │   └── reading-preferences.tsx  # Font size, line height, version
 ├── lib/
-│   ├── supabase/           # server.ts + client.ts
+│   ├── convex/             # (repo root) Convex functions; client in lib/convex/
 │   ├── bible-api.ts        # API chain orchestration
 │   ├── api-bible.ts        # API.bible (primary)
 │   ├── bolls-api.ts        # bolls.life (NRSVCE/CNBB fallback)

@@ -5,9 +5,19 @@ import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { isRedLetterVerse } from "@/lib/red-letter-data"
 import { Highlight } from "@/lib/persistence"
-import { Trash2, StickyNote, Share2, Copy, Check } from "lucide-react"
+import { StickyNote } from "lucide-react"
 import { NotePanel } from "@/components/reading/note-dialog"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu"
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+    VerseHighlightContextMenuContent,
+    VerseHighlightDropdownMenuContent,
+} from "@/components/reading/verse-highlight-menus"
+import { HIGHLIGHT_MENU_COLORS as HIGHLIGHT_COLORS } from "@/lib/highlight-menu"
 import { SPRING_FAST } from "@/lib/animation"
 
 interface ReadingContentProps {
@@ -20,14 +30,6 @@ interface ReadingContentProps {
     disableHighlighting?: boolean
 }
 
-const HIGHLIGHT_COLORS = [
-    { id: "yellow", label: "Highlight yellow", class: "bg-yellow-500/40 dark:bg-yellow-500/30", border: "border-yellow-500/50" },
-    { id: "green", label: "Highlight green", class: "bg-green-500/40 dark:bg-green-500/30", border: "border-green-500/50" },
-    { id: "blue", label: "Highlight blue", class: "bg-blue-500/40 dark:bg-blue-500/30", border: "border-blue-500/50" },
-    { id: "pink", label: "Highlight pink", class: "bg-pink-500/40 dark:bg-pink-500/30", border: "border-pink-500/50" },
-    { id: "purple", label: "Highlight purple", class: "bg-purple-500/40 dark:bg-purple-500/30", border: "border-purple-500/50" },
-]
-
 export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [], mode = 'default', disableHighlighting = false }: ReadingContentProps) {
     const { isLoaded, fontSize, fontFamily, lineHeight, showVerseNumbers, redLetters, showTitles, defaultHighlightColor } = useReadingPreferences()
     const [highlights, setHighlights] = React.useState<Highlight[]>([])
@@ -35,9 +37,23 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
     // Track which verses are being highlighted from share link (for pulse animation)
     const [pulsingVerses, setPulsingVerses] = React.useState<number[]>([])
 
-    // Floating Menu State
+    // Floating Menu State (long-press / drag → dropdown)
     const [menuOpen, setMenuOpen] = React.useState(false)
     const [menuPosition, setMenuPosition] = React.useState({ top: 0, left: 0 })
+    const [anyContextMenuOpen, setAnyContextMenuOpen] = React.useState(false)
+    /** Bumping a verse’s key forces its ContextMenu to remount (close) after actions — Radix has no controlled `open`. */
+    const [verseMenuEpoch, setVerseMenuEpoch] = React.useState<Record<number, number>>({})
+
+    const bumpVerseContextMenus = React.useCallback((verses: number[]) => {
+        if (verses.length === 0) return
+        setVerseMenuEpoch((e) => {
+            const n = { ...e }
+            for (const v of verses) {
+                n[v] = (n[v] ?? 0) + 1
+            }
+            return n
+        })
+    }, [])
     const [selectedVerses, setSelectedVerses] = React.useState<number[]>([])
     const [liveAnnouncement, setLiveAnnouncement] = React.useState("")
 
@@ -229,14 +245,6 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
         }
     }
 
-    // 3. Right Click (Context Menu) -> Open Menu
-    const handleContextMenu = (e: React.MouseEvent, verseNum: number) => {
-        e.preventDefault()
-        // If native selection exists, let it be (but context menu usually overrides or is blocked).
-        // Here we just open our menu at cursor.
-        openMenu(e.target as HTMLElement, verseNum, e.clientX, e.clientY, false)
-    }
-
     const openMenu = (target: HTMLElement, verseNum: number, clientX: number, clientY: number, autoPosition: boolean) => {
 
         let top = 0
@@ -269,7 +277,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
         return () => document.removeEventListener('mousemove', onMouseMove)
     }, [])
 
-    const applyColor = async (color: string) => {
+    const applyColor = React.useCallback(async (color: string) => {
         const newHighlights = [...highlights]
         const persistence = await import("@/lib/persistence")
 
@@ -278,20 +286,18 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
             let noteToKeep = existingIdx !== -1 ? newHighlights[existingIdx].note : undefined
             let idToKeep = existingIdx !== -1 ? newHighlights[existingIdx].id : undefined // Preserve ID for safe update
 
-            // If we are applying color, remove old entry to replace in local state (logic for display)
-            // But we must reuse the ID if we want persistence to UPDATE instead of INSERT (duplicate)
             if (existingIdx !== -1) newHighlights.splice(existingIdx, 1)
 
             const verseData = chapter.verses.find(v => v.verse === vId)
             if (verseData) {
                 const h: Highlight = {
-                    id: idToKeep, // PASS ID
+                    id: idToKeep,
                     book: bookName,
                     chapter: chapterNum,
                     verse: vId,
                     color,
                     content: verseData.text,
-                    note: noteToKeep, // Preserve note
+                    note: noteToKeep,
                     created_at: new Date().toISOString()
                 }
                 newHighlights.push(h)
@@ -301,29 +307,32 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
         setHighlights(newHighlights)
         setMenuOpen(false)
+        bumpVerseContextMenus(selectedVerses)
+        setAnyContextMenuOpen(false)
         window.getSelection()?.removeAllRanges()
-    }
+    }, [highlights, selectedVerses, bookName, chapterNum, chapter.verses, bumpVerseContextMenus])
 
 
 
     // Keyboard shortcuts for highlight menu: 1–5 apply colors, Escape closes
     React.useEffect(() => {
-        if (!menuOpen) return
+        if (!menuOpen && !anyContextMenuOpen) return
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
+            if (e.key === "Escape") {
                 setMenuOpen(false)
+                setAnyContextMenuOpen(false)
                 window.getSelection()?.removeAllRanges()
                 return
             }
             const colorIndex = parseInt(e.key, 10) - 1
             if (colorIndex >= 0 && colorIndex < HIGHLIGHT_COLORS.length) {
                 e.preventDefault()
-                applyColor(HIGHLIGHT_COLORS[colorIndex].id)
+                void applyColor(HIGHLIGHT_COLORS[colorIndex].id)
             }
         }
-        window.addEventListener('keydown', handleKeyDown)
-        return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [menuOpen, selectedVerses])
+        window.addEventListener("keydown", handleKeyDown)
+        return () => window.removeEventListener("keydown", handleKeyDown)
+    }, [menuOpen, anyContextMenuOpen, applyColor])
 
     const clearSelection = async () => {
         const newHighlights = highlights.filter(h => !selectedVerses.includes(h.verse))
@@ -333,6 +342,8 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
             await persistence.removeHighlight(bookName, chapterNum, vId)
         }
         setMenuOpen(false)
+        bumpVerseContextMenus(selectedVerses)
+        setAnyContextMenuOpen(false)
         window.getSelection()?.removeAllRanges()
     }
 
@@ -353,6 +364,8 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
     const handleOpenNote = () => {
         setMenuOpen(false)
+        bumpVerseContextMenus(selectedVerses)
+        setAnyContextMenuOpen(false)
         setNoteContent(getInitialNoteContent())
         setNoteTouched(false)
         setNoteStatus("idle")
@@ -436,6 +449,8 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
             alert("Link copied to clipboard!")
         }
         setMenuOpen(false)
+        bumpVerseContextMenus(selectedVerses)
+        setAnyContextMenuOpen(false)
         window.getSelection()?.removeAllRanges()
     }
 
@@ -457,9 +472,23 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
         setTimeout(() => {
             setCopyDone(false)
             setMenuOpen(false)
+            bumpVerseContextMenus(selectedVerses)
+            setAnyContextMenuOpen(false)
             window.getSelection()?.removeAllRanges()
         }, 1000)
     }
+
+    const menuHandlers = React.useMemo(
+        () => ({
+            applyColor: (c: string) => void applyColor(c),
+            onNote: () => handleOpenNote(),
+            onCopy: () => void handleCopyVerse(),
+            onShare: () => void handleShareSelection(),
+            onClear: () => void clearSelection(),
+            copyDone,
+        }),
+        [applyColor, handleOpenNote, handleCopyVerse, handleShareSelection, clearSelection, copyDone]
+    )
 
     // Helper to get initial note content
     const getInitialNoteContent = () => {
@@ -601,93 +630,28 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 )}
             </AnimatePresence>
 
-            {/* Elegant Floating Highlight Menu */}
-            <AnimatePresence>
-                {menuOpen && (
-                    <motion.div
-                        role="toolbar"
-                        aria-label="Highlight options"
-                        initial={{ opacity: 0, scale: 0.95, y: 5 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 5 }}
-                        transition={SPRING_FAST}
-                        className="fixed z-50 flex items-center gap-2 p-1.5 bg-background border border-border/30 shadow-[0_4px_16px_rgba(0,0,0,0.08)] rounded-[2px]"
-                        style={{
-                            top: menuPosition.top,
-                            left: menuPosition.left,
-                            transform: 'translate(10px, -120%)' // Up and to the right
-                        }}
-                    >
-                        {HIGHLIGHT_COLORS.map(c => (
-                            <motion.button
-                                key={c.id}
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => applyColor(c.id)}
-                                aria-label={c.label}
-                                className={cn(
-                                    "w-5 h-5 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary",
-                                    c.class
-                                )}
-                            />
-                        ))}
-
-                        <div className="w-[1px] h-4 bg-border/50 mx-1" />
-
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={handleOpenNote}
-                            aria-label="Add note"
-                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary rounded-sm"
-                        >
-                            <StickyNote className="h-4 w-4" />
-                        </motion.button>
-
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={handleCopyVerse}
-                            aria-label="Copy verse"
-                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary rounded-sm"
-                        >
-                            {copyDone ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                        </motion.button>
-
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={handleShareSelection}
-                            aria-label="Share verse"
-                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary rounded-sm"
-                        >
-                            <Share2 className="h-4 w-4" />
-                        </motion.button>
-
-                        <div className="w-[1px] h-5 bg-border mx-1" />
-
-                        <motion.button
-                            whileHover={{ scale: 1.1, color: "var(--destructive)" }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={clearSelection}
-                            aria-label="Remove highlight"
-                            className="p-1.5 text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary rounded-sm"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </motion.button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Click Overlay to Dismiss Menu */}
-            {menuOpen && (
-                <div
-                    className="fixed inset-0 z-40 bg-transparent"
-                    onClick={() => {
-                        setMenuOpen(false)
-                        window.getSelection()?.removeAllRanges()
+            {/* Long-press / drag selection → anchored dropdown menu */}
+            {!disableHighlighting && (
+                <DropdownMenu
+                    open={menuOpen}
+                    onOpenChange={(open) => {
+                        setMenuOpen(open)
+                        if (!open) {
+                            window.getSelection()?.removeAllRanges()
+                        }
                     }}
-                />
+                >
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            type="button"
+                            aria-hidden
+                            tabIndex={-1}
+                            className="pointer-events-none fixed z-40 h-px w-px opacity-0"
+                            style={{ left: menuPosition.left, top: menuPosition.top }}
+                        />
+                    </DropdownMenuTrigger>
+                    <VerseHighlightDropdownMenuContent handlers={menuHandlers} />
+                </DropdownMenu>
             )}
 
             {/* Chapter Header - Static, not animated */}
@@ -726,7 +690,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                 animate={{ opacity: 1 }}
                                                 className="w-full mt-10 mb-4 flex justify-center"
                                             >
-                                                <h3 className="text-lg md:text-xl font-bold font-sans text-foreground/90 tracking-tight leading-tight text-center max-w-[80%]">
+                                                <h3 className="max-w-[90%] border-t border-border/25 pt-6 text-center font-sans text-base font-semibold leading-snug tracking-wide text-foreground/85 md:text-lg">
                                                     {verse.heading}
                                                 </h3>
                                             </motion.div>
@@ -760,70 +724,97 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                     isLoaded && !showTitles && "hidden"
                                                 )}
                                             >
-                                                <h3 className="text-lg md:text-xl font-bold font-sans text-foreground/90 tracking-tight leading-tight text-center max-w-[80%]">
+                                                <h3 className="max-w-[90%] border-t border-border/25 pt-6 text-center font-sans text-base font-semibold leading-snug tracking-wide text-foreground/85 md:text-lg">
                                                     {verse.heading}
                                                 </h3>
                                             </motion.div>
                                         )}
-                                        <motion.span
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: i * 0.002, duration: 0.2 }}
-                                            data-verse={verse.verse}
-                                            className={cn(
-                                                "inline cursor-pointer transition-colors duration-150 rounded px-[2px] -mx-[2px] relative",
-                                                bgClass || "hover:bg-primary/5",
-                                                // Active drag selection — strong, obvious highlight
-                                                dragVerses.includes(verse.verse) && "bg-primary/30 ring-2 ring-primary/60 ring-inset",
-                                                // Persistent selection while menu is open
-                                                !dragVerses.length && menuOpen && selectedVerses.includes(verse.verse) && (
-                                                    bgClass
-                                                        ? "ring-2 ring-primary/60 ring-inset"
-                                                        : "bg-primary/15 ring-2 ring-primary/50 ring-inset"
-                                                ),
-                                                // Pulse animation for shared verses — use highlight color if present
-                                                pulsingVerses.includes(verse.verse) && (
-                                                    highlight?.color === 'green' ? "animate-verse-pulse-green" :
-                                                    highlight?.color === 'blue' ? "animate-verse-pulse-blue" :
-                                                    highlight?.color === 'pink' ? "animate-verse-pulse-pink" :
-                                                    highlight?.color === 'purple' ? "animate-verse-pulse-purple" :
-                                                    "animate-verse-pulse"
-                                                ),
-                                                // Show indicator if there's a note but no color
-                                                highlight?.note && !bgClass && "underline decoration-dotted decoration-primary/50"
-                                            )}
-                                            // Click Handler (Default Highlight)
-                                            onClick={() => handleVerseClick(verse.verse, verse.text)}
-                                            // Right Click (Context Menu)
-                                            onContextMenu={(e) => handleContextMenu(e, verse.verse)}
-                                            // Drag-to-select + Long Press
-                                            onMouseDown={(e) => { handleTouchStart(verse.verse, e); startDrag(verse.verse) }}
-                                            onMouseEnter={() => updateDrag(verse.verse)}
-                                            onMouseUp={(e) => { handleTouchEnd(); finalizeDrag(verse.verse, e) }}
-                                            onMouseLeave={handleTouchEnd}
-                                            onTouchStart={(e) => handleTouchStart(verse.verse, e)}
-                                            onTouchEnd={handleTouchEnd}
+                                        <ContextMenu
+                                            key={`ctx-${verse.verse}-${verseMenuEpoch[verse.verse] ?? 0}`}
+                                            onOpenChange={(open) => {
+                                                setAnyContextMenuOpen(open)
+                                                if (open) {
+                                                    setSelectedVerses([verse.verse])
+                                                    setLiveAnnouncement(
+                                                        `Verse ${verse.verse}. Press 1–5 to highlight, or use the menu.`
+                                                    )
+                                                }
+                                            }}
                                         >
-                                            <motion.sup
-                                                aria-hidden="true"
-                                                animate={{ opacity: isLoaded && !showVerseNumbers ? 0 : 1 }}
-                                                transition={{ duration: 0.2 }}
-                                                className={cn(
-                                                "mr-1 text-[0.6em] text-muted-foreground/60 select-none font-mono inline-flex items-center gap-0.5",
-                                                isLoaded && !showVerseNumbers && "w-0 mr-0 overflow-hidden"
-                                            )}>
-                                                <span>{verse.verse}</span>
-                                                {highlight?.note && (
-                                                    <StickyNote className="h-2 w-2 text-primary/70" />
-                                                )}
-                                            </motion.sup>
-                                            <span className={cn(
-                                                "transition-colors duration-200",
-                                                isLoaded && redLetters && isRedLetterVerse(bookName, chapterNum, verse.verse) && "text-red-700 dark:text-red-400"
-                                            )}>
-                                                {verse.text}
-                                            </span>
-                                        </motion.span>
+                                            <ContextMenuTrigger asChild>
+                                                <motion.span
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: i * 0.002, duration: 0.2 }}
+                                                    data-verse={verse.verse}
+                                                    className={cn(
+                                                        "inline cursor-pointer transition-colors duration-150 rounded px-[2px] -mx-[2px] relative",
+                                                        bgClass || "hover:bg-primary/5",
+                                                        dragVerses.includes(verse.verse) &&
+                                                            "bg-primary/30 ring-2 ring-primary/60 ring-inset",
+                                                        !dragVerses.length &&
+                                                            (menuOpen || anyContextMenuOpen) &&
+                                                            selectedVerses.includes(verse.verse) &&
+                                                            (bgClass
+                                                                ? "ring-2 ring-primary/60 ring-inset"
+                                                                : "bg-primary/15 ring-2 ring-primary/50 ring-inset"),
+                                                        pulsingVerses.includes(verse.verse) &&
+                                                            (highlight?.color === "green"
+                                                                ? "animate-verse-pulse-green"
+                                                                : highlight?.color === "blue"
+                                                                  ? "animate-verse-pulse-blue"
+                                                                  : highlight?.color === "pink"
+                                                                    ? "animate-verse-pulse-pink"
+                                                                    : highlight?.color === "purple"
+                                                                      ? "animate-verse-pulse-purple"
+                                                                      : "animate-verse-pulse"),
+                                                        highlight?.note &&
+                                                            !bgClass &&
+                                                            "underline decoration-dotted decoration-primary/50"
+                                                    )}
+                                                    onClick={() => handleVerseClick(verse.verse, verse.text)}
+                                                    onMouseDown={(e) => {
+                                                        handleTouchStart(verse.verse, e)
+                                                        startDrag(verse.verse)
+                                                    }}
+                                                    onMouseEnter={() => updateDrag(verse.verse)}
+                                                    onMouseUp={(e) => {
+                                                        handleTouchEnd()
+                                                        finalizeDrag(verse.verse, e)
+                                                    }}
+                                                    onMouseLeave={handleTouchEnd}
+                                                    onTouchStart={(e) => handleTouchStart(verse.verse, e)}
+                                                    onTouchEnd={handleTouchEnd}
+                                                >
+                                                    <motion.sup
+                                                        aria-hidden="true"
+                                                        animate={{ opacity: isLoaded && !showVerseNumbers ? 0 : 1 }}
+                                                        transition={{ duration: 0.2 }}
+                                                        className={cn(
+                                                            "mr-1 inline-flex items-center gap-0.5 select-none font-mono text-[0.6em] text-muted-foreground/60",
+                                                            isLoaded && !showVerseNumbers && "mr-0 w-0 overflow-hidden"
+                                                        )}
+                                                    >
+                                                        <span>{verse.verse}</span>
+                                                        {highlight?.note && (
+                                                            <StickyNote className="h-2 w-2 text-primary/70" />
+                                                        )}
+                                                    </motion.sup>
+                                                    <span
+                                                        className={cn(
+                                                            "transition-colors duration-200",
+                                                            isLoaded &&
+                                                                redLetters &&
+                                                                isRedLetterVerse(bookName, chapterNum, verse.verse) &&
+                                                                "text-red-700 dark:text-red-400"
+                                                        )}
+                                                    >
+                                                        {verse.text}
+                                                    </span>
+                                                </motion.span>
+                                            </ContextMenuTrigger>
+                                            <VerseHighlightContextMenuContent handlers={menuHandlers} />
+                                        </ContextMenu>
                                         {" "}
                                     </React.Fragment>
                                 )

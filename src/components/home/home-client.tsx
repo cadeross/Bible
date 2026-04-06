@@ -5,7 +5,9 @@ import { motion } from "framer-motion"
 import { BookOpen, Church, Clock, Heart, Share2 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+import { useAuth, useUser } from "@clerk/nextjs"
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
 import { getDailyContent, parseVerseRef, getLiturgicalColorClass, DailyContent, FALLBACK_CONTENT } from "@/lib/daily-content"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { useNavMode } from "@/contexts/nav-mode"
@@ -75,6 +77,12 @@ const getFontClass = (font: string) => {
 };
 
 export function HomeClient({ dailyReadings }: HomeClientProps) {
+  const { isSignedIn } = useAuth()
+  const { user } = useUser()
+  const convexProfile = useQuery(
+    api.profiles.getMyProfile,
+    isSignedIn ? {} : "skip"
+  )
   const [username, setUsername] = useState<string>("")
   const [greeting, setGreeting] = useState<string>("")
   const [todayLabel, setTodayLabel] = useState<string>("")
@@ -100,6 +108,15 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
   const { navMode } = useNavMode()
 
   useEffect(() => {
+    const name =
+      convexProfile?.username ??
+      user?.username ??
+      user?.firstName ??
+      ""
+    setUsername(name)
+  }, [convexProfile, user])
+
+  useEffect(() => {
     setMounted(true)
     setGreeting(getGreeting())
     setTodayLabel(
@@ -111,14 +128,11 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
     )
 
     const loadData = async () => {
-      const supabase = createClient()
       const { getProfile, getHistory } = await import("@/lib/persistence")
 
-      // Fetch user, content, and reading context in parallel
-      let userResult, content, profile, history
+      let content, profile, history
       try {
-        ;[userResult, content, profile, history] = await Promise.all([
-          supabase.auth.getUser(),
+        ;[content, profile, history] = await Promise.all([
           getDailyContent(),
           getProfile(),
           getHistory(),
@@ -127,10 +141,6 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
         console.error("Failed to load page data:", err)
         setIsLoading(false)
         return
-      }
-
-      if (userResult.data.user?.user_metadata?.username) {
-        setUsername(userResult.data.user.user_metadata.username)
       }
 
       setDailyContent(content)
@@ -321,19 +331,19 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
         <nav className="flex flex-wrap justify-center gap-3 text-xs font-mono uppercase tracking-wide">
           <Link
             href="/read/Genesis/1"
-            className="px-4 py-2 rounded-[2px] border border-border/40 hover:border-foreground/30 hover:bg-secondary/10 transition-colors"
+            className="px-4 py-2 rounded-md border border-border/40 hover:border-foreground/30 hover:bg-secondary/10 transition-colors"
           >
             start reading
           </Link>
           <Link
             href="/calendar"
-            className="px-4 py-2 rounded-[2px] border border-border/40 hover:border-foreground/30 hover:bg-secondary/10 transition-colors"
+            className="px-4 py-2 rounded-md border border-border/40 hover:border-foreground/30 hover:bg-secondary/10 transition-colors"
           >
             liturgical calendar
           </Link>
           <Link
             href="/how-to"
-            className="px-4 py-2 rounded-[2px] border border-border/40 hover:border-foreground/30 hover:bg-secondary/10 transition-colors"
+            className="px-4 py-2 rounded-md border border-border/40 hover:border-foreground/30 hover:bg-secondary/10 transition-colors"
           >
             how to use openwrit
           </Link>
@@ -380,11 +390,11 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
           {/* Quick Actions */}
           {(isLoading && streakDays === null && !continueReading) ? (
             <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
-              <div className="flex items-center gap-2.5 px-4 py-2 rounded-[2px] border border-border/30 bg-secondary/5">
+              <div className="flex items-center gap-2.5 px-4 py-2 rounded-md border border-border/30 bg-secondary/5">
                 <div className="h-3.5 w-3.5 rounded-full bg-muted-foreground/20 animate-pulse shrink-0" />
                 <div className="h-2 w-20 rounded-full bg-muted-foreground/20 animate-pulse" />
               </div>
-              <div className="flex items-center gap-2.5 px-4 py-2 rounded-[2px] border border-border/30 bg-secondary/5">
+              <div className="flex items-center gap-2.5 px-4 py-2 rounded-md border border-border/30 bg-secondary/5">
                 <div className="h-3.5 w-3.5 rounded-full bg-muted-foreground/20 animate-pulse shrink-0" />
                 <div className="h-2 w-28 rounded-full bg-muted-foreground/20 animate-pulse" />
               </div>
@@ -394,7 +404,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
               {streakDays !== null && (
                 <Link
                   href="/profile"
-                  className="group flex items-center gap-2.5 px-4 py-2 rounded-[2px] border border-border/30 bg-secondary/5 hover:bg-secondary/10 hover:border-foreground/20 transition-all duration-300"
+                  className="group flex items-center gap-2.5 px-4 py-2 rounded-md border border-border/30 bg-secondary/5 hover:bg-secondary/10 hover:border-foreground/20 transition-all duration-300"
                 >
                   <Heart className="h-3.5 w-3.5 text-heart/60 group-hover:text-heart transition-colors" />
                   <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">
@@ -405,7 +415,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
               {continueReading && (
                 <Link
                   href={`/read/${encodeURIComponent(continueReading.book)}/${continueReading.chapter}?translation=${bibleVersion}`}
-                  className="group flex items-center gap-2.5 px-4 py-2 rounded-[2px] border border-border/30 bg-secondary/5 hover:bg-secondary/10 hover:border-foreground/20 transition-all duration-300"
+                  className="group flex items-center gap-2.5 px-4 py-2 rounded-md border border-border/30 bg-secondary/5 hover:bg-secondary/10 hover:border-foreground/20 transition-all duration-300"
                 >
                   <BookOpen className="h-3.5 w-3.5 text-bookmark/60 group-hover:text-bookmark transition-colors" />
                   <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">

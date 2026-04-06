@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { AuthTabs } from "@/components/auth/auth-tabs";
+import { useUser, useClerk } from "@clerk/nextjs";
+import { getConvexHttp } from "@/lib/convex/http";
+import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { User, LogOut, Cloud, Activity, Palette, Camera, PenLine, X } from "lucide-react";
@@ -62,7 +63,8 @@ const bookConfig = {
 };
 
 export default function ProfilePage() {
-    const [user, setUser] = useState<any>(null);
+    const { user, isLoaded: userLoaded } = useUser();
+    const { signOut } = useClerk();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         words: 0,
@@ -92,6 +94,7 @@ export default function ProfilePage() {
 
     // Profile photo state
     const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+    const [convexUsername, setConvexUsername] = useState<string | null>(null);
     const [isHoveringAvatar, setIsHoveringAvatar] = useState(false);
 
     // Edit Profile State
@@ -102,56 +105,54 @@ export default function ProfilePage() {
 
 
     const router = useRouter();
-    const supabase = createClient();
 
     const handleUpdateProfile = async () => {
         setIsSaving(true);
         try {
-            const updates: any = {};
-
-            // Only update email if it changed
-            if (editEmail !== user.email) {
-                updates.email = editEmail;
+            const currentUsername =
+                convexUsername ?? user?.username ?? user?.firstName ?? "";
+            if (
+                editUsername.trim() &&
+                editUsername.toLowerCase() !== currentUsername.toLowerCase()
+            ) {
+                const client = getConvexHttp();
+                await client.mutation(api.profiles.updateUsername, {
+                    username: editUsername.trim(),
+                });
+                setConvexUsername(editUsername.trim().toLowerCase());
+                toast.success("Username updated");
             }
-
-            // Only update username if it changed
-            if (editUsername !== user.user_metadata?.username) {
-                updates.data = { username: editUsername };
-            }
-
-            if (Object.keys(updates).length > 0) {
-                const { data, error } = await supabase.auth.updateUser(updates);
-
-                if (error) throw error;
-
-                // Update local user state
-                setUser(data.user);
-
-                if (updates.email) {
-                    toast.success("Profile updated", {
-                        description: "Please check your new email address for a confirmation link."
-                    });
-                } else {
-                    toast.success("Profile updated successfully");
-                }
+            if (editEmail && editEmail !== user?.primaryEmailAddress?.emailAddress) {
+                toast.message("Email changes", {
+                    description:
+                        "Use the user menu (Clerk) or your account portal to change email securely.",
+                });
             }
             setIsEditing(false);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error updating profile:", error);
-            toast.error(error.message || "Failed to update profile");
+            const msg = error instanceof Error ? error.message : "Failed to update profile";
+            toast.error(msg);
         } finally {
             setIsSaving(false);
         }
     };
 
     useEffect(() => {
-        const loadData = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            setUser(user);
+        if (userLoaded && !user) {
+            router.replace("/auth/login");
+        }
+    }, [userLoaded, user, router]);
 
-            if (user) {
-                // Fetch Data
-                const history = await getHistory();
+    useEffect(() => {
+        const loadData = async () => {
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+
+            // Fetch Data
+            const history = await getHistory();
                 const highlights = await getAllHighlights();
                 const profile = await getProfile();
 
@@ -159,6 +160,7 @@ export default function ProfilePage() {
                 if (profile?.avatar_url) {
                     setProfilePhoto(profile.avatar_url);
                 }
+                setConvexUsername(profile?.username ?? null);
 
                 // Process History
                 let totalWords = 0;
@@ -315,33 +317,27 @@ export default function ProfilePage() {
                         minutes: Math.round(seconds / 60)
                     }));
                 setBookData(sortedBooks.slice(0, 10)); // Show top 10 books
-            }
             setLoading(false);
         };
-        loadData();
-
-        // Auth Listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
-            if (!session) setLoading(false);
-        });
-
-        return () => subscription.unsubscribe();
-    }, [router, supabase]);
+        if (userLoaded) void loadData();
+    }, [router, user, userLoaded]);
 
     const handleSignOut = async () => {
-        await supabase.auth.signOut();
+        await signOut({ redirectUrl: "/" });
         toast.success("Signed out successfully");
         router.refresh();
     };
 
-    if (loading) {
-        return <Loading />
+    if (!userLoaded) {
+        return <Loading />;
     }
 
     if (!user) {
-        router.push("/auth/login");
         return <Loading />;
+    }
+
+    if (loading) {
+        return <Loading />
     }
 
     return (
@@ -407,10 +403,10 @@ export default function ProfilePage() {
                     <div className="space-y-1">
                         <div className="flex flex-col items-center gap-1">
                             <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                                {user.user_metadata?.username || "USER"}
+                                {convexUsername ?? user.username ?? user.firstName ?? "USER"}
                             </h1>
                             <p className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider">
-                                {user.email} • joined {new Date(user.created_at).toLocaleDateString()}
+                                {user.primaryEmailAddress?.emailAddress ?? ""} • joined {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : ""}
                             </p>
                         </div>
                     </div>
@@ -419,22 +415,22 @@ export default function ProfilePage() {
                     <Button
                         variant="ghost"
                         onClick={() => {
-                            setEditUsername(user.user_metadata?.username || "");
-                            setEditEmail(user.email || "");
+                            setEditUsername(user.username ?? user.firstName ?? "");
+                            setEditEmail(user.primaryEmailAddress?.emailAddress ?? "");
                             setIsEditing(true);
                         }}
-                        className="h-8 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-[2px] border border-border/30 bg-secondary/5 hover:border-foreground/20"
+                        className="h-8 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-md border border-border/30 bg-secondary/5 hover:border-foreground/20"
                     >
                         <PenLine className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity" /> EDIT PROFILE
                     </Button>
-                    <Button variant="ghost" onClick={handleSignOut} className="h-8 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-[2px] border border-border/30 bg-secondary/5 hover:border-foreground/20">
+                    <Button variant="ghost" onClick={handleSignOut} className="h-8 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-primary gap-2 hover:bg-transparent cursor-pointer group transition-colors px-4 rounded-md border border-border/30 bg-secondary/5 hover:border-foreground/20">
                         <LogOut className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity" /> SIGN OUT
                     </Button>
                 </div>
 
                 {/* Edit Profile Dialog */}
                 <Dialog open={isEditing} onOpenChange={(open) => { if (!open) setIsEditing(false); }}>
-                    <DialogContent className="max-w-[400px] bg-background border border-border/40 rounded-[2px] p-0 gap-0 font-mono [&>button:last-child]:hidden">
+                    <DialogContent className="max-w-[400px] bg-background border border-border/40 rounded-lg p-0 gap-0 font-mono [&>button:last-child]:hidden">
                         <div className="px-6 py-4 border-b border-border/30 flex flex-row items-center justify-between">
                             <DialogTitle className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-mono font-normal leading-none">
                                 Edit Profile
@@ -488,14 +484,14 @@ export default function ProfilePage() {
                                     variant="ghost"
                                     onClick={() => setIsEditing(false)}
                                     disabled={isSaving}
-                                    className="h-9 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-foreground hover:bg-transparent px-4 rounded-[2px]"
+                                    className="h-9 text-[10px] uppercase tracking-widest font-mono text-muted-foreground hover:text-foreground hover:bg-transparent px-4 rounded-md"
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
                                     disabled={isSaving}
-                                    className="h-9 text-[10px] uppercase tracking-widest font-mono bg-primary text-primary-foreground hover:bg-primary/90 px-5 rounded-[2px]"
+                                    className="h-9 text-[10px] uppercase tracking-widest font-mono bg-primary text-primary-foreground hover:bg-primary/90 px-5 rounded-md"
                                 >
                                     {isSaving ? "Saving..." : "Save changes"}
                                 </Button>
@@ -542,7 +538,7 @@ export default function ProfilePage() {
                             ];
 
                             return kpis.map((stat: any, i) => (
-                                <div key={i} className="bg-secondary/10 p-4 rounded-[2px] space-y-2 border border-border/50">
+                                <div key={i} className="bg-secondary/10 p-4 rounded-md space-y-2 border border-border/50">
                                     <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{stat.label}</p>
                                     <p className="text-2xl font-mono font-bold text-primary">
                                         {stat.isStreak ? `${stat.value}` : stat.value}
@@ -631,7 +627,7 @@ export default function ProfilePage() {
 
                 {/* YEARLY HEATMAP - Custom */}
                 <Section title="Yearly Activity">
-                    <div className="p-4 bg-secondary/5 rounded-[2px] border border-border/30 overflow-hidden">
+                    <div className="p-4 bg-secondary/5 rounded-md border border-border/30 overflow-hidden">
                         <CustomHeatmap data={activityMap} />
                     </div>
                 </Section>

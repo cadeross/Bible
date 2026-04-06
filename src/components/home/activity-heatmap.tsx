@@ -68,7 +68,7 @@ export function ActivityHeatmap() {
                             ? Array.from({ length: 365 }).map((_, i) => (
                                 <div
                                     key={i}
-                                    className="w-2 h-2 md:w-3 md:h-3 rounded-[2px] bg-muted/10 animate-pulse"
+                                    className="w-2 h-2 md:w-3 md:h-3 rounded-md bg-muted/10 animate-pulse"
                                 />
                             ))
                             : data.map((day, i) => (
@@ -76,7 +76,7 @@ export function ActivityHeatmap() {
                                     <TooltipTrigger asChild>
                                         <div
                                             className={cn(
-                                                "w-2 h-2 md:w-3 md:h-3 rounded-[2px] transition-colors cursor-alias",
+                                                "w-2 h-2 md:w-3 md:h-3 rounded-md transition-colors cursor-alias",
                                                 // Empty state: slightly darker than before for contrast
                                                 day.intensity === 0 && "bg-muted/20 hover:ring-1 hover:ring-muted-foreground/30 hover:z-10",
                                                 day.intensity === 1 && "bg-primary/30 hover:ring-1 hover:ring-primary/50 hover:z-10",

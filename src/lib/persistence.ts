@@ -1,415 +1,276 @@
 "use client";
 
-import { createClient } from "./supabase/client";
+import { api } from "../../convex/_generated/api";
+import { getConvexHttp } from "@/lib/convex/http";
+import { persistenceCloud } from "@/lib/persistence-cloud";
 
-// Types
+function cloudPersistenceReady(): boolean {
+  return persistenceCloud.ready;
+}
+
+function mapHighlight(row: {
+  _id: string;
+  userId: string;
+  book: string;
+  chapter: number;
+  verse: number;
+  color: string;
+  content: string;
+  note?: string;
+  createdAt: number;
+}): Highlight {
+  return {
+    id: row._id,
+    book: row.book,
+    chapter: row.chapter,
+    verse: row.verse,
+    color: row.color,
+    content: row.content,
+    note: row.note,
+    created_at: new Date(row.createdAt).toISOString(),
+    user_id: row.userId,
+  };
+}
+
 export interface Highlight {
-    id?: number;
-    book: string;
-    chapter: number;
-    verse: number;
-    color: string;
-    content: string;
-    note?: string; // Add note field
-    created_at: string;
-    user_id?: string;
+  id?: string;
+  book: string;
+  chapter: number;
+  verse: number;
+  color: string;
+  content: string;
+  note?: string;
+  created_at: string;
+  user_id?: string;
 }
 
 export interface SavedWisdom {
-    id?: number;
-    content: string;
-    source: string; // e.g. "Proverbs 3:5"
-    created_at: string;
-    user_id?: string;
+  id?: string;
+  content: string;
+  source: string;
+  created_at: string;
+  user_id?: string;
 }
 
-// --- Highlights ---
+export interface ReadingHistory {
+  id?: string;
+  book: string;
+  chapter: number;
+  words_read: number;
+  duration_seconds?: number;
+  completed_at: string;
+  user_id?: string;
+}
+
+export interface Profile {
+  id: string;
+  username?: string | null;
+  last_read_book: string | null;
+  last_read_chapter: number | null;
+  avatar_url: string | null;
+  updated_at: string;
+}
 
 export async function saveHighlight(highlight: Highlight) {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
+  if (!cloudPersistenceReady()) {
+    const local = localStorage.getItem("highlights");
+    let items: Highlight[] = local ? JSON.parse(local) : [];
+    items = items.filter(
+      (h) =>
+        !(
+          h.book === highlight.book &&
+          h.chapter === highlight.chapter &&
+          h.verse === highlight.verse
+        )
+    );
+    items.push(highlight);
+    localStorage.setItem("highlights", JSON.stringify(items));
+    return;
+  }
 
-    if (session) {
-        // Safe Save: Check existence first to avoid relying on DB Unique Constraints
-        // Use .limit(1) to handle potential duplicates (dirty DB) without crashing
-        // Explicitly check columns instead of .match to avoid ambiguity
-        // ORDER BY DESC: Ensure we find the MOST RECENT entry if duplicates exist
-        const { data: existingRows } = await supabase
-            .from('highlights')
-            .select('id')
-            .eq('user_id', session.user.id)
-            .eq('book', highlight.book)
-            .eq('chapter', highlight.chapter)
-            .eq('verse', highlight.verse)
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-        const existing = existingRows && existingRows.length > 0 ? existingRows[0] : null;
-        console.log("Persistence: Finding existing row for verse", highlight.verse, "Found ID:", existing?.id);
-
-        if (existing) {
-            // Update existing (the newest one)
-            console.log("Persistence: Updating existing ID", existing.id, "with color:", highlight.color, "note:", highlight.note);
-            const { error } = await supabase
-                .from('highlights')
-                .update({
-                    color: highlight.color,
-                    note: highlight.note,
-                    content: highlight.content // Update content in case it changed
-                })
-                .eq('id', existing.id);
-
-            if (error) {
-                console.error("Error updating highlight", JSON.stringify(error, null, 2));
-                throw new Error(error.message);
-            }
-        } else {
-            console.log("Persistence: Inserting new record for", highlight.verse);
-            // Insert new
-            const { error } = await supabase
-                .from('highlights')
-                .insert([{
-                    user_id: session.user.id,
-                    book: highlight.book,
-                    chapter: highlight.chapter,
-                    verse: highlight.verse,
-                    content: highlight.content,
-                    color: highlight.color,
-                    note: highlight.note
-                }]);
-
-            if (error) {
-                console.error("Error inserting highlight", JSON.stringify(error, null, 2));
-                throw new Error(error.message);
-            }
-        }
-    } else {
-        // Local Storage Fallback
-        const local = localStorage.getItem("highlights");
-        let items: Highlight[] = local ? JSON.parse(local) : [];
-
-        // Remove existing for this verse if any (to update)
-        items = items.filter(h => !(h.book === highlight.book && h.chapter === highlight.chapter && h.verse === highlight.verse));
-
-        items.push(highlight);
-        localStorage.setItem("highlights", JSON.stringify(items));
-    }
+  const client = getConvexHttp();
+  await client.mutation(api.highlights.save, {
+    book: highlight.book,
+    chapter: highlight.chapter,
+    verse: highlight.verse,
+    color: highlight.color,
+    content: highlight.content,
+    note: highlight.note,
+    createdAt: Date.parse(highlight.created_at) || undefined,
+  });
 }
 
-export async function removeHighlight(book: string, chapter: number, verse: number) {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (session) {
-        // We delete by matching fields. If multiple exist, this deletes all matches, which is good.
-        const { error } = await supabase
-            .from('highlights')
-            .delete()
-            .match({
-                user_id: session.user.id,
-                book,
-                chapter,
-                verse
-            });
-
-        if (error) {
-            console.error("Error removing highlight", error);
-        }
-    } else {
-        const local = localStorage.getItem("highlights");
-        if (local) {
-            let items: Highlight[] = JSON.parse(local);
-            items = items.filter(h => !(h.book === book && h.chapter === chapter && h.verse === verse));
-            localStorage.setItem("highlights", JSON.stringify(items));
-        }
+export async function removeHighlight(
+  book: string,
+  chapter: number,
+  verse: number
+) {
+  if (!cloudPersistenceReady()) {
+    const local = localStorage.getItem("highlights");
+    if (local) {
+      let items: Highlight[] = JSON.parse(local);
+      items = items.filter(
+        (h) => !(h.book === book && h.chapter === chapter && h.verse === verse)
+      );
+      localStorage.setItem("highlights", JSON.stringify(items));
     }
+    return;
+  }
+
+  const client = getConvexHttp();
+  await client.mutation(api.highlights.remove, { book, chapter, verse });
 }
 
-export async function getHighlights(book: string, chapter: number): Promise<Highlight[]> {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (session) {
-        const { data, error } = await supabase
-            .from('highlights')
-            .select('id, book, chapter, verse, color, content, note, created_at, user_id')
-            .match({
-                user_id: session.user.id,
-                book,
-                chapter
-            })
-            // IMPORTANT: Sort by newest first, so iterating (e.g. .find()) hits the latest update
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error("Error fetching highlights", error);
-            return [];
-        }
-        return data || [];
-    } else {
-        const local = localStorage.getItem("highlights");
-        if (local) {
-            const items: Highlight[] = JSON.parse(local);
-            return items.filter(h => h.book === book && h.chapter === chapter);
-        }
-        return [];
+export async function getHighlights(
+  book: string,
+  chapter: number
+): Promise<Highlight[]> {
+  if (!cloudPersistenceReady()) {
+    const local = localStorage.getItem("highlights");
+    if (local) {
+      const items: Highlight[] = JSON.parse(local);
+      return items.filter((h) => h.book === book && h.chapter === chapter);
     }
+    return [];
+  }
+
+  const client = getConvexHttp();
+  const rows = await client.query(api.highlights.listForChapter, {
+    book,
+    chapter,
+  });
+  return rows.map(mapHighlight);
 }
 
 export async function getAllHighlights(): Promise<Highlight[]> {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
+  if (!cloudPersistenceReady()) {
+    const local = localStorage.getItem("highlights");
+    return local ? JSON.parse(local) : [];
+  }
 
-    if (session) {
-        const { data, error } = await supabase
-            .from('highlights')
-            .select('id, book, chapter, verse, color, content, note, created_at, user_id')
-            .eq('user_id', session.user.id)
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error("Error fetching all highlights", error);
-            return [];
-        }
-        return data || [];
-    } else {
-        const local = localStorage.getItem("highlights");
-        return local ? JSON.parse(local) : [];
-    }
+  const client = getConvexHttp();
+  const rows = await client.query(api.highlights.listAll, {});
+  return rows.map(mapHighlight);
 }
 
-// --- Wisdom (Saved Quotes) ---
-
 export async function saveWisdom(wisdom: SavedWisdom) {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (session) {
-        // Check for duplicate content to avoid spamming same quote
-        const { data: existingRows } = await supabase
-            .from('saved_wisdom')
-            .select('id')
-            .match({
-                user_id: session.user.id,
-                content: wisdom.content
-            })
-            .limit(1);
-
-        const existing = existingRows && existingRows.length > 0 ? existingRows[0] : null;
-
-        if (!existing) {
-            const { error } = await supabase
-                .from('saved_wisdom')
-                .insert([{
-                    user_id: session.user.id,
-                    content: wisdom.content,
-                    source: wisdom.source,
-                    created_at: wisdom.created_at
-                }]);
-
-            if (error) console.error("Error saving wisdom", error);
-        }
-    } else {
-        // Local
-        const local = localStorage.getItem("wisdom");
-        let items: SavedWisdom[] = local ? JSON.parse(local) : [];
-        if (!items.find(i => i.content === wisdom.content)) {
-            items.push(wisdom);
-            localStorage.setItem("wisdom", JSON.stringify(items));
-        }
+  if (!cloudPersistenceReady()) {
+    const local = localStorage.getItem("wisdom");
+    const items: SavedWisdom[] = local ? JSON.parse(local) : [];
+    if (!items.find((i) => i.content === wisdom.content)) {
+      items.push(wisdom);
+      localStorage.setItem("wisdom", JSON.stringify(items));
     }
+    return;
+  }
+
+  const client = getConvexHttp();
+  await client.mutation(api.wisdom.save, {
+    content: wisdom.content,
+    source: wisdom.source,
+    createdAt: Date.parse(wisdom.created_at) || undefined,
+  });
 }
 
 export async function getAllWisdom(): Promise<SavedWisdom[]> {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
+  if (!cloudPersistenceReady()) {
+    const local = localStorage.getItem("wisdom");
+    return local ? JSON.parse(local) : [];
+  }
 
-    if (session) {
-        const { data, error } = await supabase
-            .from('saved_wisdom')
-            .select('id, content, source, created_at, user_id')
-            .eq('user_id', session.user.id)
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error("Error fetching wisdom", error);
-            return [];
-        }
-        return data || [];
-    } else {
-        const local = localStorage.getItem("wisdom");
-        return local ? JSON.parse(local) : [];
-    }
-}
-// --- Reading History ---
-
-export interface ReadingHistory {
-    id?: number;
-    book: string;
-    chapter: number;
-    words_read: number;
-    duration_seconds?: number; // New field for time tracking
-    completed_at: string;
-    user_id?: string;
+  const client = getConvexHttp();
+  const rows = await client.query(api.wisdom.listAll, {});
+  return rows.map((row) => ({
+    id: row._id,
+    content: row.content,
+    source: row.source ?? "",
+    created_at: new Date(row.createdAt).toISOString(),
+    user_id: row.userId,
+  }));
 }
 
 export async function saveHistory(history: ReadingHistory) {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
+  if (!cloudPersistenceReady()) {
+    const local = localStorage.getItem("reading_history");
+    const items: ReadingHistory[] = local ? JSON.parse(local) : [];
+    items.push(history);
+    localStorage.setItem("reading_history", JSON.stringify(items));
+    return;
+  }
 
-    if (session) {
-        // Just insert. We treat every chapter visit/read as an event.
-        const { error } = await supabase
-            .from('reading_history')
-            .insert([{
-                user_id: session.user.id,
-                book: history.book,
-                chapter: history.chapter,
-                words_read: history.words_read,
-                duration_seconds: history.duration_seconds || 0, // Ensure value
-                completed_at: history.completed_at
-            }]);
-
-        if (error) {
-            console.error("Error saving history DETAILS:", JSON.stringify(error, null, 2));
-        } else {
-            console.log("History saved successfully:", history);
-        }
-    } else {
-        const local = localStorage.getItem("reading_history");
-        const items: ReadingHistory[] = local ? JSON.parse(local) : [];
-        items.push(history);
-        localStorage.setItem("reading_history", JSON.stringify(items));
-    }
+  const client = getConvexHttp();
+  await client.mutation(api.history.add, {
+    book: history.book,
+    chapter: history.chapter,
+    wordsRead: history.words_read,
+    durationSeconds: history.duration_seconds ?? 0,
+    completedAt: history.completed_at,
+  });
 }
 
 export async function getHistory(): Promise<ReadingHistory[]> {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
+  if (!cloudPersistenceReady()) {
+    const local = localStorage.getItem("reading_history");
+    return local ? JSON.parse(local) : [];
+  }
 
-    if (session) {
-        const { data, error } = await supabase
-            .from('reading_history')
-            .select('id, book, chapter, words_read, duration_seconds, completed_at, user_id')
-            .eq('user_id', session.user.id)
-            .order('completed_at', { ascending: false });
-
-        if (error) {
-            // Silently fail if table doesn't exist yet (common in dev before migration)
-            // console.warn("History fetch failed, likely no table yet.", error.message);
-            return [];
-        }
-        return data || [];
-    } else {
-        const local = localStorage.getItem("reading_history");
-        return local ? JSON.parse(local) : [];
-    }
-}
-
-// --- User Profile ---
-
-export interface Profile {
-    id: string;
-    last_read_book: string | null;
-    last_read_chapter: number | null;
-    avatar_url: string | null;
-    updated_at: string;
+  const client = getConvexHttp();
+  const rows = await client.query(api.history.list, {});
+  return rows.map((row) => ({
+    id: row._id,
+    book: row.book,
+    chapter: row.chapter,
+    words_read: row.wordsRead,
+    duration_seconds: row.durationSeconds,
+    completed_at: row.completedAt,
+    user_id: row.userId,
+  }));
 }
 
 export async function getProfile(): Promise<Profile | null> {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
+  if (!cloudPersistenceReady()) return null;
 
-    if (!session) return null;
-
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username, last_read_book, last_read_chapter, avatar_url, updated_at')
-        .eq('id', session.user.id)
-        .single();
-
-    if (error) {
-        // Profile might not exist yet - that's ok
-        if (error.code !== 'PGRST116') {
-            console.error("Error fetching profile", error);
-        }
-        return null;
-    }
-    return data;
+  const client = getConvexHttp();
+  const row = await client.query(api.profiles.getMyProfile, {});
+  if (!row) return null;
+  return {
+    id: row.clerkUserId,
+    username: row.username ?? null,
+    last_read_book: row.lastReadBook ?? null,
+    last_read_chapter: row.lastReadChapter ?? null,
+    avatar_url: row.avatarUrl ?? null,
+    updated_at: new Date(row.updatedAt).toISOString(),
+  };
 }
 
-export async function updateLastRead(book: string, chapter: number): Promise<void> {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
+export async function updateLastRead(book: string, chapter: number) {
+  if (!cloudPersistenceReady()) return;
 
-    if (!session) return;
-
-    const { error } = await supabase
-        .from('profiles')
-        .update({
-            last_read_book: book,
-            last_read_chapter: chapter,
-            updated_at: new Date().toISOString()
-        })
-        .eq('id', session.user.id);
-
-    if (error) {
-        console.error("Error updating last read position:", error.message || error.code || JSON.stringify(error));
-    }
+  const client = getConvexHttp();
+  await client.mutation(api.profiles.updateLastRead, { book, chapter });
 }
 
 export async function uploadAvatar(file: File): Promise<string | null> {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
+  if (!cloudPersistenceReady()) return null;
 
-    if (!session) return null;
-
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${session.user.id}/avatar.${fileExt}`;
-
-    // Upload file to storage
-    const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, { upsert: true });
-
-    if (uploadError) {
-        console.error("Error uploading avatar", uploadError);
-        return null;
-    }
-
-    // Get public URL
-    const { data: urlData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
-    const avatarUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`;
-
-    // Update profile with avatar URL
-    const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-            avatar_url: avatarUrl,
-            updated_at: new Date().toISOString()
-        })
-        .eq('id', session.user.id)
-        .select()
-        .single();
-
-    if (updateError) {
-        if (updateError.code === 'PGRST116') {
-            // Profile didn't exist, insert it instead
-            const { error: insertError } = await supabase.from('profiles').insert([{
-                id: session.user.id,
-                avatar_url: avatarUrl,
-                updated_at: new Date().toISOString()
-            }]);
-            if (insertError) {
-                console.error("Error inserting avatar URL", insertError);
-            }
-        } else {
-            console.error("Error updating avatar URL", updateError);
-        }
-    }
-
-    return avatarUrl;
+  try {
+    const client = getConvexHttp();
+    const uploadUrl = await client.mutation(
+      api.profiles.generateAvatarUploadUrl,
+      {}
+    );
+    const res = await fetch(uploadUrl, {
+      method: "POST",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+    if (!res.ok) return null;
+    const { storageId } = (await res.json()) as { storageId: string };
+    return await client.mutation(api.profiles.setAvatarFromStorage, {
+      storageId: storageId as unknown as import("../../convex/_generated/dataModel").Id<"_storage">,
+    });
+  } catch (e) {
+    console.error("uploadAvatar", e);
+    return null;
+  }
 }

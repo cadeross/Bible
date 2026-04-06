@@ -6,9 +6,12 @@ import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { BOOK_LIST, TRANSLATIONS } from "@/lib/bible-api"
 import { BIBLE_BOOKS } from "@/lib/bible-data"
-import { Book, Languages, Type, Hash, Palette, ChevronLeft, ChevronRight, Heading } from "lucide-react"
+import { Book, Languages, Type, Hash, Palette, ChevronLeft, ChevronRight, Heading, CircleHelp } from "lucide-react"
 import { motion } from "framer-motion"
 import { QuickSelector } from "./quick-selector"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { ReadingTipsDialog } from "./reading-tips-dialog"
+import { canGoNextChapter, canGoPrevChapter, getAdjacentChapter } from "@/lib/chapter-navigation"
 
 
 // Internal component for editable chapter
@@ -60,7 +63,7 @@ const ChapterInput = ({ currentChapter, maxChapters, onChange }: { currentChapte
                 onChange={(e) => setValue(e.target.value)}
                 onBlur={handleSubmit}
                 onKeyDown={handleKeyDown}
-                className="w-[20px] text-xs font-medium text-center bg-transparent border-none outline-none text-foreground p-0 m-0"
+                className="min-w-[1.25rem] max-w-[2.5rem] text-xs font-medium text-center bg-transparent border-none outline-none text-foreground p-0 m-0"
             />
         )
     }
@@ -68,7 +71,7 @@ const ChapterInput = ({ currentChapter, maxChapters, onChange }: { currentChapte
     return (
         <span
             onClick={() => setIsEditing(true)}
-            className="w-[20px] inline-block text-xs font-medium text-muted-foreground text-center cursor-pointer hover:text-foreground transition-colors"
+            className="min-w-[1.25rem] inline-block text-xs font-medium text-muted-foreground text-center cursor-pointer hover:text-foreground transition-colors tabular-nums"
         >
             {currentChapter}
         </span>
@@ -131,13 +134,18 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
         router.push(url.pathname + url.search)
     }
 
+    const prevChapterNav = getAdjacentChapter(currentBook, currentChapter, -1)
+    const nextChapterNav = getAdjacentChapter(currentBook, currentChapter, 1)
+    const toolbarPrevOk = canGoPrevChapter(currentBook, currentChapter)
+    const toolbarNextOk = canGoNextChapter(currentBook, currentChapter)
+
     // ... FontButton helper ...
     const FontButton = ({ font, label }: { font: FontType; label: string }) => (
         <button
             suppressHydrationWarning
             onClick={() => setFontFamily(font)}
             className={cn(
-                "px-3 py-1 text-xs transition-colors hover:text-foreground/80 cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                "px-3 py-1 text-xs transition-colors hover:text-foreground/80 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
                 isLoaded && fontFamily === font ? "text-primary font-bold" : "text-muted-foreground"
             )}
         >
@@ -164,8 +172,14 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
 
                 <div className="flex items-center gap-0">
                     <motion.button
-                        onClick={() => handleChapterChange((Math.max(1, currentChapter - 1)).toString())}
-                        disabled={currentChapter <= 1}
+                        type="button"
+                        onClick={() => {
+                            if (!prevChapterNav) return
+                            router.push(
+                                `/read/${prevChapterNav.book}/${prevChapterNav.chapter}?translation=${currentTranslation}`
+                            )
+                        }}
+                        disabled={!toolbarPrevOk}
                         whileHover={{ scale: 1.15 }}
                         whileTap={{ scale: 0.9 }}
                         className="p-1 px-2 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed group transition-colors"
@@ -173,15 +187,26 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                         <ChevronLeft className="h-3 w-3 opacity-50 group-hover:opacity-100 transition-opacity" />
                     </motion.button>
 
-                    <ChapterInput
-                        currentChapter={currentChapter}
-                        maxChapters={chapterCount}
-                        onChange={(val) => handleChapterChange(val.toString())}
-                    />
+                    <div className="flex items-baseline gap-1 tabular-nums">
+                        <ChapterInput
+                            currentChapter={currentChapter}
+                            maxChapters={chapterCount}
+                            onChange={(val) => handleChapterChange(val.toString())}
+                        />
+                        <span className="text-[10px] text-muted-foreground/70 whitespace-nowrap">
+                            /{chapterCount}
+                        </span>
+                    </div>
 
                     <motion.button
-                        onClick={() => handleChapterChange((Math.min(chapterCount, currentChapter + 1)).toString())}
-                        disabled={currentChapter >= chapterCount}
+                        type="button"
+                        onClick={() => {
+                            if (!nextChapterNav) return
+                            router.push(
+                                `/read/${nextChapterNav.book}/${nextChapterNav.chapter}?translation=${currentTranslation}`
+                            )
+                        }}
+                        disabled={!toolbarNextOk}
                         whileHover={{ scale: 1.15 }}
                         whileTap={{ scale: 0.9 }}
                         className="p-1 px-2 text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed group transition-colors"
@@ -202,81 +227,114 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                     popoverWidth="w-[320px]"
                     className="max-w-[80px]"
                 />
-            </div>
 
-            {/* Appearance Bar */}
-            <div className="flex flex-wrap items-center justify-center gap-4 py-2 px-6 rounded-[2px] bg-secondary/30 backdrop-blur-sm mx-4">
+                <div className="h-4 w-[1px] bg-border/50" />
 
-
-
-                {/* Font Family Group */}
-                <div className="flex items-center border-r border-border/50 pr-4 gap-1">
-                    <Type className="h-3 w-3 text-muted-foreground mr-1" />
-                    <FontButton font="sans" label="sans" />
-                    <FontButton font="serif" label="serif" />
-                    <FontButton font="mono" label="mono" />
-                    <FontButton font="pixel" label="round" />
-                </div>
-
-                {/* View toggles */}
-                <div className="flex items-center gap-4 text-xs">
-                    <button
-                        suppressHydrationWarning
-                        onClick={() => setShowVerseNumbers(!showVerseNumbers)}
-                        className={cn(
-                            "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
-                            (!isLoaded || showVerseNumbers) ? "text-primary" : "text-muted-foreground/60"
-                        )}
-                    >
-                        <Hash className="h-3 w-3" />
-                        <span>numbers</span>
-                    </button>
-
-                    <button
-                        suppressHydrationWarning
-                        onClick={() => setRedLetters(!redLetters)}
-                        className={cn(
-                            "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
-                            (!isLoaded || redLetters) ? "text-red-500" : "text-muted-foreground/60"
-                        )}
-                    >
-                        <Palette className="h-3 w-3" />
-                        <span>red letters</span>
-                    </button>
-
-                    {hasSectionTitles && (
+                <Popover>
+                    <PopoverTrigger asChild>
                         <button
-                            suppressHydrationWarning
-                            onClick={() => setShowTitles(!showTitles)}
-                            className={cn(
-                                "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
-                                isLoaded && showTitles ? "text-primary" : "text-muted-foreground/60"
-                            )}
+                            type="button"
+                            aria-label="Appearance and typography"
+                            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                         >
-                            <Heading className="h-3 w-3" />
-                            <span>titles</span>
+                            <Type className="h-3 w-3" />
+                            <span className="hidden sm:inline">type</span>
                         </button>
-                    )}
-                </div>
+                    </PopoverTrigger>
+                    <PopoverContent
+                        align="center"
+                        className="w-[min(100vw-2rem,22rem)] p-4"
+                    >
+                        <p className="mb-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                            appearance
+                        </p>
+                        <div className="flex flex-col gap-4">
+                            <div className="flex flex-wrap items-center gap-2 border-b border-border/30 pb-3">
+                                <span className="w-full text-[10px] font-mono text-muted-foreground">font</span>
+                                <FontButton font="sans" label="sans" />
+                                <FontButton font="serif" label="serif" />
+                                <FontButton font="mono" label="mono" />
+                                <FontButton font="pixel" label="round" />
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-xs">
+                                <button
+                                    type="button"
+                                    suppressHydrationWarning
+                                    onClick={() => setShowVerseNumbers(!showVerseNumbers)}
+                                    className={cn(
+                                        "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                                        !isLoaded || showVerseNumbers ? "text-primary" : "text-muted-foreground/60"
+                                    )}
+                                >
+                                    <Hash className="h-3 w-3" />
+                                    <span>numbers</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    suppressHydrationWarning
+                                    onClick={() => setRedLetters(!redLetters)}
+                                    className={cn(
+                                        "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                                        !isLoaded || redLetters ? "text-red-500" : "text-muted-foreground/60"
+                                    )}
+                                >
+                                    <Palette className="h-3 w-3" />
+                                    <span>red letters</span>
+                                </button>
+                                {hasSectionTitles && (
+                                    <button
+                                        type="button"
+                                        suppressHydrationWarning
+                                        onClick={() => setShowTitles(!showTitles)}
+                                        className={cn(
+                                            "flex items-center gap-1 transition-colors hover:text-foreground cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                                            isLoaded && showTitles ? "text-primary" : "text-muted-foreground/60"
+                                        )}
+                                    >
+                                        <Heading className="h-3 w-3" />
+                                        <span>titles</span>
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex items-center justify-center gap-2 border-t border-border/30 pt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setFontSize(Math.max(12, fontSize - 2))}
+                                    aria-label="Decrease font size"
+                                    className="text-muted-foreground hover:text-foreground cursor-pointer rounded-md px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                                >
+                                    −
+                                </button>
+                                <span
+                                    suppressHydrationWarning
+                                    className="min-w-[2.5rem] text-center text-xs text-muted-foreground tabular-nums"
+                                >
+                                    {isLoaded ? fontSize : 18}px
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setFontSize(Math.min(32, fontSize + 2))}
+                                    aria-label="Increase font size"
+                                    className="text-muted-foreground hover:text-foreground cursor-pointer rounded-md px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                    </PopoverContent>
+                </Popover>
 
-                {/* Size Slider (simplified as stepped controls for now) */}
-                <div className="flex items-center gap-2 pl-4 border-l border-border/50">
-                    <button
-                        onClick={() => setFontSize(Math.max(12, fontSize - 2))}
-                        aria-label="Decrease font size"
-                        className="text-muted-foreground hover:text-foreground cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
-                    >
-                        -
-                    </button>
-                    <span suppressHydrationWarning className="text-xs w-8 text-center text-muted-foreground">{isLoaded ? fontSize : 18}px</span>
-                    <button
-                        onClick={() => setFontSize(Math.min(32, fontSize + 2))}
-                        aria-label="Increase font size"
-                        className="text-muted-foreground hover:text-foreground cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
-                    >
-                        +
-                    </button>
-                </div>
+                <ReadingTipsDialog
+                    trigger={
+                        <button
+                            type="button"
+                            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                            aria-label="Reading tips and shortcuts"
+                        >
+                            <CircleHelp className="h-3.5 w-3.5" strokeWidth={1.5} />
+                        </button>
+                    }
+                />
             </div>
         </div>
     )

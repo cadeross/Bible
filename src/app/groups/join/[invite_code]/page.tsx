@@ -4,22 +4,19 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { fetchGroupByInviteCode, fetchMyMembership, type Group, type GroupMember } from "@/lib/groups";
 import { InviteBanner } from "@/components/groups/invite-banner";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@clerk/nextjs";
 
 export default function JoinGroupPage() {
     const { invite_code } = useParams<{ invite_code: string }>();
+    const { isLoaded, isSignedIn, userId } = useAuth();
     const [group, setGroup] = useState<Group | null>(null);
     const [membership, setMembership] = useState<GroupMember | null>(null);
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
 
     useEffect(() => {
+        if (!isLoaded) return;
         const load = async () => {
-            const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
-            setCurrentUserId(session?.user.id ?? null);
-
             const g = await fetchGroupByInviteCode(invite_code);
             if (!g) {
                 setNotFound(true);
@@ -28,14 +25,14 @@ export default function JoinGroupPage() {
             }
             setGroup(g);
 
-            if (session) {
+            if (isSignedIn) {
                 const m = await fetchMyMembership(g.id);
                 setMembership(m);
             }
             setLoading(false);
         };
-        load();
-    }, [invite_code]);
+        void load();
+    }, [invite_code, isLoaded, isSignedIn]);
 
     if (loading) {
         return (
@@ -59,7 +56,7 @@ export default function JoinGroupPage() {
                 <p className="text-center text-xs font-mono text-muted-foreground mb-6">you&apos;ve been invited to</p>
                 <InviteBanner
                     group={group}
-                    currentUserId={currentUserId}
+                    currentUserId={userId ?? null}
                     alreadyMember={membership?.status === "active"}
                 />
             </div>
