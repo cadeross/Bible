@@ -27,6 +27,17 @@ export const TRANSLATIONS = [
     { id: 'cnbb', name: 'Bíblia da CNBB' },
 ];
 
+export const BOOK_LIST = [
+    "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Tobit", "Judith", "Esther", "Job", "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon", "Wisdom", "Sirach", "Isaiah", "Jeremiah", "Lamentations", "Baruch", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos", "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah", "Haggai", "Zechariah", "Malachi", "1 Maccabees", "2 Maccabees",
+    "Matthew", "Mark", "Luke", "John", "Acts", "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians", "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John", "3 John", "Jude", "Revelation"
+];
+
+/** URL segments are often lowercase; local JSON files use Title Case (Linux is case-sensitive). */
+function canonicalBookName(raw: string): string {
+    const t = raw.trim();
+    return BOOK_LIST.find((b) => b.toLowerCase() === t.toLowerCase()) ?? t;
+}
+
 export async function getAllTranslations() {
     try {
         const apiBibles = await getAvailableBibles();
@@ -92,6 +103,7 @@ function sanitizeVerseText(text: string): string {
 }
 
 export async function getChapter(book: string, chapter: number, translation: string = 'web', signal?: AbortSignal): Promise<BibleChapter> {
+    book = canonicalBookName(book);
 
     // Bolls Life Integrations
     if (translation === 'nrsvce') {
@@ -352,8 +364,3 @@ async function getLocalChapter(book: string, chapter: number): Promise<BibleChap
         throw new Error("Chapter not found locally");
     }
 }
-
-export const BOOK_LIST = [
-    "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Tobit", "Judith", "Esther", "Job", "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon", "Wisdom", "Sirach", "Isaiah", "Jeremiah", "Lamentations", "Baruch", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos", "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah", "Haggai", "Zechariah", "Malachi", "1 Maccabees", "2 Maccabees",
-    "Matthew", "Mark", "Luke", "John", "Acts", "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians", "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John", "3 John", "Jude", "Revelation"
-];
