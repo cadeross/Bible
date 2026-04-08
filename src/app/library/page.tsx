@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAllHighlights, getAllWisdom, Highlight, SavedWisdom } from "@/lib/persistence";
-import { PenTool, ArrowRight, BookOpen, Heart, Quote, StickyNote, Share2, Trash2, Pencil } from "lucide-react";
+import { PenTool, ArrowRight, BookOpen, Heart, Quote, StickyNote, Share2, Trash2, Pencil, Library } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotePanel } from "@/components/reading/note-dialog";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -13,6 +13,11 @@ import { BIBLE_BOOKS } from "@/lib/bible-data";
 import Loading from "../loading";
 import { useReadingPreferences } from "@/contexts/reading-preferences";
 import { useAuth } from "@clerk/nextjs";
+import { HIGHLIGHT_MENU_COLORS } from "@/lib/highlight-menu";
+
+const HIGHLIGHT_DOT_CLASS: Record<string, string> = Object.fromEntries(
+    HIGHLIGHT_MENU_COLORS.map((c) => [c.id, c.dotClass])
+) as Record<string, string>;
 
 interface GroupedHighlight extends Highlight {
     verseEnd: number;
@@ -209,25 +214,27 @@ export default function LibraryPage() {
     if (rawHighlights.length === 0 && wisdom.length === 0) {
         // ... (Empty state remains same)
         return (
-            <div className="flex min-h-[80vh] flex-col items-center justify-center p-4 font-mono">
-                <div className="text-center space-y-4">
-                    <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center mx-auto text-muted-foreground">
-                        <PenTool className="h-8 w-8" />
+            <div className="flex min-h-[70vh] flex-col items-center justify-center p-6">
+                <div className="text-center space-y-5">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+                        <Library className="h-7 w-7" />
                     </div>
-                    <h1 className="text-xl font-bold text-primary">empty library</h1>
-                    <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                        {isGuest
-                            ? "items saved here are on-device only. sign in to sync."
-                            : "start reading to highlight verses or save daily wisdom."
-                        }
-                    </p>
-                    <div className="flex flex-col gap-2 items-center">
-                        <Link href="/read" className="inline-flex items-center gap-2 text-primary hover:underline underline-offset-4 mt-4 text-xs tracking-wide">
-                            start reading <ArrowRight className="h-4 w-4" />
+                    <div className="space-y-2">
+                        <h1 className="text-xl font-semibold tracking-tight text-foreground">Library is empty</h1>
+                        <p className="mx-auto max-w-[280px] text-sm text-muted-foreground leading-relaxed">
+                            {isGuest
+                                ? "Saved items stay on this device until you sign in to sync."
+                                : "Start reading to highlight verses or save daily wisdom."
+                            }
+                        </p>
+                    </div>
+                    <div className="flex flex-col gap-3 items-center pt-2">
+                        <Link href="/read" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sm)] transition-all duration-200 hover:opacity-90 active:scale-[0.98]">
+                            Start reading <ArrowRight className="h-4 w-4" />
                         </Link>
                         {isGuest && (
-                            <Link href="/profile" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                                sign in to sync
+                            <Link href="/profile" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                                Sign in to sync
                             </Link>
                         )}
                     </div>
@@ -266,39 +273,42 @@ export default function LibraryPage() {
             </Dialog>
 
             {/* Header */}
-            <div className="flex flex-col items-center text-center gap-4 opacity-70 hover:opacity-100 transition-opacity mb-12">
-                <div className="space-y-1">
-                    <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                        LIBRARY
+            <div className="mb-10 space-y-5">
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                        Library
                     </h1>
-                    <p className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider">
-                        your collection of verses and wisdom
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Verses, highlights, and notes
                     </p>
                 </div>
 
-                {/* Custom Fluid Toggle */}
-                <div className="flex p-1 border border-border/30 rounded-md mt-2">
+                <div className="flex rounded-xl border border-border/30 bg-muted/30 p-1">
                     {[
-                        { id: 'highlights', count: groupedHighlights.length, icon: PenTool },
-                        { id: 'notes', count: notes.length, icon: StickyNote }
+                        { id: 'highlights', label: 'Highlights', count: groupedHighlights.length, icon: PenTool },
+                        { id: 'notes', label: 'Notes', count: notes.length, icon: StickyNote }
                     ].map((tab) => (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
-                            title={`${tab.id} (${tab.count})`}
+                            type="button"
+                            onClick={() => setActiveTab(tab.id as "highlights" | "notes")}
                             className={cn(
-                                "relative px-3 py-1.5 rounded-[1px] transition-colors flex items-center justify-center z-10",
-                                activeTab === tab.id ? "text-primary" : "text-muted-foreground hover:text-foreground/80"
+                                "relative z-10 flex items-center justify-center gap-2 rounded-[10px] px-5 py-2.5 text-[13px] font-medium transition-colors duration-200",
+                                activeTab === tab.id
+                                    ? "text-foreground"
+                                    : "text-muted-foreground hover:text-foreground"
                             )}
                         >
                             {activeTab === tab.id && (
                                 <motion.div
                                     layoutId="activeTab"
-                                    className="absolute inset-0 bg-primary/10 rounded-[1px] -z-10"
-                                    transition={{ type: "spring", bounce: 0.1, duration: 0.5 }}
+                                    className="absolute inset-0 -z-10 rounded-[10px] bg-primary/[0.07] dark:bg-primary/[0.12]"
+                                    transition={{ type: "spring", bounce: 0.12, duration: 0.45 }}
                                 />
                             )}
-                            <tab.icon className="h-4 w-4" />
+                            <tab.icon className="h-3.5 w-3.5" />
+                            {tab.label}
+                            <span className="text-xs text-muted-foreground/60 tabular-nums">{tab.count}</span>
                         </button>
                     ))}
                 </div>
@@ -307,15 +317,15 @@ export default function LibraryPage() {
             <div className="space-y-8">
                 {/* Guest Banner */}
                 {isGuest && (
-                    <div className="bg-secondary/10 border border-border/30 rounded-md p-3 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex animate-in items-center justify-between gap-4 rounded-[length:var(--radius)] border border-border/40 bg-nav p-3 fade-in slide-in-from-top-2">
                         <div className="flex items-center gap-3">
-                            <div className="h-2 w-2 rounded-full bg-yellow-500/50 animate-pulse" />
-                            <p className="text-xs font-mono text-muted-foreground">
-                                <span className="font-bold text-foreground">local mode:</span> items saved to device only.
+                            <div className="h-2 w-2 animate-pulse rounded-full bg-amber-500/70" />
+                            <p className="text-xs text-muted-foreground">
+                                <span className="font-medium text-foreground">Local only:</span> highlights stay on this device until you sync.
                             </p>
                         </div>
-                        <Link href="/profile" className="text-[10px] font-mono font-bold uppercase tracking-wider text-primary hover:text-foreground transition-colors hover:underline underline-offset-4">
-                            sync now
+                        <Link href="/profile" className="text-xs font-medium text-primary transition-colors hover:text-foreground hover:underline underline-offset-4">
+                            Sign in
                         </Link>
                     </div>
                 )}
@@ -334,41 +344,39 @@ export default function LibraryPage() {
                                 className="space-y-6"
                             >
                                 {groupedHighlights.length === 0 ? (
-                                    <div className="text-center py-12 text-muted-foreground italic font-mono text-sm">no highlights yet.</div>
+                                    <div className="py-12 text-center text-sm text-muted-foreground">No highlights yet.</div>
                                 ) : (
-                                    <div className="grid grid-cols-1 gap-4">
+                                    <div className="grid grid-cols-1 gap-3">
                                         {groupedHighlights.map((highlight, idx) => (
                                             <div
                                                 key={highlight.id || idx}
-                                                className="group relative block p-4 rounded-md bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20"
+                                                className="group relative block rounded-2xl border border-border/25 bg-card p-5 shadow-[var(--shadow-card)] transition-all duration-200 hover:shadow-[var(--shadow-elevated)] hover:border-border/40"
                                             >
-                                                <div className="space-y-2">
+                                                <div className="space-y-2.5">
                                                     <div className="flex items-center justify-between">
                                                         <Link
                                                             href={`/read/${highlight.book}/${highlight.chapter}?translation=${bibleVersion}`}
-                                                            className="text-[10px] font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2 font-mono"
+                                                            className="text-xs font-semibold text-primary/80 group-hover:text-primary transition-colors flex items-center gap-2"
                                                         >
-                                                            <span className={cn(
-                                                                "w-1.5 h-1.5 rounded-full",
-                                                                highlight.color === "yellow" && "bg-yellow-500",
-                                                                highlight.color === "green" && "bg-green-500",
-                                                                highlight.color === "blue" && "bg-blue-500",
-                                                                highlight.color === "pink" && "bg-pink-500",
-                                                                highlight.color === "purple" && "bg-purple-500",
-                                                            )} />
+                                                            <span
+                                                                className={cn(
+                                                                    "h-2 w-2 shrink-0 rounded-full",
+                                                                    HIGHLIGHT_DOT_CLASS[highlight.color] ?? "bg-muted-foreground"
+                                                                )}
+                                                            />
                                                             {highlight.book} {highlight.chapter}:{highlight.verse}{highlight.verseEnd > highlight.verse ? `-${highlight.verseEnd}` : ''}
                                                         </Link>
-                                                        <span className="text-[10px] text-muted-foreground/60 font-mono">
+                                                        <span className="text-xs text-muted-foreground/50">
                                                             {new Date(highlight.created_at).toLocaleDateString()}
                                                         </span>
                                                     </div>
                                                     <div className="flex items-start justify-between gap-4">
-                                                        <p className="text-sm leading-relaxed text-foreground/90 font-serif italic line-clamp-3">
-                                                            "{highlight.content || "view verse content"}"
+                                                        <p className="text-sm leading-relaxed text-foreground/80 font-serif italic line-clamp-3">
+                                                            &ldquo;{highlight.content || "view verse content"}&rdquo;
                                                         </p>
                                                         <button
                                                             onClick={() => handleShareNote(highlight)}
-                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-all shrink-0"
+                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200 shrink-0"
                                                             title="Share Highlight"
                                                         >
                                                             <Share2 className="h-3.5 w-3.5" />
@@ -391,37 +399,35 @@ export default function LibraryPage() {
                                 className="space-y-6"
                             >
                                 {notes.length === 0 ? (
-                                    <div className="text-center py-12 text-muted-foreground italic font-mono text-sm">no notes yet.</div>
+                                    <div className="py-12 text-center text-sm text-muted-foreground">No notes yet.</div>
                                 ) : (
-                                    <div className="grid grid-cols-1 gap-4">
+                                    <div className="grid grid-cols-1 gap-3">
                                         {notes.map((note) => (
                                             <div
                                                 key={note.id}
-                                                className="group relative block p-4 rounded-md bg-secondary/10 hover:bg-secondary/20 transition-all border border-border/50 hover:border-primary/20 cursor-pointer"
+                                                className="group relative block p-5 rounded-2xl border border-border/25 bg-card shadow-[var(--shadow-card)] transition-all duration-200 hover:shadow-[var(--shadow-elevated)] hover:border-border/40 cursor-pointer"
                                                 onClick={() => handleEditNote(note)}
                                             >
-                                                <div className="space-y-2">
+                                                <div className="space-y-2.5">
                                                     <div className="flex items-center justify-between">
-                                                        <span
-                                                            className="text-[10px] font-bold uppercase tracking-widest text-primary/70 group-hover:text-primary transition-colors flex items-center gap-2 font-mono"
-                                                        >
-                                                            <StickyNote className="h-3 w-3" />
+                                                        <span className="text-xs font-semibold text-primary/80 group-hover:text-primary transition-colors flex items-center gap-2">
+                                                            <StickyNote className="h-3.5 w-3.5" />
                                                             {note.book} {note.chapter}:{note.verse}
                                                         </span>
-                                                        <span className="text-[10px] text-muted-foreground/60 font-mono">
+                                                        <span className="text-xs text-muted-foreground/50">
                                                             {new Date(note.created_at).toLocaleDateString()}
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm leading-relaxed text-foreground/90 font-sans line-clamp-3">
+                                                    <p className="text-sm leading-relaxed text-foreground/90 line-clamp-3">
                                                         {note.note}
                                                     </p>
-                                                    <p className="text-xs text-muted-foreground/60 font-serif italic line-clamp-1">
-                                                        "{note.content}"
+                                                    <p className="text-xs text-muted-foreground/50 font-serif italic line-clamp-1">
+                                                        &ldquo;{note.content}&rdquo;
                                                     </p>
-                                                    <div className="flex items-center justify-end gap-2 pt-1">
+                                                    <div className="flex items-center justify-end gap-2">
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleShareNote(note) }}
-                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-all"
+                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
                                                             title="Share Note"
                                                         >
                                                             <Share2 className="h-3.5 w-3.5" />

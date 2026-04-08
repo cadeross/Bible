@@ -177,27 +177,28 @@ export default function RootLayout({
                   position="bottom-right"
                   style={{ zIndex: 9999 }}
                   toastOptions={{
-                    className: "font-mono text-xs !bg-background text-foreground border-border/30 border shadow-[0_4px_16px_rgba(0,0,0,0.08)] rounded-lg px-6 py-4 gap-4 opacity-100",
+                    className: "text-xs !bg-background text-foreground border-border/40 border shadow-[var(--shadow-elevated)] rounded-[length:var(--radius)] px-5 py-4 gap-3 opacity-100 tracking-tight",
                     descriptionClassName: "text-muted-foreground",
                     actionButtonStyle: {
-                      backgroundColor: "hsl(var(--primary))",
-                      color: "hsl(var(--primary-foreground))",
-                      fontFamily: "var(--font-geist-mono)",
+                      backgroundColor: "var(--primary)",
+                      color: "var(--primary-foreground)",
+                      fontFamily: "var(--font-geist-sans)",
                       fontSize: "0.75rem",
-                      borderRadius: "0.25rem",
+                      fontWeight: 500,
+                      borderRadius: "var(--radius)",
                     },
                     cancelButtonStyle: {
-                      backgroundColor: "hsl(var(--muted))",
-                      color: "hsl(var(--muted-foreground))",
-                      fontFamily: "var(--font-geist-mono)",
+                      backgroundColor: "var(--muted)",
+                      color: "var(--muted-foreground)",
+                      fontFamily: "var(--font-geist-sans)",
                       fontSize: "0.75rem",
-                      borderRadius: "0.25rem",
+                      borderRadius: "var(--radius)",
                     },
                     style: {
-                      backgroundColor: 'var(--background)',
-                      border: '1px solid hsl(var(--border), 0.6)',
-                      color: 'hsl(var(--foreground))',
-                      borderRadius: '0.5rem',
+                      backgroundColor: "var(--background)",
+                      border: "1px solid color-mix(in srgb, var(--border) 85%, transparent)",
+                      color: "var(--foreground)",
+                      borderRadius: "var(--radius)",
                     },
                   }}
                 />

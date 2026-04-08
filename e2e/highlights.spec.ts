@@ -24,8 +24,7 @@ test.describe("Highlights", () => {
         await reading.applyHighlightColor("yellow")
 
         const verse = page.locator("[data-verse='1']")
-        const className = await verse.getAttribute("class")
-        expect(className).toContain("yellow")
+        await expect(verse).toHaveAttribute("data-highlight-color", "yellow")
     })
 
     test("Keyboard shortcut 1 applies yellow highlight when menu is open", async ({ page }) => {
@@ -36,8 +35,7 @@ test.describe("Highlights", () => {
         await page.keyboard.press("1")
 
         const verse = page.locator("[data-verse='2']")
-        const className = await verse.getAttribute("class")
-        expect(className).toContain("yellow")
+        await expect(verse).toHaveAttribute("data-highlight-color", "yellow")
     })
 
     test("Escape key closes highlight menu", async ({ page }) => {
@@ -63,8 +61,7 @@ test.describe("Highlights", () => {
         await page.waitForSelector("[data-verse]")
 
         const verse = page.locator("[data-verse='1']")
-        const className = await verse.getAttribute("class")
-        expect(className).toContain("green")
+        await expect(verse).toHaveAttribute("data-highlight-color", "green")
     })
 
     test("Remove highlight removes color class from verse", async ({ page }) => {
@@ -75,13 +72,12 @@ test.describe("Highlights", () => {
         await reading.longPressVerse(1)
         await reading.applyHighlightColor("blue")
 
-        // Then remove it
+        // Then remove via same-color swatch (shows X)
         await reading.longPressVerse(1)
-        await page.getByRole("menuitem", { name: /remove highlight/i }).click()
+        await reading.removeHighlightViaActiveSwatch("blue")
 
         const verse = page.locator("[data-verse='1']")
-        const className = await verse.getAttribute("class")
-        expect(className).not.toContain("blue")
+        await expect(verse).not.toHaveAttribute("data-highlight-color")
     })
 
     test("Highlight menu has correct ARIA attributes", async ({ page }) => {
@@ -96,14 +92,17 @@ test.describe("Highlights", () => {
         await expect(page.getByRole("menuitem", { name: /highlight yellow/i })).toBeVisible()
         await expect(page.getByRole("menuitem", { name: "Note" })).toBeVisible()
         await expect(page.getByRole("menuitem", { name: "Share" })).toBeVisible()
-        await expect(page.getByRole("menuitem", { name: /remove highlight/i })).toBeVisible()
+
+        await reading.applyHighlightColor("yellow")
+        await reading.longPressVerse(1)
+        await expect(page.getByRole("menuitem", { name: /remove yellow highlight/i })).toBeVisible()
     })
 
     test("Selecting text shows word count announcement in live region", async ({ page }) => {
         const reading = new ReadingPage(page)
         await reading.goto("Genesis", 1)
 
-        const liveRegion = page.locator("[aria-live='polite']")
+        const liveRegion = page.locator(".sr-only[aria-live='polite']")
         await expect(liveRegion).toBeAttached()
     })
 })

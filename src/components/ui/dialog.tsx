@@ -22,7 +22,7 @@ const DialogOverlay = React.forwardRef<
         ref={ref}
         data-radix-dialog-overlay=""
         className={cn(
-            "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm",
+            "fixed inset-0 z-50 bg-black/30 backdrop-blur-[8px]",
             className
         )}
         {...props}
@@ -39,17 +39,14 @@ const DialogContent = React.forwardRef<
         <DialogPrimitive.Content
             ref={ref}
             className={cn(
-                // Base layout — centered, the CSS keyframes handle translate(-50%, -50%)
                 "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4",
-                // Styling
-                "border border-border/30 bg-background p-6 shadow-[0_8px_32px_rgba(0,0,0,0.12)] sm:rounded-lg",
-                // Animation is handled by globals.css [data-radix-dialog-content] keyframes
+                "glass border border-white/[0.12] dark:border-white/[0.06] p-6 shadow-[var(--shadow-dialog)] sm:rounded-2xl",
                 className
             )}
             {...props}
         >
             {children}
-            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg opacity-60 ring-offset-background transition-all duration-200 hover:opacity-100 hover:bg-accent/50 p-1 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
                 <X className="h-4 w-4" />
                 <span className="sr-only">Close</span>
             </DialogPrimitive.Close>

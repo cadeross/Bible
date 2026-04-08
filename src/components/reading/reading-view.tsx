@@ -1,15 +1,13 @@
 "use client"
 
-import React, { useCallback, useEffect, useRef } from "react"
-import { BibleChapter } from "@/lib/bible-api"
+import React, { useCallback, useEffect, useRef, useState } from "react"
+import { BibleChapter, getChapter } from "@/lib/bible-api"
 import { ReadingContent } from "./reading-content"
 import { ReadingToolbar } from "./reading-toolbar"
-import { useRouter } from "next/navigation"
 import { ChevronLeft, ChevronRight, Eye } from "lucide-react"
 import { useFocusMode } from "@/contexts/focus-mode"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
-import { SPRING_CONFIG } from "@/lib/animation"
 import {
     canGoNextChapter,
     canGoPrevChapter,
@@ -25,169 +23,167 @@ interface ReadingViewProps {
     isExplicitTranslation?: boolean
 }
 
-export function ReadingView({ chapter, book, chapterNum, translation = "dra", sharedVerses = [], isExplicitTranslation = false }: ReadingViewProps) {
-    const router = useRouter()
+export function ReadingView({ chapter: initialChapter, book: initialBook, chapterNum: initialChapterNum, translation: initialTranslation = "dra", sharedVerses = [], isExplicitTranslation = false }: ReadingViewProps) {
     const { isFocusMode, toggleFocusMode } = useFocusMode()
     const reduceMotion = useReducedMotion()
     const { bibleVersion, isLoaded } = useReadingPreferences()
-    const hasSectionTitles = chapter.verses.some(v => v.heading)
-    const prevOk = canGoPrevChapter(book, chapterNum)
-    const nextOk = canGoNextChapter(book, chapterNum)
-    // Track navigation direction for slide animation: 1 = forward, -1 = backward
-    const navDirection = useRef(0)
-    // Prevent infinite redirect loop: only redirect once per mount
-    const hasRedirected = useRef(false)
 
-    const goTo = useCallback(
-        (nextBook: string, nextChapter: number) => {
-            router.push(`/read/${nextBook}/${nextChapter}?translation=${translation}`)
-        },
-        [router, translation]
-    )
+    const [currentBook, setCurrentBook] = useState(initialBook)
+    const [currentChapterNum, setCurrentChapterNum] = useState(initialChapterNum)
+    const [currentTranslation, setCurrentTranslation] = useState(initialTranslation)
+    const [chapter, setChapter] = useState(initialChapter)
+    const [isNavigating, setIsNavigating] = useState(false)
+
+    const hasRedirected = useRef(false)
+    const navDirection = useRef(0)
+    const contentKey = `${currentBook}-${currentChapterNum}-${currentTranslation}`
+
+    const hasSectionTitles = chapter.verses.some(v => v.heading)
+    const prevOk = canGoPrevChapter(currentBook, currentChapterNum)
+    const nextOk = canGoNextChapter(currentBook, currentChapterNum)
+
+    const navigateTo = useCallback(async (nextBook: string, nextChapter: number, nextTranslation?: string) => {
+        const trans = nextTranslation || currentTranslation
+        setIsNavigating(true)
+
+        const url = `/read/${encodeURIComponent(nextBook)}/${nextChapter}?translation=${trans}`
+        window.history.pushState(null, "", url)
+
+        try {
+            const data = await getChapter(nextBook, nextChapter, trans)
+            setCurrentBook(nextBook)
+            setCurrentChapterNum(nextChapter)
+            setCurrentTranslation(trans)
+            setChapter(data)
+        } catch (err) {
+            console.error("Failed to load chapter:", err)
+        } finally {
+            setIsNavigating(false)
+        }
+    }, [currentTranslation])
 
     const handleNext = useCallback(() => {
-        const next = getAdjacentChapter(book, chapterNum, 1)
+        const next = getAdjacentChapter(currentBook, currentChapterNum, 1)
         if (!next) return
         navDirection.current = 1
-        goTo(next.book, next.chapter)
-    }, [book, chapterNum, goTo])
+        navigateTo(next.book, next.chapter)
+    }, [currentBook, currentChapterNum, navigateTo])
 
     const handlePrev = useCallback(() => {
-        const prev = getAdjacentChapter(book, chapterNum, -1)
+        const prev = getAdjacentChapter(currentBook, currentChapterNum, -1)
         if (!prev) return
         navDirection.current = -1
-        goTo(prev.book, prev.chapter)
-    }, [book, chapterNum, goTo])
+        navigateTo(prev.book, prev.chapter)
+    }, [currentBook, currentChapterNum, navigateTo])
 
-    // Sync with user's preferred translation if not explicitly set in URL
     useEffect(() => {
         if (!isLoaded) return
-        if (!isExplicitTranslation && bibleVersion && bibleVersion !== translation && !hasRedirected.current) {
+        if (!isExplicitTranslation && bibleVersion && bibleVersion !== currentTranslation && !hasRedirected.current) {
             hasRedirected.current = true
-            router.replace(`/read/${book}/${chapterNum}?translation=${bibleVersion}`)
+            navigateTo(currentBook, currentChapterNum, bibleVersion)
         }
-    }, [isExplicitTranslation, isLoaded, bibleVersion, translation, book, chapterNum, router])
+    }, [isExplicitTranslation, isLoaded, bibleVersion, currentTranslation, currentBook, currentChapterNum, navigateTo])
 
-    // Keyboard Navigation (skip when typing in fields)
+    useEffect(() => {
+        const onPopState = () => {
+            const match = window.location.pathname.match(/^\/read\/([^/]+)\/(\d+)/)
+            if (match) {
+                const b = decodeURIComponent(match[1])
+                const c = parseInt(match[2], 10)
+                const params = new URLSearchParams(window.location.search)
+                const t = params.get("translation") || currentTranslation
+                navigateTo(b, c, t)
+            }
+        }
+        window.addEventListener("popstate", onPopState)
+        return () => window.removeEventListener("popstate", onPopState)
+    }, [currentTranslation, navigateTo])
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const el = e.target as HTMLElement | null
-            if (
-                el &&
-                (el.tagName === "INPUT" ||
-                    el.tagName === "TEXTAREA" ||
-                    el.tagName === "SELECT" ||
-                    el.isContentEditable)
-            ) {
-                return
-            }
-            if (e.key === "ArrowRight") {
-                e.preventDefault()
-                handleNext()
-            }
-            if (e.key === "ArrowLeft") {
-                e.preventDefault()
-                handlePrev()
-            }
-            // Toggle focus mode with Option+F (Alt+F)
-            if (e.altKey && e.code === "KeyF") {
-                e.preventDefault()
-                toggleFocusMode()
-            }
+            if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable)) return
+            if (e.key === "ArrowRight") { e.preventDefault(); handleNext() }
+            if (e.key === "ArrowLeft") { e.preventDefault(); handlePrev() }
+            if (e.altKey && e.code === "KeyF") { e.preventDefault(); toggleFocusMode() }
         }
         window.addEventListener("keydown", handleKeyDown)
         return () => window.removeEventListener("keydown", handleKeyDown)
     }, [handleNext, handlePrev, toggleFocusMode])
 
     const slideVariants = {
-        enter: (dir: number) =>
-            reduceMotion ? { opacity: 0 } : { opacity: 0, x: dir * 20 },
-        center: { opacity: 1, x: 0 },
-        exit: (dir: number) =>
-            reduceMotion ? { opacity: 0 } : { opacity: 0, x: dir * -20 },
+        enter: () => reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, filter: "blur(4px)" },
+        center: { opacity: 1, y: 0, filter: "blur(0px)" },
+        exit: () => reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4, filter: "blur(4px)" },
     }
+
+    const contentTransition = reduceMotion
+        ? { duration: 0.15 }
+        : { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const }
 
     return (
         <div className="min-h-screen bg-background flex flex-col items-center py-8">
 
-            {/* Top Controls — animated with Framer Motion */}
-            <AnimatePresence mode="wait">
-                {!isFocusMode ? (
-                    <motion.div
-                        key="toolbar-visible"
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={SPRING_CONFIG}
-                    >
-                        <ReadingToolbar currentBook={book} currentChapter={chapterNum} currentTranslation={translation} hasSectionTitles={hasSectionTitles} />
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        key="toolbar-focus"
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 0.08 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        whileHover={{ opacity: 1, y: 0 }}
-                        transition={SPRING_CONFIG}
-                    >
-                        <ReadingToolbar currentBook={book} currentChapter={chapterNum} currentTranslation={translation} hasSectionTitles={hasSectionTitles} />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <motion.div
+                data-reading-chrome
+                animate={isFocusMode ? { opacity: 0.08, y: 0 } : { opacity: 1, y: 0 }}
+                whileHover={isFocusMode ? { opacity: 1 } : undefined}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+            >
+                <ReadingToolbar
+                    currentBook={currentBook}
+                    currentChapter={currentChapterNum}
+                    currentTranslation={currentTranslation}
+                    hasSectionTitles={hasSectionTitles}
+                    onNavigate={navigateTo}
+                />
+            </motion.div>
 
-            {/* Focus Toggle */}
-            {/* Focus Toggle - Moved to Footer */}
-
-            {/* Fade Gradients (Visible < 1500px and NOT Focus Mode) */}
             {!isFocusMode && (
                 <>
-                    <div className="fixed top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent z-40 pointer-events-none hidden max-[1500px]:block" />
-                    <div className="fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent z-40 pointer-events-none hidden max-[1500px]:block" />
+                    <div className="fixed top-[calc(3.5rem+var(--maintenance-banner-height,0px))] left-0 right-0 h-24 bg-gradient-to-b from-background to-transparent z-30 pointer-events-none hidden max-[1500px]:block" />
+                    <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent z-30 pointer-events-none hidden max-[1500px]:block" />
                 </>
             )}
 
-            {/* Main Content Area */}
             <main className="flex-1 w-full max-w-4xl relative flex items-start justify-center">
 
-                {/* Left Nav (Desktop) */}
-                <div className="hidden lg:flex fixed left-8 top-1/2 -translate-y-1/2 flex-col gap-2 opacity-20 hover:opacity-100 transition-opacity">
+                <div className="hidden lg:flex fixed left-8 top-1/2 -translate-y-1/2 flex-col gap-2 opacity-15 hover:opacity-80 transition-opacity duration-300">
                     <button
                         type="button"
                         onClick={handlePrev}
                         disabled={!prevOk}
                         aria-label="Previous chapter"
-                        className="p-2 text-muted-foreground/50 hover:text-primary transition-colors disabled:pointer-events-none disabled:opacity-0 cursor-pointer"
+                        className="flex h-12 w-12 items-center justify-center rounded-2xl text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 disabled:pointer-events-none disabled:opacity-0 cursor-pointer"
                     >
-                        <ChevronLeft className="h-10 w-10" strokeWidth={1.5} />
+                        <ChevronLeft className="h-8 w-8" strokeWidth={1.5} />
                     </button>
                 </div>
 
                 <AnimatePresence mode="wait" custom={navDirection.current}>
                     <motion.div
-                        key={`${book}-${chapterNum}`}
+                        key={contentKey}
                         custom={navDirection.current}
                         variants={slideVariants}
                         initial="enter"
                         animate="center"
                         exit="exit"
-                        transition={reduceMotion ? { duration: 0.15 } : SPRING_CONFIG}
+                        transition={contentTransition}
                         className="w-full"
                     >
-                        <ReadingContent chapter={chapter} bookName={book} chapterNum={chapterNum} sharedVerses={sharedVerses} />
+                        <ReadingContent chapter={chapter} bookName={currentBook} chapterNum={currentChapterNum} sharedVerses={sharedVerses} />
                     </motion.div>
                 </AnimatePresence>
 
-                {/* Right Nav (Desktop) */}
-                <div className="hidden lg:flex fixed right-8 top-1/2 -translate-y-1/2 flex-col gap-2 opacity-20 hover:opacity-100 transition-opacity">
+                <div className="hidden lg:flex fixed right-8 top-1/2 -translate-y-1/2 flex-col gap-2 opacity-15 hover:opacity-80 transition-opacity duration-300">
                     <button
                         type="button"
                         onClick={handleNext}
                         disabled={!nextOk}
                         aria-label="Next chapter"
-                        className="p-2 text-muted-foreground/50 hover:text-primary transition-colors disabled:pointer-events-none disabled:opacity-0 cursor-pointer"
+                        className="flex h-12 w-12 items-center justify-center rounded-2xl text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 disabled:pointer-events-none disabled:opacity-0 cursor-pointer"
                     >
-                        <ChevronRight className="h-10 w-10" strokeWidth={1.5} />
+                        <ChevronRight className="h-8 w-8" strokeWidth={1.5} />
                     </button>
                 </div>
             </main>
@@ -197,7 +193,7 @@ export function ReadingView({ chapter, book, chapterNum, translation = "dra", sh
                     type="button"
                     onClick={toggleFocusMode}
                     aria-label="Show reading controls"
-                    className="fixed right-4 z-50 flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm hover:text-foreground top-[calc(5rem+var(--maintenance-banner-height))] md:top-[calc(6rem+var(--maintenance-banner-height))]"
+                    className="fixed right-4 z-50 flex h-10 w-10 items-center justify-center rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle text-muted-foreground shadow-[var(--shadow-card)] transition-all duration-200 hover:text-foreground hover:shadow-[var(--shadow-elevated)] top-[calc(5rem+var(--maintenance-banner-height))] md:top-[calc(6rem+var(--maintenance-banner-height))]"
                 >
                     <Eye className="h-4 w-4" strokeWidth={1.5} />
                 </button>

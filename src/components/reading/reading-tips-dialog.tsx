@@ -60,7 +60,7 @@ export function ReadingTipsDialog({ trigger }: { trigger: React.ReactNode }) {
                     ))}
                 </ul>
                 <p className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground/70">
-                    Themes and palettes live in Settings.
+                    Appearance and reading options live in Settings.
                 </p>
             </DialogContent>
         </Dialog>

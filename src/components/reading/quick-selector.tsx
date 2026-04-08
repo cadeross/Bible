@@ -3,19 +3,7 @@
 import * as React from "react"
 import { Check, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-    PopoverAnchor,
-} from "@/components/ui/popover"
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandItem,
-    CommandList,
-} from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover"
 
 interface QuickSelectorProps {
     value: string
@@ -41,7 +29,10 @@ export function QuickSelector({
 }: QuickSelectorProps) {
     const [open, setOpen] = React.useState(false)
     const [search, setSearch] = React.useState("")
+    const [activeIndex, setActiveIndex] = React.useState(0)
     const inputRef = React.useRef<HTMLInputElement>(null)
+    const listRef = React.useRef<HTMLDivElement>(null)
+    const listboxId = React.useId().replace(/:/g, "")
 
     const normalizedItems = React.useMemo(() => {
         return items.map((item) =>
@@ -78,6 +69,16 @@ export function QuickSelector({
         )
     }, [normalizedItems, search, displayValue])
 
+    React.useEffect(() => {
+        setActiveIndex(0)
+    }, [open, filteredItems.length, search])
+
+    React.useEffect(() => {
+        if (!open || filteredItems.length === 0) return
+        const el = listRef.current?.querySelector<HTMLButtonElement>(`[data-qs-index="${activeIndex}"]`)
+        el?.scrollIntoView({ block: "nearest" })
+    }, [activeIndex, open, filteredItems.length])
+
     const handleSelect = (id: string, name: string) => {
         onSelect(id)
         const found = normalizedItems.find((i) => i.id === id)
@@ -101,6 +102,25 @@ export function QuickSelector({
         if (e.key === "Escape") {
             setOpen(false)
             inputRef.current?.blur()
+            return
+        }
+
+        if (filteredItems.length === 0) return
+
+        if (e.key === "ArrowDown") {
+            e.preventDefault()
+            setActiveIndex((i) => Math.min(i + 1, filteredItems.length - 1))
+            return
+        }
+        if (e.key === "ArrowUp") {
+            e.preventDefault()
+            setActiveIndex((i) => Math.max(i - 1, 0))
+            return
+        }
+        if (e.key === "Enter") {
+            e.preventDefault()
+            const item = filteredItems[activeIndex]
+            if (item) handleSelect(item.id, item.name)
         }
     }
 
@@ -131,6 +151,10 @@ export function QuickSelector({
                                 }}
                                 onKeyDown={handleKeyDown}
                                 placeholder={placeholder}
+                                aria-expanded={open}
+                                aria-haspopup="listbox"
+                                aria-controls={open ? listboxId : undefined}
+                                autoComplete="off"
                                 className={cn(
                                     "col-start-1 row-start-1 w-full min-w-[10px] cursor-text truncate border-none bg-transparent p-0 text-left font-medium outline-none transition-colors placeholder:text-muted-foreground/50",
                                     open ? "text-foreground" : "text-muted-foreground group-hover:text-primary",
@@ -140,40 +164,60 @@ export function QuickSelector({
                         </div>
                     </PopoverAnchor>
                     <PopoverContent
-                        className={cn("p-0", popoverWidth)}
+                        className={cn("z-[100] p-0", popoverWidth)}
                         align="start"
                         onOpenAutoFocus={(e) => e.preventDefault()}
                     >
-                        <Command shouldFilter={false}>
-                            <CommandList className="max-h-[400px]">
-                                <CommandEmpty>No results found.</CommandEmpty>
-                                <CommandGroup>
-                                    {filteredItems.map((item) => (
-                                        <CommandItem
-                                            key={item.id}
-                                            value={`${item.id}\u200b${item.name}`}
-                                            onSelect={() => handleSelect(item.id, item.name)}
-                                            className={cn(
-                                                "font-mono text-xs",
-                                                item.id === value && "text-primary"
+                        <div
+                            ref={listRef}
+                            id={listboxId}
+                            role="listbox"
+                            aria-activedescendant={
+                                open && filteredItems[activeIndex]
+                                    ? `${listboxId}-opt-${filteredItems[activeIndex].id}`
+                                    : undefined
+                            }
+                            className="max-h-[400px] overflow-y-auto overflow-x-hidden p-1"
+                        >
+                            {filteredItems.length === 0 ? (
+                                <div className="py-6 text-center text-xs font-mono text-muted-foreground">
+                                    No results found.
+                                </div>
+                            ) : (
+                                filteredItems.map((item, index) => (
+                                    <button
+                                        key={item.id}
+                                        type="button"
+                                        id={`${listboxId}-opt-${item.id}`}
+                                        role="option"
+                                        data-qs-index={index}
+                                        aria-selected={item.id === value}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => handleSelect(item.id, item.name)}
+                                        onMouseEnter={() => setActiveIndex(index)}
+                                        className={cn(
+                                            "flex w-full cursor-pointer select-none items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-mono outline-none transition-colors",
+                                            "hover:bg-accent hover:text-accent-foreground",
+                                            "focus-visible:bg-accent focus-visible:text-accent-foreground",
+                                            index === activeIndex && "bg-accent text-accent-foreground",
+                                            item.id === value && "text-primary"
+                                        )}
+                                    >
+                                        <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-left">
+                                            {displayFormat === "id" && (
+                                                <span className="w-16 shrink-0 text-left font-mono text-[10px] uppercase opacity-70">
+                                                    {item.abbreviation || item.id}
+                                                </span>
                                             )}
-                                        >
-                                            <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-left">
-                                                {displayFormat === "id" && (
-                                                    <span className="w-16 shrink-0 text-left font-mono text-[10px] uppercase opacity-70">
-                                                        {item.abbreviation || item.id}
-                                                    </span>
-                                                )}
-                                                <span className="truncate pr-4 font-medium">{item.name}</span>
-                                            </span>
-                                            {item.id === value && (
-                                                <Check className="ml-auto h-3 w-3 shrink-0 text-primary" />
-                                            )}
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            </CommandList>
-                        </Command>
+                                            <span className="truncate pr-4 font-medium">{item.name}</span>
+                                        </span>
+                                        {item.id === value && (
+                                            <Check className="ml-auto h-3 w-3 shrink-0 text-primary" />
+                                        )}
+                                    </button>
+                                ))
+                            )}
+                        </div>
                     </PopoverContent>
                 </Popover>
 

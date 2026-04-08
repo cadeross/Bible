@@ -1,8 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import React, { useCallback, useEffect, useRef, useState } from "react"
 import { motion, type Transition } from "framer-motion"
-import { Check, Copy, Share2, StickyNote, Trash2 } from "lucide-react"
+import { Check, Copy, Share2, StickyNote, X } from "lucide-react"
 import {
     ContextMenuContent,
     ContextMenuGroup,
@@ -25,20 +25,26 @@ export interface VerseHighlightMenuHandlers {
     onNote: () => void
     onCopy: () => void
     onShare: () => void
-    onClear: () => void
     copyDone: boolean
+    /** When every selected verse uses this color, that swatch shows an X and removes on click. */
+    activeHighlightColor: string | null
 }
 
 const menuSurfaceClass =
-    "ow-menu-surface w-56 overflow-visible rounded-lg border border-border bg-popover p-1 font-mono text-popover-foreground shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
+    "ow-menu-surface glass w-56 overflow-visible rounded-xl border border-white/[0.15] bg-foreground/90 p-1 text-background shadow-[var(--shadow-elevated)] dark:border-white/[0.08] dark:bg-muted/90 dark:text-foreground/85"
 
+/** Tight strip: closer to menu left/right edges */
 const colorDotsRowClass =
-    "flex flex-row flex-wrap items-center justify-center gap-1 px-0 py-2 -mx-1"
+    "flex flex-row flex-wrap items-center justify-center gap-0.5 px-0 py-1.5 -mx-1.5"
+
+const menuSeparatorClass = "bg-white/12 dark:bg-border/40"
 
 const colorDotItemClass =
-    "relative z-0 h-8 w-8 shrink-0 justify-center rounded-full p-0 outline-none transition-colors data-[highlighted]:z-10 data-[highlighted]:bg-accent/40"
+    "cursor-pointer relative z-0 h-8 w-8 shrink-0 justify-center rounded-full p-0 outline-none transition-colors data-[highlighted]:z-10 data-[highlighted]:bg-white/12 dark:data-[highlighted]:bg-white/10"
 
-/** Subtle springs — small overshoot, smooth handoff when moving between items */
+const menuActionItemClass =
+    "cursor-pointer text-background focus:bg-white/12 focus:text-background data-[highlighted]:bg-white/12 data-[highlighted]:text-background dark:text-foreground/90 dark:focus:bg-accent/50 dark:focus:text-accent-foreground dark:data-[highlighted]:bg-accent/50 dark:data-[highlighted]:text-accent-foreground"
+
 const springIn: Transition = {
     type: "spring",
     stiffness: 320,
@@ -65,31 +71,37 @@ const springTap: Transition = {
 
 type DotMenuItem = typeof ContextMenuItem | typeof DropdownMenuItem
 
-function HighlightColorDotVisual({ c, index, hot }: { c: HighlightMenuColor; index: number; hot: boolean }) {
-    const tilt = index % 2 === 0 ? -11 : 11
+function HighlightColorDotVisual({
+    c,
+    index,
+    hot,
+    isActiveColor,
+}: {
+    c: HighlightMenuColor
+    index: number
+    hot: boolean
+    isActiveColor: boolean
+}) {
     return (
         <motion.span
             className={cn(
-                "block h-5 w-5 rounded-full ring-1 ring-inset ring-black/15 dark:ring-white/20",
-                hot
-                    ? "shadow-md ring-2 ring-foreground/25 ring-offset-2 ring-offset-[var(--popover)] dark:ring-white/40"
-                    : "shadow-sm",
-                c.dotClass
+                "relative block h-5 w-5 rounded-full",
+                c.dotClass,
+                isActiveColor && "ring-2 ring-white/50 dark:ring-white/30"
             )}
-            style={{ transformOrigin: "50% 85%" }}
-            animate={
-                hot
-                    ? { scale: 1.18, y: -4, rotate: tilt }
-                    : { scale: 1, y: 0, rotate: 0 }
-            }
-            transition={hot ? springIn : springOut}
-            whileTap={{
-                scale: 0.74,
-                y: 2,
-                rotate: tilt * -0.28,
-                transition: springTap,
-            }}
-        />
+            animate={hot ? { scale: 1.25 } : { scale: 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            whileTap={{ scale: 0.85 }}
+        >
+            {isActiveColor && (
+                <span
+                    className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/25 dark:bg-black/35"
+                    aria-hidden
+                >
+                    <X className="h-3 w-3 text-white drop-shadow-sm" strokeWidth={2.5} />
+                </span>
+            )}
+        </motion.span>
     )
 }
 
@@ -151,6 +163,7 @@ function HighlightColorPickItem({
     applyColor,
     hot,
     bindDotItem,
+    activeHighlightColor,
 }: {
     Item: DotMenuItem
     c: HighlightMenuColor
@@ -161,22 +174,35 @@ function HighlightColorPickItem({
         onPointerEnter: () => void
         onFocus: () => void
     }
+    activeHighlightColor: string | null
 }) {
     const { onPointerEnter, onFocus } = bindDotItem(c.id)
+    const isActiveColor = activeHighlightColor === c.id
     return (
         <Item
-            aria-label={c.label}
+            aria-label={isActiveColor ? c.removeLabel : c.label}
             className={colorDotItemClass}
             onSelect={() => applyColor(c.id)}
             onPointerEnter={onPointerEnter}
             onFocus={onFocus}
         >
-            <HighlightColorDotVisual c={c} index={index} hot={hot} />
+            <HighlightColorDotVisual
+                c={c}
+                index={index}
+                hot={hot}
+                isActiveColor={isActiveColor}
+            />
         </Item>
     )
 }
 
-function HighlightColorDotsContext({ applyColor }: { applyColor: (c: string) => void }) {
+function HighlightColorDotsContext({
+    applyColor,
+    activeHighlightColor,
+}: {
+    applyColor: (c: string) => void
+    activeHighlightColor: string | null
+}) {
     const { rowRef, onRowPointerLeave, isHot, bindDotItem } = useHighlightColorDotsRowState()
     return (
         <ContextMenuGroup className="p-0">
@@ -195,6 +221,7 @@ function HighlightColorDotsContext({ applyColor }: { applyColor: (c: string) => 
                         applyColor={applyColor}
                         hot={isHot(c.id)}
                         bindDotItem={bindDotItem}
+                        activeHighlightColor={activeHighlightColor}
                     />
                 ))}
             </div>
@@ -202,7 +229,13 @@ function HighlightColorDotsContext({ applyColor }: { applyColor: (c: string) => 
     )
 }
 
-function HighlightColorDotsDropdown({ applyColor }: { applyColor: (c: string) => void }) {
+function HighlightColorDotsDropdown({
+    applyColor,
+    activeHighlightColor,
+}: {
+    applyColor: (c: string) => void
+    activeHighlightColor: string | null
+}) {
     const { rowRef, onRowPointerLeave, isHot, bindDotItem } = useHighlightColorDotsRowState()
     return (
         <DropdownMenuGroup className="p-0">
@@ -221,10 +254,76 @@ function HighlightColorDotsDropdown({ applyColor }: { applyColor: (c: string) =>
                         applyColor={applyColor}
                         hot={isHot(c.id)}
                         bindDotItem={bindDotItem}
+                        activeHighlightColor={activeHighlightColor}
                     />
                 ))}
             </div>
         </DropdownMenuGroup>
+    )
+}
+
+/** Sliding highlight behind Note / Copy / Share as pointer or focus moves. */
+function FluidMenuActionShell({ children }: { children: React.ReactNode }) {
+    const containerRef = useRef<HTMLDivElement>(null)
+    const [dims, setDims] = useState<{ top: number; height: number } | null>(null)
+
+    const showFor = useCallback((target: EventTarget | null) => {
+        const el = target as HTMLElement | null
+        const parent = containerRef.current
+        if (!el || !parent) return
+        const pr = parent.getBoundingClientRect()
+        const er = el.getBoundingClientRect()
+        setDims({ top: er.top - pr.top + parent.scrollTop, height: er.height })
+    }, [])
+
+    const clearIfLeaving = useCallback((e: React.PointerEvent) => {
+        const next = e.relatedTarget as Node | null
+        if (next && containerRef.current?.contains(next)) return
+        setDims(null)
+    }, [])
+
+    return (
+        <div
+            ref={containerRef}
+            className="relative py-0.5"
+            onPointerLeave={clearIfLeaving}
+        >
+            <motion.div
+                aria-hidden
+                className="pointer-events-none absolute left-0.5 right-0.5 z-0 rounded-md bg-white/12 dark:bg-white/10"
+                initial={false}
+                animate={
+                    dims && dims.height > 0
+                        ? { opacity: 1, top: dims.top, height: dims.height }
+                        : { opacity: 0, top: 0, height: 0 }
+                }
+                transition={{ type: "spring", stiffness: 520, damping: 36, mass: 0.55 }}
+                style={{ position: "absolute" }}
+            />
+            {React.Children.map(children, (child) => {
+                if (!React.isValidElement(child)) return child
+                const el = child as React.ReactElement<{
+                    className?: string
+                    onPointerEnter?: React.PointerEventHandler
+                    onPointerLeave?: React.PointerEventHandler
+                    onFocus?: React.FocusEventHandler
+                }>
+                return React.cloneElement(el, {
+                    className: cn(
+                        "relative z-[1] bg-transparent data-[highlighted]:bg-transparent focus-visible:bg-transparent",
+                        el.props.className
+                    ),
+                    onPointerEnter: (e) => {
+                        showFor(e.currentTarget)
+                        el.props.onPointerEnter?.(e)
+                    },
+                    onFocus: (e) => {
+                        showFor(e.currentTarget)
+                        el.props.onFocus?.(e)
+                    },
+                })
+            })}
+        </div>
     )
 }
 
@@ -233,28 +332,25 @@ export function VerseHighlightContextMenuContent({
 }: {
     handlers: VerseHighlightMenuHandlers
 }) {
-    const { applyColor, onNote, onCopy, onShare, onClear, copyDone } = handlers
+    const { applyColor, onNote, onCopy, onShare, copyDone, activeHighlightColor } = handlers
     return (
         <ContextMenuContent className={menuSurfaceClass} aria-label="Highlight options">
-            <HighlightColorDotsContext applyColor={applyColor} />
-            <ContextMenuSeparator />
-            <ContextMenuItem onSelect={onNote}>
-                <StickyNote className="h-3.5 w-3.5" />
-                Note
-            </ContextMenuItem>
-            <ContextMenuItem onSelect={onCopy}>
-                {copyDone ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                Copy
-            </ContextMenuItem>
-            <ContextMenuItem onSelect={onShare}>
-                <Share2 className="h-3.5 w-3.5" />
-                Share
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem onSelect={onClear} className="text-destructive focus:text-destructive">
-                <Trash2 className="h-3.5 w-3.5" />
-                Remove highlight
-            </ContextMenuItem>
+            <HighlightColorDotsContext applyColor={applyColor} activeHighlightColor={activeHighlightColor} />
+            <ContextMenuSeparator className={menuSeparatorClass} />
+            <FluidMenuActionShell>
+                <ContextMenuItem className={menuActionItemClass} onSelect={onNote}>
+                    <StickyNote className="h-3.5 w-3.5" />
+                    Note
+                </ContextMenuItem>
+                <ContextMenuItem className={menuActionItemClass} onSelect={onCopy}>
+                    {copyDone ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    Copy
+                </ContextMenuItem>
+                <ContextMenuItem className={menuActionItemClass} onSelect={onShare}>
+                    <Share2 className="h-3.5 w-3.5" />
+                    Share
+                </ContextMenuItem>
+            </FluidMenuActionShell>
         </ContextMenuContent>
     )
 }
@@ -264,7 +360,7 @@ export function VerseHighlightDropdownMenuContent({
 }: {
     handlers: VerseHighlightMenuHandlers
 }) {
-    const { applyColor, onNote, onCopy, onShare, onClear, copyDone } = handlers
+    const { applyColor, onNote, onCopy, onShare, copyDone, activeHighlightColor } = handlers
     return (
         <DropdownMenuContent
             className={menuSurfaceClass}
@@ -273,25 +369,22 @@ export function VerseHighlightDropdownMenuContent({
             aria-label="Highlight options"
             onCloseAutoFocus={(e) => e.preventDefault()}
         >
-            <HighlightColorDotsDropdown applyColor={applyColor} />
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={onNote}>
-                <StickyNote className="h-3.5 w-3.5" />
-                Note
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onCopy}>
-                {copyDone ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                Copy
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onShare}>
-                <Share2 className="h-3.5 w-3.5" />
-                Share
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={onClear} className="text-destructive focus:text-destructive">
-                <Trash2 className="h-3.5 w-3.5" />
-                Remove highlight
-            </DropdownMenuItem>
+            <HighlightColorDotsDropdown applyColor={applyColor} activeHighlightColor={activeHighlightColor} />
+            <DropdownMenuSeparator className={menuSeparatorClass} />
+            <FluidMenuActionShell>
+                <DropdownMenuItem className={menuActionItemClass} onSelect={onNote}>
+                    <StickyNote className="h-3.5 w-3.5" />
+                    Note
+                </DropdownMenuItem>
+                <DropdownMenuItem className={menuActionItemClass} onSelect={onCopy}>
+                    {copyDone ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    Copy
+                </DropdownMenuItem>
+                <DropdownMenuItem className={menuActionItemClass} onSelect={onShare}>
+                    <Share2 className="h-3.5 w-3.5" />
+                    Share
+                </DropdownMenuItem>
+            </FluidMenuActionShell>
         </DropdownMenuContent>
     )
 }

@@ -17,11 +17,12 @@ interface NotePanelProps {
 }
 
 const COLOR_ACCENTS: Record<string, string> = {
-    yellow: "border-l-yellow-500/50 bg-yellow-500/5 text-yellow-500/80",
-    green: "border-l-green-500/50 bg-green-500/5 text-green-500/80",
-    blue: "border-l-blue-500/50 bg-blue-500/5 text-blue-500/80",
-    pink: "border-l-pink-500/50 bg-pink-500/5 text-pink-500/80",
-    purple: "border-l-purple-500/50 bg-purple-500/5 text-purple-500/80",
+    yellow: "border-l-[#FFCC00]/60 bg-[rgba(255,204,0,0.08)] text-[#B8860B]",
+    green: "border-l-[#34C759]/60 bg-[rgba(52,199,89,0.08)] text-[#248A3D]",
+    blue: "border-l-[#007AFF]/60 bg-[rgba(0,122,255,0.08)] text-[#0056B3] dark:border-l-[#0A84FF]/60 dark:text-[#64B5FF]",
+    pink: "border-l-[#FF2D55]/60 bg-[rgba(255,45,85,0.08)] text-[#CC2444]",
+    purple: "border-l-[#AF52DE]/60 bg-[rgba(175,82,222,0.08)] text-[#7B2CBF] dark:border-l-[#BF5AF2]/60",
+    orange: "border-l-[#FF9500]/60 bg-[rgba(255,149,0,0.1)] text-[#CC7700] dark:border-l-[#FF9F0A]/60",
 }
 
 export function NotePanel({

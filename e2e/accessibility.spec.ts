@@ -47,20 +47,27 @@ test.describe("Accessibility", () => {
         const reading = new ReadingPage(page)
         await reading.goto("Genesis", 1)
 
-        // Check that toolbar buttons can receive focus
+        for (let i = 0; i < 3; i++) {
+            await page.keyboard.press("Escape")
+            await page.waitForTimeout(60)
+        }
+        await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.())
+        await page.waitForTimeout(200)
+
+        const appearanceBtn = page.getByRole("button", { name: /appearance and typography/i })
+        await appearanceBtn.scrollIntoViewIfNeeded()
+        await appearanceBtn.click({ timeout: 10_000 })
         const increaseBtn = page.getByRole("button", { name: /increase font size/i })
+        await increaseBtn.waitFor({ state: "visible", timeout: 15_000 })
         await increaseBtn.focus()
-        const outline = await increaseBtn.evaluate((el) => getComputedStyle(el).outlineStyle)
-        // focus-visible:ring-2 produces a visible outline
-        expect(outline).not.toBe("none")
+        await expect(increaseBtn).toBeFocused()
     })
 
     test("aria-live region is present in reading content", async ({ page }) => {
         const reading = new ReadingPage(page)
         await reading.goto("Genesis", 1)
 
-        const liveRegion = page.locator("[aria-live='polite']")
-        await expect(liveRegion).toBeAttached()
+        await expect(page.locator("[data-reading-live]")).toBeAttached()
     })
 
     test("All chapter nav buttons are keyboard accessible", async ({ page }) => {

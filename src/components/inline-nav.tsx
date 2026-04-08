@@ -1,39 +1,66 @@
 "use client"
 
-import type { MouseEvent, ReactNode } from "react"
+import type { ReactNode } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useFocusMode } from "@/contexts/focus-mode"
-import { useNavMode } from "@/contexts/nav-mode"
-import { useAuth, useUser } from "@clerk/nextjs"
-import { useQuery } from "convex/react"
-import { api } from "../../convex/_generated/api"
-import { Search, Command, Settings, BookOpen, Library, User, Home } from "lucide-react"
+import { Search, Settings } from "lucide-react"
 import { openCommandMenu } from "@/lib/open-command-menu"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { SettingsPanel } from "@/components/settings-panel"
+
+function OpenWritLogo({ className }: { className?: string }) {
+    return (
+        <svg
+            width="18"
+            height="18"
+            viewBox="0 0 370 370"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={className}
+        >
+            <circle cx="185.062" cy="185.062" r="185.062" fill="currentColor" />
+            <rect x="168.955" y="102.397" width="31.9991" height="165.755" rx="7" fill="white" />
+            <rect x="102.396" y="168.955" width="165.755" height="31.9991" rx="7" fill="white" />
+        </svg>
+    )
+}
+
+function NavLink({ href, children }: { href: string; children: ReactNode }) {
+    return (
+        <Link
+            href={href}
+            className="group relative px-3 py-1.5 text-[13px] font-medium tracking-[-0.01em] text-muted-foreground/60 transition-colors duration-200 hover:text-foreground"
+        >
+            {children}
+            <span className="absolute inset-0 rounded-full bg-transparent transition-all duration-200 group-hover:bg-foreground/[0.04] group-hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] dark:group-hover:bg-white/[0.05]" style={{ zIndex: -1 }} />
+        </Link>
+    )
+}
+
+function NavIconButton({ onClick, label, children }: { onClick: () => void; label: string; children: ReactNode }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-label={label}
+            className="group relative flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground/50 transition-colors duration-200 hover:text-foreground"
+        >
+            {children}
+            <span className="absolute inset-0 rounded-full bg-transparent transition-all duration-200 group-hover:bg-foreground/[0.04] group-hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] dark:group-hover:bg-white/[0.05]" style={{ zIndex: -1 }} />
+        </button>
+    )
+}
 
 export function InlineNav() {
     const pathname = usePathname() || "/"
-    const { inlineNavLayout } = useNavMode()
     const { isFocusMode } = useFocusMode()
     const isReadPage = pathname.startsWith("/read")
-    const { isSignedIn } = useAuth()
-    const { user } = useUser()
-    const profile = useQuery(
-        api.profiles.getMyProfile,
-        isSignedIn ? {} : "skip"
-    )
-    const username =
-        profile?.username ?? user?.username ?? user?.firstName ?? null
+    const [settingsOpen, setSettingsOpen] = useState(false)
 
-    const isActive = (href: string) => {
-        if (href === "/") return pathname === "/"
-        return pathname.startsWith(href)
-    }
-
-    const profileLabel = username || "Profile"
-
-    const navShell = (children: ReactNode) => (
+    return (
         <nav
             className={cn(
                 "w-full transition-opacity duration-500",
@@ -41,177 +68,44 @@ export function InlineNav() {
             )}
             aria-label="Primary"
         >
-            {children}
-        </nav>
-    )
-
-    if (inlineNavLayout === "minimal") {
-        return navShell(
-            <div className="pb-6">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <Link
-                        href="/"
-                        className={cn(
-                            "inline-flex shrink-0 items-center gap-3 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground transition-colors hover:text-primary",
-                            pathname === "/" && "text-primary"
-                        )}
-                    >
-                        <span className="h-px w-8 shrink-0 bg-border" />
-                        <span className="tracking-[0.45em]">openwrit</span>
-                    </Link>
-
-                    <div className="flex min-w-0 flex-wrap items-center gap-3 md:gap-5 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">
-                        <Link
-                            href="/read"
-                            className={cn(
-                                "transition-colors hover:text-primary whitespace-nowrap",
-                                isActive("/read") && "text-primary"
-                            )}
-                        >
-                            read
-                        </Link>
-                        <span className="text-muted-foreground/45">·</span>
-                        <Link
-                            href="/library"
-                            className={cn(
-                                "transition-colors hover:text-primary whitespace-nowrap",
-                                isActive("/library") && "text-primary"
-                            )}
-                        >
-                            library
-                        </Link>
-                        <span className="text-muted-foreground/45">·</span>
-                        <button
-                            type="button"
-                            aria-label="Open search palette"
-                            onClick={() => openCommandMenu()}
-                            className="flex items-center justify-center p-1 transition-colors hover:text-primary"
-                        >
-                            <Search className="h-3.5 w-3.5 opacity-80" strokeWidth={1.5} />
-                        </button>
-                        <span className="text-muted-foreground/45">·</span>
-                        <Link
-                            href="/profile"
-                            aria-label={profileLabel}
-                            className={cn(
-                                "flex items-center justify-center p-1 transition-colors hover:text-primary",
-                                isActive("/profile") && "text-primary"
-                            )}
-                        >
-                            <User className="h-3.5 w-3.5 opacity-80" strokeWidth={1.5} />
-                        </Link>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    const primaryLinks = [
-        { kind: "route" as const, name: "home", href: "/", icon: Home },
-        { kind: "route" as const, name: "read", href: "/read", icon: BookOpen },
-        { kind: "route" as const, name: "library", href: "/library", icon: Library },
-        { kind: "palette" as const, name: "search", icon: Search },
-    ] as const
-
-    const utilityLinks = [
-        { name: "command", href: "#", icon: Command, onClick: (e: MouseEvent) => { e.preventDefault(); openCommandMenu() } },
-        { name: "settings", href: "/settings", icon: Settings },
-    ] as const
-
-    return navShell(
-        <div className="flex flex-col gap-4 pb-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center justify-between">
                 <Link
-                    href="/"
-                    className={cn(
-                        "inline-flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.35em] text-muted-foreground transition-colors hover:text-primary",
-                        pathname === "/" && "text-primary"
-                    )}
+                    href="/read"
+                    className="group relative flex items-center gap-1.5 px-2.5 py-1.5 transition-all duration-200"
                 >
-                    <span className="h-px w-6 shrink-0 bg-border" />
-                    <span className="whitespace-nowrap">openwrit</span>
+                    <OpenWritLogo className="rounded-[3px] text-muted-foreground/30 transition-colors duration-200 group-hover:text-primary" />
+                    <span className="text-[14px] font-semibold tracking-tight text-muted-foreground/50 transition-colors duration-200 group-hover:text-foreground">
+                        OpenWrit
+                    </span>
+                    <span className="absolute inset-0 rounded-full bg-transparent transition-all duration-200 group-hover:bg-foreground/[0.04] group-hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] dark:group-hover:bg-white/[0.05]" style={{ zIndex: -1 }} />
                 </Link>
-            </div>
 
-            <div className="flex flex-wrap items-center gap-x-1 gap-y-2 border-b border-border/15 pb-3">
-                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-0.5 gap-y-1 sm:gap-x-1">
-                    {primaryLinks.map((link) => {
-                        const Icon = link.icon
-                        if (link.kind === "palette") {
-                            return (
-                                <button
-                                    key={link.name}
-                                    type="button"
-                                    onClick={() => openCommandMenu()}
-                                    className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
-                                >
-                                    <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" strokeWidth={1.5} />
-                                    <span>{link.name}</span>
-                                </button>
-                            )
-                        }
-                        const active = isActive(link.href)
-                        return (
-                            <Link
-                                key={link.name}
-                                href={link.href}
-                                className={cn(
-                                    "inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors",
-                                    active
-                                        ? "bg-muted/60 text-foreground"
-                                        : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-                                )}
+                <div className="flex items-center gap-0.5">
+                    <NavLink href="/read">Read</NavLink>
+                    <NavLink href="/daily">Daily</NavLink>
+                    <NavLink href="/library">Library</NavLink>
+
+                    <NavIconButton onClick={() => openCommandMenu()} label="Search">
+                        <Search className="h-3.5 w-3.5" />
+                    </NavIconButton>
+
+                    <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
+                        <PopoverTrigger asChild>
+                            <button
+                                type="button"
+                                aria-label="Settings"
+                                className="group relative flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground/50 transition-colors duration-200 hover:text-foreground"
                             >
-                                <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" strokeWidth={1.5} />
-                                <span>{link.name}</span>
-                            </Link>
-                        )
-                    })}
-                    <Link
-                        href="/profile"
-                        aria-label={profileLabel}
-                        className={cn(
-                            "inline-flex items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground",
-                            isActive("/profile") && "bg-muted/60 text-foreground"
-                        )}
-                    >
-                        <User className="h-3.5 w-3.5 opacity-70" strokeWidth={1.5} />
-                    </Link>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-0.5 border-t border-border/10 pt-2 sm:border-t-0 sm:pt-0">
-                    {utilityLinks.map((link) => {
-                        const Icon = link.icon
-                        if (link.name === "command") {
-                            return (
-                                <button
-                                    key={link.name}
-                                    type="button"
-                                    onClick={link.onClick}
-                                    className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
-                                >
-                                    <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" strokeWidth={1.5} />
-                                    <span className="hidden sm:inline">⌘K</span>
-                                </button>
-                            )
-                        }
-                        return (
-                            <Link
-                                key={link.name}
-                                href={link.href}
-                                className={cn(
-                                    "inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors",
-                                    isActive(link.href)
-                                        ? "bg-muted/60 text-foreground"
-                                        : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-                                )}
-                            >
-                                <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" strokeWidth={1.5} />
-                                <span>{link.name}</span>
-                            </Link>
-                        )
-                    })}
+                                <Settings className="h-3.5 w-3.5" />
+                                <span className="absolute inset-0 rounded-full bg-transparent transition-all duration-200 group-hover:bg-foreground/[0.04] group-hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] dark:group-hover:bg-white/[0.05]" style={{ zIndex: -1 }} />
+                            </button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" sideOffset={8} className="w-auto p-0 overflow-hidden">
+                            <SettingsPanel onClose={() => setSettingsOpen(false)} />
+                        </PopoverContent>
+                    </Popover>
                 </div>
             </div>
-        </div>
+        </nav>
     )
 }

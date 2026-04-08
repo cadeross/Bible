@@ -499,26 +499,23 @@ export default function CalendarPage() {
             animate="visible"
         >
             {/* Month Navigation Header */}
-            <motion.div variants={sectionVariants} className="relative flex flex-col items-center justify-center border-b border-border/50 pb-6 mb-8 min-h-[80px] opacity-80 hover:opacity-100 transition-opacity">
+            <motion.div variants={sectionVariants} className="relative flex flex-col items-center justify-center pb-8 mb-4 min-h-[80px]">
                 {/* Previous Button (Left) */}
                 <div className="absolute left-0 top-1/2 -translate-y-1/2">
                     <button
                         onClick={goToPrevMonth}
-                        className="p-2 rounded-md hover:bg-muted/40 transition-colors text-muted-foreground/50 hover:text-primary"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground/50 transition-all duration-200 hover:bg-accent hover:text-foreground"
                     >
                         <ChevronLeft className="h-5 w-5" />
                     </button>
                 </div>
 
                 {/* Centered Month/Year Text */}
-                <div className="text-center space-y-2">
-                    <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                        CALENDAR
-                    </h1>
-                    <h2 className="text-3xl md:text-5xl font-mono font-bold text-primary tracking-tight">
+                <div className="space-y-2 text-center">
+                    <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
                         {MONTH_NAMES[currentMonth - 1]}
                     </h2>
-                    <div className="flex items-center justify-center gap-3 text-xs font-mono text-muted-foreground/60">
+                    <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
                         <span>{currentYear}</span>
                         {currentSeason && (
                             <>
@@ -540,14 +537,14 @@ export default function CalendarPage() {
                     {!isCurrentMonth && (
                         <button
                             onClick={goToToday}
-                            className="text-xs font-mono uppercase tracking-wider text-muted-foreground/70 hover:text-primary transition-colors px-3 py-2 rounded-md hover:bg-muted/40 hidden sm:block"
+                            className="hidden rounded-full px-4 py-2 text-xs font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground sm:block"
                         >
                             Today
                         </button>
                     )}
                     <button
                         onClick={goToNextMonth}
-                        className="p-2 rounded-md hover:bg-muted/40 transition-colors text-muted-foreground/50 hover:text-primary"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground/50 transition-all duration-200 hover:bg-accent hover:text-foreground"
                     >
                         <ChevronRight className="h-5 w-5" />
                     </button>
@@ -687,27 +684,24 @@ export default function CalendarPage() {
                     {/* Season Legend */}
                     <motion.div variants={sectionVariants} initial="hidden" animate="visible">
                         <div className="space-y-4">
-                            <h2 className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
                                 Liturgical Colors
                             </h2>
-                            <div className="pl-4 border-l border-border/40">
-                                <div className="flex flex-wrap gap-x-6 gap-y-2">
-                                    {[
-                                        { key: 'GREEN', label: 'Green', desc: 'Ordinary Time' },
-                                        { key: 'VIOLET', label: 'Violet', desc: 'Advent & Lent' },
-                                        { key: 'WHITE', label: 'White', desc: 'Christmas & Easter' },
-                                        { key: 'RED', label: 'Red', desc: 'Martyrs & Pentecost' },
-                                        { key: 'ROSE', label: 'Rose', desc: 'Gaudete & Laetare' },
-                                    ].map(c => (
-                                        <div key={c.key} className="flex items-center gap-2 text-xs">
-                                            <span className={cn("w-2 h-2 rounded-full", COLOR_DOT_BG[c.key])} />
-                                            <span className="font-mono text-muted-foreground/60">{c.label}</span>
-                                            <span className="text-muted-foreground/30 hidden sm:inline">—</span>
-                                            <span className="text-muted-foreground/40 hidden sm:inline">{c.desc}</span>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="flex flex-wrap gap-x-6 gap-y-2.5">
+                                {[
+                                    { key: 'GREEN', label: 'Green', desc: 'Ordinary Time' },
+                                    { key: 'VIOLET', label: 'Violet', desc: 'Advent & Lent' },
+                                    { key: 'WHITE', label: 'White', desc: 'Christmas & Easter' },
+                                    { key: 'RED', label: 'Red', desc: 'Martyrs & Pentecost' },
+                                    { key: 'ROSE', label: 'Rose', desc: 'Gaudete & Laetare' },
+                                ].map(c => (
+                                    <div key={c.key} className="flex items-center gap-2 text-xs">
+                                        <span className={cn("h-2.5 w-2.5 rounded-full", COLOR_DOT_BG[c.key])} />
+                                        <span className="text-foreground/70">{c.label}</span>
+                                        <span className="text-muted-foreground/30 hidden sm:inline">—</span>
+                                        <span className="text-muted-foreground hidden sm:inline">{c.desc}</span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </motion.div>
@@ -715,25 +709,22 @@ export default function CalendarPage() {
                     {/* Rank Legend */}
                     <motion.div variants={sectionVariants} initial="hidden" animate="visible">
                         <div className="space-y-4">
-                            <h2 className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
                                 Celebration Ranks
                             </h2>
-                            <div className="pl-4 border-l border-border/40">
-                                <div className="flex flex-wrap gap-x-6 gap-y-2">
-                                    {[
-                                        { label: 'Solemnity', desc: 'Highest rank — e.g., Easter, Christmas' },
-                                        { label: 'Feast', desc: 'Major celebrations — e.g., apostles' },
-                                        { label: 'Memorial', desc: 'Saints and special commemorations' },
-                                        { label: 'Weekday', desc: 'Ordinary ferial days' },
-                                    ].map(r => (
-                                        <div key={r.label} className="flex items-center gap-2 text-xs">
-                                            <span className="font-mono text-muted-foreground/60">{r.label}</span>
-                                            <span className="text-muted-foreground/30 hidden sm:inline">—</span>
-                                            <span className="text-muted-foreground/40 hidden sm:inline">{r.desc}</span>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="flex flex-wrap gap-x-6 gap-y-2.5">
+                                {[
+                                    { label: 'Solemnity', desc: 'Highest rank — e.g., Easter, Christmas' },
+                                    { label: 'Feast', desc: 'Major celebrations — e.g., apostles' },
+                                    { label: 'Memorial', desc: 'Saints and special commemorations' },
+                                    { label: 'Weekday', desc: 'Ordinary ferial days' },
+                                ].map(r => (
+                                    <div key={r.label} className="flex items-center gap-2 text-xs">
+                                        <span className="text-foreground/70">{r.label}</span>
+                                        <span className="text-muted-foreground/30 hidden sm:inline">—</span>
+                                        <span className="text-muted-foreground hidden sm:inline">{r.desc}</span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </motion.div>

@@ -53,9 +53,10 @@ test.describe("Reading flow", () => {
     test("Translation query param loads correct version label", async ({ page }) => {
         await page.goto("/read/Genesis/1?translation=kjv")
         await page.waitForSelector("[data-verse]")
-        // Check the translation chip shows the right value
-        const toolbar = page.locator("header, [class*='toolbar']").first()
-        await expect(toolbar).toBeVisible()
+        await expect(page.locator("[data-reading-chrome]")).toBeVisible()
+        await expect(
+            page.locator('input.uppercase').filter({ hasValue: "KJV" })
+        ).toBeVisible()
     })
 
     test("Multiple verses render in paragraph form (inline spans)", async ({ page }) => {

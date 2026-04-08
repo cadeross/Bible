@@ -46,12 +46,11 @@ const itemVariants = {
 }
 
 const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
-  <div className="space-y-4">
-    <h2 className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
-      <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+  <div className="space-y-5">
+    <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
       {title}
     </h2>
-    <div className="pl-4 border-l border-border/40 space-y-4">
+    <div className="space-y-4">
       {children}
     </div>
   </div>
@@ -314,38 +313,29 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
 
   if (!mounted) {
     return (
-      <div className="w-full max-w-[900px] mx-auto px-6 py-12 space-y-6">
-        <header className="space-y-3 text-center">
-          <p className="text-xs font-mono uppercase tracking-[0.35em] text-muted-foreground/70">
-            openwrit
-          </p>
-          <h1 className="text-2xl font-semibold text-foreground">
-            OpenWrit Bible Reading App
+      <div className="w-full max-w-[860px] mx-auto px-6 py-16 space-y-8">
+        <header className="space-y-4 text-center">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            OpenWrit
           </h1>
-          <p className="text-sm text-muted-foreground max-w-[680px] mx-auto leading-relaxed">
-            Read Scripture with clarity and focus. Explore daily readings, follow the liturgical calendar,
-            and continue your Bible reading journey chapter by chapter.
+          <p className="text-[15px] text-muted-foreground max-w-[520px] mx-auto leading-relaxed">
+            Read Scripture with clarity and focus. Daily readings,
+            liturgical calendar, and your reading journey — all in one place.
           </p>
         </header>
 
-        <nav className="flex flex-wrap justify-center gap-3 text-xs font-mono uppercase tracking-wide">
+        <nav className="flex flex-wrap justify-center gap-3 text-sm font-medium tracking-tight">
           <Link
             href="/read/Genesis/1"
-            className="px-4 py-2 rounded-md border border-border/40 hover:border-foreground/30 hover:bg-secondary/10 transition-colors"
+            className="rounded-full bg-primary px-5 py-2.5 text-primary-foreground shadow-[var(--shadow-sm)] transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
           >
-            start reading
+            Start reading
           </Link>
           <Link
             href="/calendar"
-            className="px-4 py-2 rounded-md border border-border/40 hover:border-foreground/30 hover:bg-secondary/10 transition-colors"
+            className="rounded-full border border-border/40 bg-background px-5 py-2.5 text-foreground shadow-[var(--shadow-sm)] transition-all duration-200 hover:bg-accent active:scale-[0.98]"
           >
-            liturgical calendar
-          </Link>
-          <Link
-            href="/how-to"
-            className="px-4 py-2 rounded-md border border-border/40 hover:border-foreground/30 hover:bg-secondary/10 transition-colors"
-          >
-            how to use openwrit
+            Liturgical calendar
           </Link>
         </nav>
       </div>
@@ -355,59 +345,49 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
   return (
     <>
     <motion.div
-      className="w-full max-w-[900px] mx-auto px-6 py-12 space-y-12"
+      className="w-full max-w-[860px] mx-auto px-6 py-16 space-y-14"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
-      {/* Header */}
-      <motion.div variants={itemVariants} className="mb-12">
-        <div className="flex flex-col items-center text-center gap-4 opacity-95 hover:opacity-100 transition-opacity">
-          {/*
-          {navMode === 'classic' && (
-            <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-[0.45em] text-muted-foreground/60 w-full justify-center">
-              openwrit
-            </div>
-          )}
-          */}
-
-          <div className="space-y-1">
-            <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+      {/* Hero */}
+      <motion.div variants={itemVariants}>
+        <div className="flex flex-col items-center text-center gap-5">
+          <div className="space-y-3">
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground capitalize sm:text-4xl">
               {greeting}
             </h1>
             {liturgyLabel && (
               <Link
                 href="/calendar"
-                className="text-xs font-mono text-muted-foreground hover:text-foreground transition-colors inline-block"
+                className="inline-block max-w-[min(100%,480px)] truncate text-[15px] text-muted-foreground transition-colors duration-200 hover:text-foreground"
               >
-                <span className="truncate max-w-[300px] md:max-w-[500px] block uppercase tracking-wider">
-                  {liturgyLabel}
-                </span>
+                {liturgyLabel}
               </Link>
             )}
           </div>
 
-          {/* Quick Actions */}
+          {/* Quick Action Pills */}
           {(isLoading && streakDays === null && !continueReading) ? (
-            <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
-              <div className="flex items-center gap-2.5 px-4 py-2 rounded-md border border-border/30 bg-secondary/5">
-                <div className="h-3.5 w-3.5 rounded-full bg-muted-foreground/20 animate-pulse shrink-0" />
-                <div className="h-2 w-20 rounded-full bg-muted-foreground/20 animate-pulse" />
+            <div className="flex flex-wrap justify-center items-center gap-3 mt-1">
+              <div className="flex items-center gap-2.5 rounded-full border border-border/30 bg-card px-5 py-2.5 shadow-[var(--shadow-sm)]">
+                <div className="h-3.5 w-3.5 shrink-0 animate-pulse rounded-full bg-muted-foreground/15" />
+                <div className="h-2.5 w-20 animate-pulse rounded-full bg-muted-foreground/15" />
               </div>
-              <div className="flex items-center gap-2.5 px-4 py-2 rounded-md border border-border/30 bg-secondary/5">
-                <div className="h-3.5 w-3.5 rounded-full bg-muted-foreground/20 animate-pulse shrink-0" />
-                <div className="h-2 w-28 rounded-full bg-muted-foreground/20 animate-pulse" />
+              <div className="flex items-center gap-2.5 rounded-full border border-border/30 bg-card px-5 py-2.5 shadow-[var(--shadow-sm)]">
+                <div className="h-3.5 w-3.5 shrink-0 animate-pulse rounded-full bg-muted-foreground/15" />
+                <div className="h-2.5 w-28 animate-pulse rounded-full bg-muted-foreground/15" />
               </div>
             </div>
           ) : (streakDays !== null || continueReading) ? (
-            <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
+            <div className="flex flex-wrap justify-center items-center gap-3 mt-1">
               {streakDays !== null && (
                 <Link
                   href="/profile"
-                  className="group flex items-center gap-2.5 px-4 py-2 rounded-md border border-border/30 bg-secondary/5 hover:bg-secondary/10 hover:border-foreground/20 transition-all duration-300"
+                  className="group flex items-center gap-2.5 rounded-full border border-border/30 bg-card px-5 py-2.5 shadow-[var(--shadow-sm)] transition-all duration-200 hover:shadow-[var(--shadow-card)] hover:border-border/50"
                 >
-                  <Heart className="h-3.5 w-3.5 text-heart/60 group-hover:text-heart transition-colors" />
-                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">
+                  <Heart className="h-3.5 w-3.5 text-heart/70 transition-colors group-hover:text-heart" />
+                  <span className="text-[13px] font-medium tracking-tight text-foreground/80 transition-colors group-hover:text-foreground">
                     {streakDays} day streak
                   </span>
                 </Link>
@@ -415,13 +395,13 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
               {continueReading && (
                 <Link
                   href={`/read/${encodeURIComponent(continueReading.book)}/${continueReading.chapter}?translation=${bibleVersion}`}
-                  className="group flex items-center gap-2.5 px-4 py-2 rounded-md border border-border/30 bg-secondary/5 hover:bg-secondary/10 hover:border-foreground/20 transition-all duration-300"
+                  className="group flex items-center gap-2.5 rounded-full border border-border/30 bg-card px-5 py-2.5 shadow-[var(--shadow-sm)] transition-all duration-200 hover:shadow-[var(--shadow-card)] hover:border-border/50"
                 >
-                  <BookOpen className="h-3.5 w-3.5 text-bookmark/60 group-hover:text-bookmark transition-colors" />
-                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">
-                    resume {continueReading.book} {continueReading.chapter}
+                  <BookOpen className="h-3.5 w-3.5 text-primary/70 transition-colors group-hover:text-primary" />
+                  <span className="text-[13px] font-medium tracking-tight text-foreground/80 transition-colors group-hover:text-foreground">
+                    Resume {continueReading.book} {continueReading.chapter}
                   </span>
-                  <span className="text-[10px] text-muted-foreground/80 opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all">
+                  <span className="text-[13px] text-muted-foreground/60 transition-all duration-200 group-hover:text-primary group-hover:translate-x-0.5">
                     →
                   </span>
                 </Link>
@@ -431,34 +411,28 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
         </div>
       </motion.div>
 
-      {/* Daily Focus */}
+      {/* Daily Readings */}
       <motion.div variants={itemVariants}>
         <div className="w-full">
           {dailyReadings ? (
             <DailyReadings data={dailyReadings} />
           ) : (
-            <div className="w-full max-w-[720px] mx-auto flex flex-col items-center justify-center gap-3 py-16 text-center">
-              <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">
-                · readings unavailable ·
-              </span>
-              <p className="text-xs font-mono text-muted-foreground max-w-[280px] leading-relaxed">
-                today&apos;s readings could not be loaded. check back shortly or visit usccb.org directly.
+            <div className="w-full max-w-[720px] mx-auto flex flex-col items-center justify-center gap-4 py-20 text-center">
+              <p className="text-sm text-muted-foreground max-w-[320px] leading-relaxed">
+                Today&apos;s readings could not be loaded. Check back shortly or visit usccb.org directly.
               </p>
               <a
                 href="https://bible.usccb.org/daily-bible-reading"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] font-mono text-muted-foreground hover:text-primary transition-colors uppercase tracking-wider mt-1"
+                className="text-sm text-primary hover:text-primary/80 transition-colors"
               >
-                usccb.org ↗
+                usccb.org →
               </a>
             </div>
           )}
         </div>
       </motion.div>
-
-      {/* USCCB Daily Readings - Moved above */}
-
 
     </motion.div>
     </>

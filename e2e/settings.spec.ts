@@ -8,7 +8,19 @@ test.describe("Reading settings", () => {
     })
 
     async function openAppearancePopover(page: Page) {
-        await page.getByRole("button", { name: /appearance and typography/i }).click()
+        // Dismiss any overlays (command palette, popover already open, etc.)
+        for (let i = 0; i < 3; i++) {
+            await page.keyboard.press("Escape")
+            await page.waitForTimeout(60)
+        }
+        // Blur any focused inputs (quick-selector) so keyboard events route correctly
+        await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.())
+        await page.waitForTimeout(200)
+
+        const btn = page.getByRole("button", { name: /appearance and typography/i })
+        await btn.scrollIntoViewIfNeeded()
+        await btn.click({ timeout: 10_000 })
+        await page.getByRole("button", { name: /increase font size/i }).waitFor({ state: "visible", timeout: 15_000 })
     }
 
     test("Font size increase button enlarges text", async ({ page }) => {
@@ -50,7 +62,8 @@ test.describe("Reading settings", () => {
         const after = await container.evaluate((el) =>
             parseFloat(getComputedStyle(el).fontSize)
         )
-        expect(after).toBeLessThan(before)
+        // One step down should be strictly smaller; allow tiny float noise.
+        expect(after).toBeLessThan(before - 0.05)
     })
 
     test("Font size preference persists on reload", async ({ page }) => {
@@ -75,35 +88,41 @@ test.describe("Reading settings", () => {
         const reading = new ReadingPage(page)
         await reading.goto("Genesis", 1)
 
-        // Numbers should be visible by default
+        // Verse row animates in; wait until verse numbers are fully opaque.
+        await expect(page.locator("[data-verse='1']")).toBeVisible()
         const sup = page.locator("[data-verse='1'] sup").first()
-        await expect(sup).toBeVisible()
+        await expect(async () => {
+            const o = await sup.evaluate((el) => parseFloat(getComputedStyle(el).opacity))
+            expect(o).toBeGreaterThan(0.9)
+        }).toPass({ timeout: 10_000 })
 
         await openAppearancePopover(page)
         // Click numbers toggle
         await page.getByRole("button", { name: /numbers/i }).click()
 
-        // sup should now have opacity-0 or be hidden
-        const opacity = await sup.evaluate((el) => getComputedStyle(el).opacity)
-        expect(parseFloat(opacity)).toBeLessThan(0.5)
+        await expect(async () => {
+            const o = await sup.evaluate((el) => parseFloat(getComputedStyle(el).opacity))
+            expect(o).toBeLessThan(0.5)
+        }).toPass({ timeout: 5000 })
     })
 
     test("Alt+F toggles focus mode", async ({ page }) => {
         const reading = new ReadingPage(page)
         await reading.goto("Genesis", 1)
 
-        // Toolbar should be visible
-        const toolbar = page.locator("[class*='toolbar']").first()
-        const beforeOpacity = await toolbar.evaluate((el) => getComputedStyle(el).opacity)
+        const chrome = page.locator("[data-reading-chrome]")
+        await expect(async () => {
+            const o = parseFloat(await chrome.evaluate((el) => getComputedStyle(el).opacity))
+            expect(o).toBeGreaterThan(0.9)
+        }).toPass({ timeout: 8000 })
 
-        // Toggle focus mode
         await page.keyboard.press("Alt+f")
-        await page.waitForTimeout(500)
+        await expect(async () => {
+            const o = parseFloat(await chrome.evaluate((el) => getComputedStyle(el).opacity))
+            expect(o).toBeLessThan(0.3)
+        }).toPass({ timeout: 5000 })
 
-        // Toolbar should be dimmed/hidden in focus mode
-        // This checks the DOM changes — exact assertion depends on implementation
-        const url = page.url()
-        expect(url).toContain("/read/") // still on reading page
+        expect(page.url()).toContain("/read/")
     })
 
     test("Settings persist across page reload", async ({ page }) => {

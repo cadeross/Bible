@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 
 export type FontType = "sans" | "serif" | "mono" | "pixel"
-export type PaletteType = "standard" | "terminal" | "solarized" | "sepia" | "midnight" | "lavender" | "rose" | "oled" | "things"
 
 export interface ReadingPreferences {
     fontSize: number
@@ -13,7 +12,6 @@ export interface ReadingPreferences {
     redLetters: boolean
     showTitles: boolean
     defaultHighlightColor: string
-    palette: PaletteType
     bibleVersion: string
 }
 
@@ -26,7 +24,6 @@ interface ReadingPreferencesContextType extends ReadingPreferences {
     setRedLetters: (show: boolean) => void
     setShowTitles: (show: boolean) => void
     setDefaultHighlightColor: (color: string) => void
-    setPalette: (palette: PaletteType) => void
     setBibleVersion: (version: string) => void
     resetPreferences: () => void
 }
@@ -39,51 +36,44 @@ const defaultPreferences: ReadingPreferences = {
     redLetters: true,
     showTitles: true,
     defaultHighlightColor: "yellow",
-    palette: "things",
     bibleVersion: "nrsvce",
 }
 
 const ReadingPreferencesContext = createContext<ReadingPreferencesContextType | undefined>(undefined)
 
+/** Drop removed keys (e.g. legacy `palette`) from persisted preferences. */
+function sanitizeStoredPreferences(raw: Record<string, unknown>): Partial<ReadingPreferences> {
+    const next = { ...raw }
+    delete next.palette
+    return next as Partial<ReadingPreferences>
+}
+
 export function ReadingPreferencesProvider({ children }: { children: React.ReactNode }) {
     const [preferences, setPreferences] = useState<ReadingPreferences>(defaultPreferences)
     const [isLoaded, setIsLoaded] = useState(false)
 
-    // Load preferences from local storage on mount
+    // Merge persisted preferences after mount so server and first client paint match (no localStorage on SSR).
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            const saved = localStorage.getItem("reading-preferences")
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved)
-
-                    // Validate palette (migration for legacy/removed themes like 'forest')
-                    const validPalettes: PaletteType[] = ["standard", "terminal", "solarized", "sepia", "midnight", "lavender", "rose", "oled", "things"];
-                    if (parsed.palette && !validPalettes.includes(parsed.palette)) {
-                        parsed.palette = "standard";
-                    }
-
-                    // Default bibleVersion if missing
-                    if (!parsed.bibleVersion) {
-                        parsed.bibleVersion = "nrsvce";
-                    }
-
-                    setPreferences({ ...defaultPreferences, ...parsed })
-                } catch (e) {
-                    console.error("Failed to parse reading preferences", e)
-                }
+        document.documentElement.removeAttribute("data-palette")
+        const saved = localStorage.getItem("reading-preferences")
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved) as Record<string, unknown>
+                const cleaned = sanitizeStoredPreferences(parsed)
+                if (!cleaned.bibleVersion) cleaned.bibleVersion = "nrsvce"
+                // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: hydrate from localStorage once after mount
+                setPreferences({ ...defaultPreferences, ...cleaned })
+            } catch (e) {
+                console.error("Failed to parse reading preferences", e)
             }
-            setIsLoaded(true)
         }
+        setIsLoaded(true)
     }, [])
 
     // Save preferences to local storage when they change
     useEffect(() => {
         if (isLoaded) {
             localStorage.setItem("reading-preferences", JSON.stringify(preferences))
-
-            // Sync palette to document attribute for CSS targeting
-            document.documentElement.setAttribute('data-palette', preferences.palette)
         }
     }, [preferences, isLoaded])
 
@@ -93,8 +83,8 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
     const setShowVerseNumbers = (showVerseNumbers: boolean) => setPreferences((prev) => ({ ...prev, showVerseNumbers }))
     const setRedLetters = (redLetters: boolean) => setPreferences((prev) => ({ ...prev, redLetters }))
     const setShowTitles = (showTitles: boolean) => setPreferences((prev) => ({ ...prev, showTitles }))
-    const setDefaultHighlightColor = (defaultHighlightColor: string) => setPreferences((prev) => ({ ...prev, defaultHighlightColor }))
-    const setPalette = (palette: PaletteType) => setPreferences((prev) => ({ ...prev, palette }))
+    const setDefaultHighlightColor = (defaultHighlightColor: string) =>
+        setPreferences((prev) => ({ ...prev, defaultHighlightColor }))
     const setBibleVersion = (bibleVersion: string) => setPreferences((prev) => ({ ...prev, bibleVersion }))
     const resetPreferences = () => setPreferences(defaultPreferences)
 
@@ -108,7 +98,6 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
         setRedLetters,
         setShowTitles,
         setDefaultHighlightColor,
-        setPalette,
         setBibleVersion,
         resetPreferences,
     }
@@ -127,7 +116,7 @@ export function getStoredBibleVersion(): string {
     try {
         const saved = localStorage.getItem("reading-preferences")
         if (saved) {
-            const parsed = JSON.parse(saved)
+            const parsed = JSON.parse(saved) as { bibleVersion?: string }
             if (parsed.bibleVersion) return parsed.bibleVersion
         }
     } catch {}

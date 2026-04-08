@@ -29,65 +29,63 @@ export function HowToDialog({ children }: { children: React.ReactNode }) {
                 >
                     <DialogPrimitive.Title className="sr-only">How To Use</DialogPrimitive.Title>
 
-                    <div className="bg-background border border-border/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-lg overflow-hidden flex flex-col max-h-[60vh]">
+                    <div className="glass border border-white/[0.12] dark:border-white/[0.06] shadow-[var(--shadow-dialog)] rounded-2xl overflow-hidden flex flex-col max-h-[60vh]">
                         {/* Header */}
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-primary/10 bg-muted/20">
-                            <div className="flex items-center gap-2 text-sm font-mono font-medium opacity-70">
-                                <HelpCircle className="h-4 w-4" />
-                                <span>how to use</span>
+                        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/15">
+                            <div className="flex items-center gap-2 text-sm font-medium text-foreground/80">
+                                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                                <span>How to use</span>
                             </div>
-                            <DialogPrimitive.Close className="opacity-50 hover:opacity-100 transition-opacity">
+                            <DialogPrimitive.Close className="rounded-lg p-1 text-muted-foreground/50 transition-all duration-200 hover:bg-accent/50 hover:text-foreground">
                                 <X className="h-4 w-4" />
                             </DialogPrimitive.Close>
                         </div>
 
                         {/* Content */}
-                        <div className="p-6 font-mono text-sm space-y-6 overflow-y-auto">
+                        <div className="p-6 text-sm space-y-6 overflow-y-auto">
 
-                            {/* Section: Shortcuts */}
                             <div className="space-y-3">
-                                <div className="flex items-center gap-2 opacity-50 text-xs uppercase tracking-wider">
-                                    <Keyboard className="h-3 w-3" />
+                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                                    <Keyboard className="h-3.5 w-3.5" />
                                     <span>Keyboard Shortcuts</span>
                                 </div>
-                                <div className="grid grid-cols-[1fr_auto] gap-2 text-muted-foreground text-xs">
+                                <div className="grid grid-cols-[1fr_auto] gap-2.5 text-foreground/80 text-sm">
                                     <span>Next Chapter</span>
-                                    <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border">Right Arrow</kbd>
+                                    <kbd className="rounded-lg bg-muted/60 px-2 py-0.5 border border-border/30 text-xs font-medium text-muted-foreground">Right Arrow</kbd>
 
                                     <span>Previous Chapter</span>
-                                    <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border">Left Arrow</kbd>
+                                    <kbd className="rounded-lg bg-muted/60 px-2 py-0.5 border border-border/30 text-xs font-medium text-muted-foreground">Left Arrow</kbd>
 
                                     <span>Command Menu</span>
-                                    <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border">Cmd + K</kbd>
+                                    <kbd className="rounded-lg bg-muted/60 px-2 py-0.5 border border-border/30 text-xs font-medium text-muted-foreground">Cmd + K</kbd>
                                 </div>
                             </div>
 
-                            {/* Section: Features */}
                             <div className="space-y-3">
-                                <div className="flex items-center gap-2 opacity-50 text-xs uppercase tracking-wider">
-                                    <Eye className="h-3 w-3" />
+                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                                    <Eye className="h-3.5 w-3.5" />
                                     <span>Focus Mode</span>
                                 </div>
-                                <p className="text-muted-foreground leading-relaxed text-xs">
+                                <p className="text-foreground/80 leading-relaxed">
                                     Toggle <strong>Focus Mode</strong> in the footer to hide all distractions. The interface fades away, leaving only the text. Move your mouse to reveal controls.
                                 </p>
                             </div>
 
                             <div className="space-y-3">
-                                <div className="flex items-center gap-2 opacity-50 text-xs uppercase tracking-wider">
-                                    <Palette className="h-3 w-3" />
+                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                                    <Palette className="h-3.5 w-3.5" />
                                     <span>Themes</span>
                                 </div>
-                                <p className="text-muted-foreground leading-relaxed text-xs">
-                                    Click the theme name in the footer (e.g., "standard", "sepia") to cycle through available color palettes.
+                                <p className="text-foreground/80 leading-relaxed">
+                                    Choose light, dark, or system appearance in Settings.
                                 </p>
                             </div>
 
                         </div>
 
                         {/* Footer Hint */}
-                        <div className="p-2 bg-muted/20 text-[10px] text-center text-muted-foreground/40 font-mono tracking-widest uppercase border-t border-dashed border-primary/5">
-                            esc to close
+                        <div className="p-2.5 text-xs text-center text-muted-foreground/40 border-t border-border/15">
+                            Press Esc to close
                         </div>
                     </div>
                 </DialogPrimitive.Content>

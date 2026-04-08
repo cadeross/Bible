@@ -147,7 +147,7 @@ export function OnboardingFlow() {
     const [checkingUsername, setCheckingUsername] = useState(false);
 
     // Preferences
-    const { fontFamily, setFontFamily, palette, setPalette, bibleVersion, setBibleVersion } = useReadingPreferences();
+    const { fontFamily, setFontFamily, bibleVersion, setBibleVersion } = useReadingPreferences();
     const { theme, setTheme } = useTheme();
 
     // Content
@@ -354,44 +354,6 @@ export function OnboardingFlow() {
                                             >
                                                 <opt.icon className="w-4 h-4 mb-1 opacity-70" />
                                                 <span className="text-[10px] font-mono uppercase tracking-wider">{opt.label}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Palette */}
-                                <div>
-                                    <Label className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70 font-mono mb-3 block">palette</Label>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {[
-                                            { value: 'standard', label: 'Standard', bg: '#ffffff', fg: '#1a1a1a' },
-                                            { value: 'terminal', label: 'Terminal', bg: '#000000', fg: '#00ff41' },
-                                            { value: 'solarized', label: 'Solar', bg: '#fdf6e3', fg: '#b58900' },
-                                            { value: 'sepia', label: 'Sepia', bg: '#f8f4e5', fg: '#433422' },
-                                            { value: 'midnight', label: 'Midnight', bg: '#0f172a', fg: '#38bdf8' },
-                                            { value: 'lavender', label: 'Lavender', bg: '#f3e8ff', fg: '#9333ea' },
-                                            { value: 'rose', label: 'Rose', bg: '#fff1f2', fg: '#be123c' },
-                                            { value: 'oled', label: 'OLED', bg: '#000000', fg: '#ffffff' }
-                                        ].map(opt => (
-                                            <button
-                                                key={opt.value}
-                                                // @ts-ignore
-                                                onClick={() => setPalette(opt.value)}
-                                                className={cn(
-                                                    "flex flex-col items-center justify-center p-2 rounded-md border border-border/20 transition-all duration-200 h-16 group cursor-pointer",
-                                                    palette === opt.value
-                                                        ? 'border-primary/50 shadow-sm'
-                                                        : 'border-border/20 hover:border-border/50'
-                                                )}
-                                            >
-                                                <div
-                                                    className={cn(
-                                                        "w-7 h-7 rounded-full shadow-sm transition-transform duration-200 group-hover:scale-110 mb-1",
-                                                        palette === opt.value && "ring-1 ring-primary ring-offset-2 ring-offset-background"
-                                                    )}
-                                                    style={{ background: `linear-gradient(135deg, ${opt.bg} 50%, ${opt.fg} 50%)` }}
-                                                />
-                                                <span className="text-[10px] font-mono text-muted-foreground/70 uppercase tracking-wider">{opt.label}</span>
                                             </button>
                                         ))}
                                     </div>

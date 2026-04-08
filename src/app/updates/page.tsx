@@ -5,23 +5,23 @@ import { motion } from "framer-motion"
 
 const Section = ({ title, icon: Icon, children }: { title: string, icon: React.ElementType, children: React.ReactNode }) => (
     <div className="space-y-4">
-        <h2 className="text-muted-foreground text-xs font-mono uppercase tracking-wider flex items-center gap-2">
-            <Icon className="h-3 w-3" />
+        <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+            <Icon className="h-3.5 w-3.5" />
             {title}
         </h2>
-        <div className="pl-4 border-l border-border/40 space-y-6">
+        <div className="space-y-6">
             {children}
         </div>
     </div>
 )
 
 const FeatureGroup = ({ label, items }: { label: string, items: string[] }) => (
-    <div className="space-y-2">
-        <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground/60">{label}</p>
+    <div className="space-y-2.5">
+        <p className="text-xs font-medium text-foreground/60">{label}</p>
         <ul className="space-y-2">
             {items.map((item, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm font-mono text-muted-foreground leading-relaxed">
-                    <span className="w-1 h-1 rounded-full bg-primary/40 shrink-0 mt-[9px]" />
+                <li key={i} className="flex items-start gap-2.5 text-sm text-foreground/80 leading-relaxed">
+                    <span className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-muted-foreground/30" />
                     {item}
                 </li>
             ))}
@@ -38,24 +38,22 @@ export default function UpdatesPage() {
             className="w-full max-w-[720px] mx-auto px-6 py-12 space-y-12"
         >
             {/* Header */}
-            <div className="flex flex-col items-center text-center gap-4 opacity-70 hover:opacity-100 transition-opacity mb-12">
-                <div className="space-y-1">
-                    <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                        UPDATES
-                    </h1>
-                    <p className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider">
-                        version history and changelog
-                    </p>
-                </div>
+            <div className="mb-6">
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                    Updates
+                </h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Version history and changelog
+                </p>
             </div>
 
             <div className="grid gap-12">
 
                 {/* Version 1.0.2 */}
                 <div className="flex items-center gap-4">
-                    <span className="font-mono text-lg font-bold text-primary">v1.0.2</span>
-                    <span className="text-xs text-muted-foreground/50 font-mono">Mar 2026</span>
-                    <div className="flex-1 h-px bg-border/30" />
+                    <span className="text-lg font-semibold text-foreground">v1.0.2</span>
+                    <span className="text-xs text-muted-foreground/60">Mar 2026</span>
+                    <div className="flex-1 h-px bg-border/20" />
                 </div>
 
                 <Section title="Account" icon={User}>
@@ -89,7 +87,7 @@ export default function UpdatesPage() {
                     <FeatureGroup
                         label="Navigation"
                         items={[
-                            "Active nav tab in the Munich theme now renders with a blue icon and theme-aware text — white in dark mode, dark foreground in light mode.",
+                            "Active navigation tabs use a soft blue selection state with clear contrast in both light and dark mode.",
                             "Hover effects across the header, footer, and mobile nav are now visually consistent.",
                             "Footer links for How To and Updates now highlight correctly when those pages are active.",
                         ]}
@@ -98,17 +96,17 @@ export default function UpdatesPage() {
 
                 {/* Version 1.0.1 */}
                 <div className="flex items-center gap-4">
-                    <span className="font-mono text-lg font-bold text-primary">v1.0.1</span>
-                    <span className="text-xs text-muted-foreground/50 font-mono">Mar 2026</span>
-                    <div className="flex-1 h-px bg-border/30" />
+                    <span className="text-lg font-semibold text-foreground">v1.0.1</span>
+                    <span className="text-xs text-muted-foreground/60">Mar 2026</span>
+                    <div className="flex-1 h-px bg-border/20" />
                 </div>
 
                 <Section title="Personalization" icon={Palette}>
                     <FeatureGroup
                         label="Themes"
                         items={[
-                            "New Munich palette added and set as the default, replacing Standard.",
-                            "Completely redesigned theme and palette picker with a live preview of your Bible text.",
+                            "Unified Things 3–inspired light and dark appearance (system sync).",
+                            "Removed multi-palette themes in favor of a single refined visual language.",
                         ]}
                     />
                     <FeatureGroup
@@ -158,9 +156,9 @@ export default function UpdatesPage() {
 
                 {/* Version 1.0.0 */}
                 <div className="flex items-center gap-4">
-                    <span className="font-mono text-lg font-bold text-primary">v1.0.0</span>
-                    <span className="text-xs text-muted-foreground/50 font-mono">initial release</span>
-                    <div className="flex-1 h-px bg-border/30" />
+                    <span className="text-lg font-semibold text-foreground">v1.0.0</span>
+                    <span className="text-xs text-muted-foreground/60">Initial release</span>
+                    <div className="flex-1 h-px bg-border/20" />
                 </div>
 
                 <Section title="Reading" icon={BookOpen}>
@@ -189,7 +187,7 @@ export default function UpdatesPage() {
                         items={[
                             "Click any verse to apply a quick highlight in your default color.",
                             "Right-click or long-press to open the annotation menu.",
-                            "Five highlight colors: yellow, green, blue, pink, and purple.",
+                            "Six highlight colors: yellow, green, blue, pink, purple, and orange.",
                             "Inline notes attached to any verse or range of verses.",
                             "Share a specific verse or selection via a direct link.",
                             "Highlights and notes persist locally and sync to your account.",
@@ -224,7 +222,7 @@ export default function UpdatesPage() {
                         label="Themes"
                         items={[
                             "Light, dark, and system-synced modes.",
-                            "Eight color palettes: Standard, Terminal, Solarized, Sepia, Midnight, Lavender, Rose, and OLED.",
+                            "Minimal, Things-inspired interface with no separate color palettes.",
                         ]}
                     />
                     <FeatureGroup

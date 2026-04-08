@@ -2,38 +2,28 @@
 
 import { useLayoutEffect } from "react"
 import { usePathname } from "next/navigation"
-import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { useTheme } from "next-themes"
 
 export function ThemeFavicon() {
-    const { palette } = useReadingPreferences()
     const { resolvedTheme } = useTheme()
     const pathname = usePathname()
 
     useLayoutEffect(() => {
         const updateFavicon = () => {
             const createIcon = () => {
-                const style = getComputedStyle(document.documentElement)
-                // We need to read the variable value. If it's not set (e.g. strict mode/server), fallback to black
-                const primaryParams = style.getPropertyValue('--primary').trim()
-
-                if (!primaryParams) return
-
-                // Helper to resolve CSS variable to actual color
                 const resolveColor = (cssVar: string) => {
-                    const temp = document.createElement('div')
+                    const temp = document.createElement("div")
                     temp.style.color = `var(${cssVar})`
-                    temp.style.display = 'none'
+                    temp.style.display = "none"
                     document.body.appendChild(temp)
                     const color = getComputedStyle(temp).color
                     document.body.removeChild(temp)
                     return color
                 }
 
-                const resolvedPrimary = resolveColor('--primary')
-                const resolvedForeground = resolveColor('--primary-foreground')
+                const resolvedPrimary = resolveColor("--primary")
+                const resolvedForeground = resolveColor("--primary-foreground")
 
-                // SVG with circle and central cross
                 const svg = `
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
                         <circle cx="16" cy="16" r="14" fill="${resolvedPrimary}" />
@@ -42,11 +32,10 @@ export function ThemeFavicon() {
                 `
                 const svgDataUri = `data:image/svg+xml;base64,${btoa(svg)}`
 
-                // Update existing icon links in place so Next.js doesn't crash on unmount
                 const existingLinks = document.querySelectorAll("link[rel*='icon']")
                 if (existingLinks.length > 0) {
-                    existingLinks.forEach(link => {
-                        (link as HTMLLinkElement).href = svgDataUri
+                    existingLinks.forEach((link) => {
+                        ;(link as HTMLLinkElement).href = svgDataUri
                     })
                 } else {
                     const newLink = document.createElement("link")
@@ -56,7 +45,6 @@ export function ThemeFavicon() {
                 }
             }
 
-            // Allow a brief delay for theme-provider to apply classes and CSS variables to settle
             setTimeout(createIcon, 50)
         }
 
@@ -68,12 +56,11 @@ export function ThemeFavicon() {
 
         observer.observe(document.documentElement, {
             attributes: true,
-            attributeFilter: ['class', 'style', 'data-theme', 'data-palette']
+            attributeFilter: ["class", "style", "data-theme"],
         })
 
         return () => observer.disconnect()
-
-    }, [palette, resolvedTheme, pathname])
+    }, [resolvedTheme, pathname])
 
     return null
 }

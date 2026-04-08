@@ -20,6 +20,23 @@ import {
 import { HIGHLIGHT_MENU_COLORS as HIGHLIGHT_COLORS } from "@/lib/highlight-menu"
 import { SPRING_FAST } from "@/lib/animation"
 
+function verseSharePulseClass(color: string | undefined): string {
+    switch (color) {
+        case "green":
+            return "animate-verse-pulse-green"
+        case "blue":
+            return "animate-verse-pulse-blue"
+        case "pink":
+            return "animate-verse-pulse-pink"
+        case "purple":
+            return "animate-verse-pulse-purple"
+        case "orange":
+            return "animate-verse-pulse-orange"
+        default:
+            return "animate-verse-pulse"
+    }
+}
+
 interface ReadingContentProps {
     chapter: BibleChapter
     bookName: string
@@ -185,7 +202,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 setSelectedVerses(selected)
                 setMenuPosition({ top: e.clientY, left: e.clientX })
                 setMenuOpen(true)
-                setLiveAnnouncement(`${selected.length} verses selected. Choose a highlight color or press 1–5.`)
+                setLiveAnnouncement(`${selected.length} verses selected. Choose a highlight color or press 1–6.`)
                 if (window.navigator?.vibrate) window.navigator.vibrate(50)
             }
         }
@@ -277,44 +294,80 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
         return () => document.removeEventListener('mousemove', onMouseMove)
     }, [])
 
-    const applyColor = React.useCallback(async (color: string) => {
-        const newHighlights = [...highlights]
-        const persistence = await import("@/lib/persistence")
-
-        for (const vId of selectedVerses) {
-            const existingIdx = newHighlights.findIndex(h => h.verse === vId)
-            let noteToKeep = existingIdx !== -1 ? newHighlights[existingIdx].note : undefined
-            let idToKeep = existingIdx !== -1 ? newHighlights[existingIdx].id : undefined // Preserve ID for safe update
-
-            if (existingIdx !== -1) newHighlights.splice(existingIdx, 1)
-
-            const verseData = chapter.verses.find(v => v.verse === vId)
-            if (verseData) {
-                const h: Highlight = {
-                    id: idToKeep,
-                    book: bookName,
-                    chapter: chapterNum,
-                    verse: vId,
-                    color,
-                    content: verseData.text,
-                    note: noteToKeep,
-                    created_at: new Date().toISOString()
-                }
-                newHighlights.push(h)
-                await persistence.saveHighlight(h)
+    const removeHighlightsForVerses = React.useCallback(
+        async (verseNums: number[]) => {
+            if (verseNums.length === 0) return
+            const newHighlights = highlights.filter((h) => !verseNums.includes(h.verse))
+            setHighlights(newHighlights)
+            const persistence = await import("@/lib/persistence")
+            for (const vId of verseNums) {
+                await persistence.removeHighlight(bookName, chapterNum, vId)
             }
-        }
+            setMenuOpen(false)
+            bumpVerseContextMenus(verseNums)
+            setAnyContextMenuOpen(false)
+            window.getSelection()?.removeAllRanges()
+        },
+        [highlights, bookName, chapterNum, bumpVerseContextMenus]
+    )
 
-        setHighlights(newHighlights)
-        setMenuOpen(false)
-        bumpVerseContextMenus(selectedVerses)
-        setAnyContextMenuOpen(false)
-        window.getSelection()?.removeAllRanges()
-    }, [highlights, selectedVerses, bookName, chapterNum, chapter.verses, bumpVerseContextMenus])
+    const applyColor = React.useCallback(
+        async (color: string) => {
+            if (selectedVerses.length > 0) {
+                const allHaveThisColor = selectedVerses.every(
+                    (v) => highlights.find((h) => h.verse === v)?.color === color
+                )
+                if (allHaveThisColor) {
+                    await removeHighlightsForVerses(selectedVerses)
+                    return
+                }
+            }
 
+            const newHighlights = [...highlights]
+            const persistence = await import("@/lib/persistence")
 
+            for (const vId of selectedVerses) {
+                const existingIdx = newHighlights.findIndex((h) => h.verse === vId)
+                const noteToKeep = existingIdx !== -1 ? newHighlights[existingIdx].note : undefined
+                const idToKeep = existingIdx !== -1 ? newHighlights[existingIdx].id : undefined
 
-    // Keyboard shortcuts for highlight menu: 1–5 apply colors, Escape closes
+                if (existingIdx !== -1) newHighlights.splice(existingIdx, 1)
+
+                const verseData = chapter.verses.find((v) => v.verse === vId)
+                if (verseData) {
+                    const h: Highlight = {
+                        id: idToKeep,
+                        book: bookName,
+                        chapter: chapterNum,
+                        verse: vId,
+                        color,
+                        content: verseData.text,
+                        note: noteToKeep,
+                        created_at: new Date().toISOString(),
+                    }
+                    newHighlights.push(h)
+                    await persistence.saveHighlight(h)
+                }
+            }
+
+            setHighlights(newHighlights)
+            setMenuOpen(false)
+            bumpVerseContextMenus(selectedVerses)
+            setAnyContextMenuOpen(false)
+            window.getSelection()?.removeAllRanges()
+        },
+        [
+            highlights,
+            selectedVerses,
+            bookName,
+            chapterNum,
+            chapter.verses,
+            bumpVerseContextMenus,
+            removeHighlightsForVerses,
+        ]
+    )
+
+    // Keyboard shortcuts for highlight menu: 1–6 apply colors (or remove if already that color), Escape closes
     React.useEffect(() => {
         if (!menuOpen && !anyContextMenuOpen) return
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -335,16 +388,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
     }, [menuOpen, anyContextMenuOpen, applyColor])
 
     const clearSelection = async () => {
-        const newHighlights = highlights.filter(h => !selectedVerses.includes(h.verse))
-        setHighlights(newHighlights)
-        const persistence = await import("@/lib/persistence")
-        for (const vId of selectedVerses) {
-            await persistence.removeHighlight(bookName, chapterNum, vId)
-        }
-        setMenuOpen(false)
-        bumpVerseContextMenus(selectedVerses)
-        setAnyContextMenuOpen(false)
-        window.getSelection()?.removeAllRanges()
+        await removeHighlightsForVerses(selectedVerses)
     }
 
 
@@ -356,8 +400,17 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
     const selectedHighlightColor = React.useMemo(() => {
         if (selectedVerses.length === 0) return undefined
-        const h = highlights.find(h => h.verse === selectedVerses[0])
+        const h = highlights.find((h) => h.verse === selectedVerses[0])
         return h?.color
+    }, [selectedVerses, highlights])
+
+    /** Swatch X + remove-on-click only when every selected verse already uses the same color. */
+    const menuActiveHighlightColor = React.useMemo(() => {
+        if (selectedVerses.length === 0) return null
+        const colors = selectedVerses.map((v) => highlights.find((h) => h.verse === v)?.color)
+        if (colors.some((c) => c === undefined)) return null
+        const first = colors[0]
+        return colors.every((c) => c === first) ? first! : null
     }, [selectedVerses, highlights])
 
     // ... (existing handlers)
@@ -484,10 +537,10 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
             onNote: () => handleOpenNote(),
             onCopy: () => void handleCopyVerse(),
             onShare: () => void handleShareSelection(),
-            onClear: () => void clearSelection(),
             copyDone,
+            activeHighlightColor: menuActiveHighlightColor,
         }),
-        [applyColor, handleOpenNote, handleCopyVerse, handleShareSelection, clearSelection, copyDone]
+        [applyColor, handleOpenNote, handleCopyVerse, handleShareSelection, copyDone, menuActiveHighlightColor]
     )
 
     // Helper to get initial note content
@@ -609,7 +662,9 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
             </Dialog>
 
             {/* Screen reader live region for selection feedback */}
-            <div aria-live="polite" className="sr-only">{liveAnnouncement}</div>
+            <div aria-live="polite" className="sr-only" data-reading-live="">
+                {liveAnnouncement}
+            </div>
 
             {/* Drag selection count badge */}
             <AnimatePresence>
@@ -654,14 +709,12 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 </DropdownMenu>
             )}
 
-            {/* Chapter Header - Static, not animated */}
-            {/* Chapter Header - Static, not animated */}
             {mode === 'default' && (
-                <div className="text-center mb-12 opacity-50 hover:opacity-100 transition-opacity">
-                    <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                <div className="text-center mb-14">
+                    <h1 className="text-lg font-semibold tracking-tight text-foreground">
                         {chapter.reference}
                     </h1>
-                    <p className="text-xs text-muted-foreground mt-1">{chapter.translation_name}</p>
+                    <p className="text-xs text-muted-foreground mt-1.5">{chapter.translation_name}</p>
                 </div>
             )}
 
@@ -736,7 +789,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                 if (open) {
                                                     setSelectedVerses([verse.verse])
                                                     setLiveAnnouncement(
-                                                        `Verse ${verse.verse}. Press 1–5 to highlight, or use the menu.`
+                                                        `Verse ${verse.verse}. Press 1–6 to highlight, or use the menu.`
                                                     )
                                                 }
                                             }}
@@ -747,6 +800,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: i * 0.002, duration: 0.2 }}
                                                     data-verse={verse.verse}
+                                                    data-highlight-color={highlight?.color}
                                                     className={cn(
                                                         "inline cursor-pointer transition-colors duration-150 rounded px-[2px] -mx-[2px] relative",
                                                         bgClass || "hover:bg-primary/5",
@@ -759,15 +813,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                                 ? "ring-2 ring-primary/60 ring-inset"
                                                                 : "bg-primary/15 ring-2 ring-primary/50 ring-inset"),
                                                         pulsingVerses.includes(verse.verse) &&
-                                                            (highlight?.color === "green"
-                                                                ? "animate-verse-pulse-green"
-                                                                : highlight?.color === "blue"
-                                                                  ? "animate-verse-pulse-blue"
-                                                                  : highlight?.color === "pink"
-                                                                    ? "animate-verse-pulse-pink"
-                                                                    : highlight?.color === "purple"
-                                                                      ? "animate-verse-pulse-purple"
-                                                                      : "animate-verse-pulse"),
+                                                            verseSharePulseClass(highlight?.color),
                                                         highlight?.note &&
                                                             !bgClass &&
                                                             "underline decoration-dotted decoration-primary/50"
@@ -822,10 +868,9 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                         )}
                     </div>
 
-                    {/* Citation / Copyright */}
                     {mode === 'default' && chapter.translation_note && (
-                        <div className="mt-12 text-center opacity-60 hover:opacity-80 transition-opacity">
-                            <p className="text-[10px] font-mono leading-relaxed max-w-lg mx-auto">
+                        <div className="mt-16 text-center">
+                            <p className="text-xs text-muted-foreground/50 leading-relaxed max-w-lg mx-auto">
                                 {chapter.translation_note}
                             </p>
                         </div>

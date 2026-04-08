@@ -229,11 +229,8 @@ export function CommandMenu() {
                     {showEmptyHint && <CommandEmpty>No matches. Try a book name or reference (e.g. John 3:16).</CommandEmpty>}
 
                     {!input.trim() && (
-                        <div className="border-t border-border/30 bg-muted/15 px-3 py-2.5 text-center text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">
+                        <div className="border-t border-white/[0.06] px-3 py-2.5 text-center text-xs text-muted-foreground/50">
                             <div>Type anywhere to search · ⌘K</div>
-                            <div className="mt-1 normal-case tracking-normal text-muted-foreground/50">
-                                Jump · full-text (with API key)
-                            </div>
                         </div>
                     )}
                 </CommandList>
