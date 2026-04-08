@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { MobileNav } from "@/components/mobile-nav";
 import { ReadingPreferencesProvider } from "@/contexts/reading-preferences";
 import { Header } from "@/components/header";
-import { CommandMenu } from "@/components/command-menu";
+
 import { Footer } from "@/components/footer";
 import { Toaster } from "sonner";
 import { MainLayout } from "@/components/main-layout";
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
     url: "/",
     images: [
       {
-        url: "/favicon-light.png",
+        url: "/OW1.svg",
       },
     ],
   },
@@ -83,7 +83,7 @@ export const metadata: Metadata = {
     card: "summary",
     title: `${BRAND_NAME} | Bible Reading App`,
     description: SITE_DESCRIPTION,
-    images: ["/favicon-light.png"],
+    images: ["/OW1.svg"],
   },
   robots: {
     index: true,
@@ -97,17 +97,8 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: [
-      {
-        media: "(prefers-color-scheme: light)",
-        url: "/favicon-light.png",
-      },
-      {
-        media: "(prefers-color-scheme: dark)",
-        url: "/favicon-dark.png",
-      },
-    ],
-    apple: "/favicon-light.png",
+    icon: "/OW1.svg",
+    apple: "/OW1.svg",
   },
 };
 
@@ -159,7 +150,6 @@ export default function RootLayout({
                 <NavModeGate mode="classic">
                   <Header />
                 </NavModeGate>
-                <CommandMenu />
                 <MainLayout>
                   <Suspense fallback={<Loading />}>
                     {children}

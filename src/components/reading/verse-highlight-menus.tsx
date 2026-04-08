@@ -156,7 +156,7 @@ function ActionItems({
                         data-slide-item
                         onSelect={a.onSelect}
                         onPointerEnter={() => setHovered(i)}
-                        className="relative z-10 flex cursor-default select-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium outline-none transition-colors text-popover-foreground !bg-transparent"
+                        className="relative z-10 flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium outline-none transition-colors text-popover-foreground !bg-transparent"
                     >
                         {a.icon}
                         {a.label}

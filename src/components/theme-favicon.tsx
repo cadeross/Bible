@@ -1,66 +1,32 @@
 "use client"
 
 import { useLayoutEffect } from "react"
-import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 
 export function ThemeFavicon() {
     const { resolvedTheme } = useTheme()
-    const pathname = usePathname()
 
     useLayoutEffect(() => {
-        const updateFavicon = () => {
-            const createIcon = () => {
-                const resolveColor = (cssVar: string) => {
-                    const temp = document.createElement("div")
-                    temp.style.color = `var(${cssVar})`
-                    temp.style.display = "none"
-                    document.body.appendChild(temp)
-                    const color = getComputedStyle(temp).color
-                    document.body.removeChild(temp)
-                    return color
-                }
+        const update = () => {
+            const primary = resolvedTheme === "dark" ? "#0a84ff" : "#2488f2"
 
-                const resolvedPrimary = resolveColor("--primary")
-                const resolvedForeground = resolveColor("--primary-foreground")
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 370 370"><circle cx="185" cy="185" r="185" fill="${primary}"/><rect x="169" y="102" width="32" height="166" rx="7" fill="white"/><rect x="102" y="169" width="166" height="32" rx="7" fill="white"/></svg>`
+            const href = `data:image/svg+xml;base64,${btoa(svg)}`
 
-                const svg = `
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-                        <circle cx="16" cy="16" r="14" fill="${resolvedPrimary}" />
-                        <path d="M16 10 V22 M10 16 H22" stroke="${resolvedForeground}" stroke-width="3" stroke-linecap="round" />
-                    </svg>
-                `
-                const svgDataUri = `data:image/svg+xml;base64,${btoa(svg)}`
-
-                const existingLinks = document.querySelectorAll("link[rel*='icon']")
-                if (existingLinks.length > 0) {
-                    existingLinks.forEach((link) => {
-                        ;(link as HTMLLinkElement).href = svgDataUri
-                    })
-                } else {
-                    const newLink = document.createElement("link")
-                    newLink.rel = "shortcut icon"
-                    newLink.href = svgDataUri
-                    document.head.appendChild(newLink)
-                }
+            const existing = document.querySelectorAll("link[rel*='icon']")
+            if (existing.length > 0) {
+                existing.forEach((el) => { (el as HTMLLinkElement).href = href })
+            } else {
+                const link = document.createElement("link")
+                link.rel = "icon"
+                link.type = "image/svg+xml"
+                link.href = href
+                document.head.appendChild(link)
             }
-
-            setTimeout(createIcon, 50)
         }
 
-        updateFavicon()
-
-        const observer = new MutationObserver(() => {
-            setTimeout(updateFavicon, 50)
-        })
-
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ["class", "style", "data-theme"],
-        })
-
-        return () => observer.disconnect()
-    }, [resolvedTheme, pathname])
+        setTimeout(update, 50)
+    }, [resolvedTheme])
 
     return null
 }

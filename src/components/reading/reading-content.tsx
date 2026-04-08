@@ -1,4 +1,5 @@
 import React from "react"
+import { createPortal } from "react-dom"
 import { BibleChapter } from "@/lib/bible-api"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { cn } from "@/lib/utils"
@@ -82,8 +83,12 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
     const [dragVerses, setDragVerses] = React.useState<number[]>([])
     const [dragCursorPos, setDragCursorPos] = React.useState({ x: 0, y: 0 })
     const dragStartVerseRef = React.useRef<number | null>(null)
-    const isDraggingRef = React.useRef(false) // ref mirror for use in event handlers
-    const wasDraggingRef = React.useRef(false) // survives through the click event
+    const dragStartPosRef = React.useRef<{ x: number; y: number } | null>(null)
+    const isDraggingRef = React.useRef(false)
+    const wasDraggingRef = React.useRef(false)
+    const menuClosedAtRef = React.useRef(0)
+    const DRAG_THRESHOLD = 8
+    const MENU_COOLDOWN = 400
 
     // Log Reading History
     // Log Reading History (Time Tracking)
@@ -159,18 +164,43 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
     // --- Interaction Handlers ---
 
-    // 0. Drag-to-select verses
-    const startDrag = (verseNum: number) => {
+    const cancelDrag = React.useCallback(() => {
+        dragStartVerseRef.current = null
+        dragStartPosRef.current = null
+        isDraggingRef.current = false
+        wasDraggingRef.current = false
+        setIsDragging(false)
+        setDragVerses([])
+    }, [])
+
+    React.useEffect(() => {
+        if (!menuOpen && !anyContextMenuOpen) {
+            menuClosedAtRef.current = Date.now()
+        }
+    }, [menuOpen, anyContextMenuOpen])
+
+    // 0. Drag-to-select verses (left-click only)
+    const startDrag = (verseNum: number, e: React.MouseEvent) => {
+        if (e.button !== 0) return
+        if (menuOpen || anyContextMenuOpen) return
+        if (Date.now() - menuClosedAtRef.current < MENU_COOLDOWN) return
         dragStartVerseRef.current = verseNum
+        dragStartPosRef.current = { x: e.clientX, y: e.clientY }
         isDraggingRef.current = false
         setDragVerses([])
     }
 
-    const updateDrag = (verseNum: number) => {
-        if (dragStartVerseRef.current === null || menuOpen) return
+    const updateDrag = (verseNum: number, e: React.MouseEvent) => {
+        if (dragStartVerseRef.current === null || menuOpen || anyContextMenuOpen) return
+
+        if (!isDraggingRef.current && dragStartPosRef.current) {
+            const dx = e.clientX - dragStartPosRef.current.x
+            const dy = e.clientY - dragStartPosRef.current.y
+            if (Math.sqrt(dx * dx + dy * dy) < DRAG_THRESHOLD) return
+        }
+
         if (verseNum === dragStartVerseRef.current && !isDraggingRef.current) return
 
-        // Cancel long press once we start dragging across verses
         if (!isDraggingRef.current) {
             if (longPressTimeout.current) {
                 clearTimeout(longPressTimeout.current)
@@ -203,15 +233,33 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 setMenuPosition({ top: e.clientY, left: e.clientX })
                 setMenuOpen(true)
                 setLiveAnnouncement(`${selected.length} verses selected. Choose a highlight color or press 1–6.`)
-                if (window.navigator?.vibrate) window.navigator.vibrate(50)
             }
         }
 
         dragStartVerseRef.current = null
+        dragStartPosRef.current = null
         isDraggingRef.current = false
         setIsDragging(false)
         setDragVerses([])
     }
+
+    // Escape key cancels drag or closes selection
+    React.useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key !== "Escape") return
+            if (isDraggingRef.current) {
+                e.preventDefault()
+                cancelDrag()
+                return
+            }
+            if (menuOpen) {
+                setMenuOpen(false)
+                window.getSelection()?.removeAllRanges()
+            }
+        }
+        window.addEventListener("keydown", handleEsc)
+        return () => window.removeEventListener("keydown", handleEsc)
+    }, [menuOpen, cancelDrag])
 
     // 1. Click -> Toggle Default Highlight
     const handleVerseClick = async (verseNum: number, verseText: string) => {
@@ -248,10 +296,11 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
     const longPressTimeout = React.useRef<NodeJS.Timeout | null>(null)
 
     const handleTouchStart = (verseNum: number, e: React.TouchEvent | React.MouseEvent) => {
+        if ("button" in e && e.button !== 0) return
         if (longPressTimeout.current) clearTimeout(longPressTimeout.current)
 
         longPressTimeout.current = setTimeout(() => {
-            openMenu(e.target as HTMLElement, verseNum, 0, 0, true) // Pass standard offset
+            openMenu(e.target as HTMLElement, verseNum, 0, 0, true)
         }, 500)
     }
 
@@ -280,7 +329,6 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
         setMenuPosition({ top, left })
         setSelectedVerses([verseNum])
         setMenuOpen(true)
-        if (window.navigator?.vibrate) window.navigator.vibrate(50)
     }
 
     // 4. Track cursor position during drag for the badge
@@ -666,27 +714,37 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 {liveAnnouncement}
             </div>
 
-            {/* Drag selection count badge */}
-            <AnimatePresence>
-                {isDragging && dragVerses.length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={SPRING_FAST}
-                        className="fixed z-50 pointer-events-none"
-                        style={{ top: dragCursorPos.y + 14, left: dragCursorPos.x + 14 }}
-                    >
-                        <div className="flex items-center gap-1.5 bg-foreground text-background text-[11px] font-mono font-medium px-2.5 py-1 rounded-full shadow-lg">
-                            <span>{dragVerses.length}</span>
-                            <span className="opacity-70">{dragVerses.length === 1 ? 'verse' : 'verses'}</span>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Drag selection count badge — portaled to body to escape transform containment */}
+            {typeof document !== "undefined" && createPortal(
+                <AnimatePresence>
+                    {isDragging && dragVerses.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.85 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                            className="fixed z-[9999] pointer-events-none rounded-full"
+                            style={{
+                                top: dragCursorPos.y + 16,
+                                left: dragCursorPos.x + 16,
+                                background: "color-mix(in srgb, var(--popover) 82%, transparent)",
+                                WebkitBackdropFilter: "blur(60px) saturate(2)",
+                                backdropFilter: "blur(60px) saturate(2)",
+                                boxShadow: "var(--shadow-elevated), inset 0 0.5px 0 rgba(255,255,255,0.12)",
+                            }}
+                        >
+                            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground px-3 py-1.5">
+                                <span>{dragVerses.length}</span>
+                                <span className="text-muted-foreground font-medium">{dragVerses.length === 1 ? 'verse' : 'verses'}</span>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
-            {/* Long-press / drag selection → anchored dropdown menu */}
-            {!disableHighlighting && (
+            {/* Long-press / drag selection → anchored dropdown menu — portaled trigger */}
+            {!disableHighlighting && typeof document !== "undefined" && createPortal(
                 <DropdownMenu
                     open={menuOpen}
                     onOpenChange={(open) => {
@@ -706,7 +764,8 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                         />
                     </DropdownMenuTrigger>
                     <VerseHighlightDropdownMenuContent handlers={menuHandlers} />
-                </DropdownMenu>
+                </DropdownMenu>,
+                document.body
             )}
 
             {mode === 'default' && (
@@ -805,13 +864,13 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                         "inline cursor-pointer transition-colors duration-150 rounded px-[2px] -mx-[2px] relative",
                                                         bgClass || "hover:bg-primary/5",
                                                         dragVerses.includes(verse.verse) &&
-                                                            "bg-primary/30 ring-2 ring-primary/60 ring-inset",
+                                                            "bg-primary/15 ring-1 ring-primary/30 ring-inset",
                                                         !dragVerses.length &&
                                                             (menuOpen || anyContextMenuOpen) &&
                                                             selectedVerses.includes(verse.verse) &&
                                                             (bgClass
-                                                                ? "ring-2 ring-primary/60 ring-inset"
-                                                                : "bg-primary/15 ring-2 ring-primary/50 ring-inset"),
+                                                                ? "ring-1 ring-primary/40 ring-inset"
+                                                                : "bg-primary/10 ring-1 ring-primary/30 ring-inset"),
                                                         pulsingVerses.includes(verse.verse) &&
                                                             verseSharePulseClass(highlight?.color),
                                                         highlight?.note &&
@@ -821,9 +880,9 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                     onClick={() => handleVerseClick(verse.verse, verse.text)}
                                                     onMouseDown={(e) => {
                                                         handleTouchStart(verse.verse, e)
-                                                        startDrag(verse.verse)
+                                                        startDrag(verse.verse, e)
                                                     }}
-                                                    onMouseEnter={() => updateDrag(verse.verse)}
+                                                    onMouseEnter={(e) => updateDrag(verse.verse, e)}
                                                     onMouseUp={(e) => {
                                                         handleTouchEnd()
                                                         finalizeDrag(verse.verse, e)
