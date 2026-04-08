@@ -7,9 +7,9 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useFocusMode } from "@/contexts/focus-mode"
 import { Search, Settings } from "lucide-react"
-import { openCommandMenu } from "@/lib/open-command-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SettingsPanel } from "@/components/settings-panel"
+import { SearchPanel } from "@/components/search-panel"
 
 function OpenWritLogo({ className }: { className?: string }) {
     return (
@@ -42,25 +42,12 @@ function NavLink({ href, children }: { href: string; children: ReactNode }) {
     )
 }
 
-function NavIconButton({ onClick, label, children }: { onClick: () => void; label: string; children: ReactNode }) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            aria-label={label}
-            className="group isolate relative flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground/50 transition-colors duration-200 hover:text-foreground"
-        >
-            {children}
-            <span className={hoverPillClass} />
-        </button>
-    )
-}
-
 export function InlineNav() {
     const pathname = usePathname() || "/"
     const { isFocusMode } = useFocusMode()
     const isReadPage = pathname.startsWith("/read")
     const [settingsOpen, setSettingsOpen] = useState(false)
+    const [searchOpen, setSearchOpen] = useState(false)
 
     return (
         <nav
@@ -87,9 +74,21 @@ export function InlineNav() {
                     <NavLink href="/daily">Daily</NavLink>
                     <NavLink href="/library">Library</NavLink>
 
-                    <NavIconButton onClick={() => openCommandMenu()} label="Search">
-                        <Search className="h-3.5 w-3.5" />
-                    </NavIconButton>
+                    <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                        <PopoverTrigger asChild>
+                            <button
+                                type="button"
+                                aria-label="Search"
+                                className="group isolate relative flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground/50 transition-colors duration-200 hover:text-foreground"
+                            >
+                                <Search className="h-3.5 w-3.5" />
+                                <span className={hoverPillClass} />
+                            </button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" sideOffset={8} className="w-auto p-0 overflow-hidden">
+                            <SearchPanel open={searchOpen} onOpenChange={setSearchOpen} />
+                        </PopoverContent>
+                    </Popover>
 
                     <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
                         <PopoverTrigger asChild>

@@ -274,11 +274,14 @@ export default function LibraryPage() {
 
             {/* Header */}
             <div className="mb-10 space-y-5">
-                <div>
+                <div className="space-y-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1 text-[11px] font-medium text-primary">
+                        Redesign coming soon
+                    </span>
                     <h1 className="text-2xl font-semibold tracking-tight text-foreground">
                         Library
                     </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                         Verses, highlights, and notes
                     </p>
                 </div>

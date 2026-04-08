@@ -66,7 +66,7 @@ function BookList({ books, currentBook, onSelect }: { books: { id: string; name:
                     onClick={() => onSelect(book.id)}
                     onPointerEnter={() => setHovered(i)}
                     className={cn(
-                        "relative z-10 flex w-full items-center rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+                        "relative z-10 flex w-full cursor-pointer items-center rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
                         book.id === currentBook ? "text-foreground" : "text-foreground/70"
                     )}
                 >
@@ -98,7 +98,7 @@ function TranslationList({ translations, currentTranslation, onSelect }: { trans
                         data-slide-item
                         onClick={() => onSelect(t.id)}
                         onPointerEnter={() => setHovered(i)}
-                        className="relative z-10 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors"
+                        className="relative z-10 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors"
                     >
                         <span className={cn("w-14 shrink-0 text-xs font-semibold tabular-nums", selected ? "text-foreground" : "text-muted-foreground")}>
                             {abbrev}
@@ -155,7 +155,7 @@ const ChapterInput = ({ currentChapter, maxChapters, onChange }: { currentChapte
                 <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="w-full text-center text-[13px] font-semibold text-foreground tabular-nums transition-colors hover:text-foreground/70"
+                    className="w-full cursor-pointer text-center text-[13px] font-semibold text-foreground tabular-nums transition-colors hover:text-foreground/70"
                 >
                     {currentChapter}
                 </button>
@@ -237,7 +237,7 @@ function ToolbarPill({
             type="button"
             onClick={onClick}
             className={cn(
-                "flex items-center gap-1.5 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)] transition-[box-shadow,border-color] duration-200 hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] active:scale-[0.97]",
+                "flex cursor-pointer items-center gap-1.5 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)] transition-[box-shadow,border-color] duration-200 hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] active:scale-[0.97]",
                 extraClassName
             )}
         >
@@ -378,7 +378,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                         type="button"
                         onClick={() => { if (prevNav) nav(prevNav.book, prevNav.chapter) }}
                         disabled={!prevOk}
-                        className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:bg-muted/50 hover:text-foreground disabled:opacity-20 disabled:pointer-events-none"
+                        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:bg-muted/50 hover:text-foreground disabled:opacity-20 disabled:pointer-events-none disabled:cursor-default"
                     >
                         <ChevronLeft className="h-3.5 w-3.5" />
                     </button>
@@ -390,7 +390,7 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                         type="button"
                         onClick={() => { if (nextNav) nav(nextNav.book, nextNav.chapter) }}
                         disabled={!nextOk}
-                        className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:bg-muted/50 hover:text-foreground disabled:opacity-20 disabled:pointer-events-none"
+                        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:bg-muted/50 hover:text-foreground disabled:opacity-20 disabled:pointer-events-none disabled:cursor-default"
                     >
                         <ChevronRight className="h-3.5 w-3.5" />
                     </button>

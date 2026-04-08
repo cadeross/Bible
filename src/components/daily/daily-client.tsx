@@ -59,6 +59,9 @@ export function DailyClient({ dailyReadings }: DailyClientProps) {
         >
             {/* Hero */}
             <div className="flex flex-col items-center text-center gap-3">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1 text-[11px] font-medium text-primary">
+                    Redesign coming soon
+                </span>
                 <p className="text-sm text-muted-foreground">{todayLabel}</p>
                 <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                     Today&apos;s Readings
