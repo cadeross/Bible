@@ -96,9 +96,9 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+  // Safari Start Page / favorites tile: raster apple-touch-icon from app/apple-icon.png
   icons: {
     icon: "/OW1.svg",
-    apple: "/OW1.svg",
   },
 };
 
