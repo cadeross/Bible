@@ -82,6 +82,18 @@
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(28px) saturate(1.8);
   backdrop-filter: blur(28px) saturate(1.8);
+  border-color: transparent !important;
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -0.5px 0 rgba(0, 0, 0, 0.06),
+    var(--shadow-elevated);
+}
+
+html[data-theme="dark"] .glass {
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.03),
+    var(--shadow-elevated);
 }
 
 .glass-subtle {
@@ -89,6 +101,18 @@
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(20px) saturate(1.5);
   backdrop-filter: blur(20px) saturate(1.5);
+  border-color: transparent !important;
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -0.5px 0 rgba(0, 0, 0, 0.08),
+    var(--shadow-sm);
+}
+
+html[data-theme="dark"] .glass-subtle {
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.03),
+    var(--shadow-sm);
 }
 
 .glass-nav {
@@ -236,15 +260,22 @@
   animation: fadeOut 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Dialog content — elegant entrance/exit */
+/* Dialog content — dimensional entrance/exit */
 @keyframes dialogContentIn {
-  from {
+  0% {
     opacity: 0;
-    transform: translate(-50%, -47%) scale(0.97);
+    transform: translate(-50%, -44%) scale(0.9);
+    filter: blur(10px);
   }
-  to {
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50.5%) scale(1.005);
+    filter: blur(0px);
+  }
+  100% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
+    filter: blur(0px);
   }
 }
 
@@ -252,10 +283,12 @@
   from {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
+    filter: blur(0px);
   }
   to {
     opacity: 0;
-    transform: translate(-50%, -49%) scale(0.97);
+    transform: translate(-50%, -47%) scale(0.94);
+    filter: blur(8px);
   }
 }
 
@@ -271,13 +304,20 @@
 }
 
 @keyframes commandContentIn {
-  from {
+  0% {
     opacity: 0;
-    transform: translate(-50%, -46%) scale(0.97);
+    transform: translate(-50%, -42%) scale(0.9);
+    filter: blur(10px);
   }
-  to {
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50.5%) scale(1.005);
+    filter: blur(0px);
+  }
+  100% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
+    filter: blur(0px);
   }
 }
 
@@ -285,29 +325,31 @@
   from {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
+    filter: blur(0px);
   }
   to {
     opacity: 0;
-    transform: translate(-50%, -48%) scale(0.98);
+    transform: translate(-50%, -46%) scale(0.94);
+    filter: blur(8px);
   }
 }
 
 @keyframes dialogOverlayIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to   { opacity: 1; backdrop-filter: blur(8px); }
 }
 
 @keyframes dialogOverlayOut {
-  from { opacity: 1; }
-  to   { opacity: 0; }
+  from { opacity: 1; backdrop-filter: blur(8px); }
+  to   { opacity: 0; backdrop-filter: blur(0px); }
 }
 
 [data-radix-dialog-content][data-state="open"] {
-  animation: dialogContentIn 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: dialogContentIn 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 [data-radix-dialog-content][data-state="closed"] {
-  animation: dialogContentOut 160ms cubic-bezier(0.4, 0, 1, 1);
+  animation: dialogContentOut 200ms cubic-bezier(0.4, 0, 1, 1);
 }
 
 [data-radix-dialog-overlay][data-state="open"] {
@@ -367,35 +409,52 @@
   animation: fadeOut 200ms ease-in;
 }
 
-/* Radix menus / popovers: opacity-only so Popper transform positioning is not clobbered */
-@keyframes owMenuFadeIn {
-  from {
+/* Radix menus / popovers: dimensional entrance with scale + blur + translate */
+@keyframes owMenuIn {
+  0% {
     opacity: 0;
+    scale: 0.92;
+    translate: 0 -6px;
+    filter: blur(8px);
   }
-
-  to {
+  60% {
     opacity: 1;
+    scale: 1.01;
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+    filter: blur(0px);
   }
 }
 
-@keyframes owMenuFadeOut {
+@keyframes owMenuOut {
   from {
     opacity: 1;
+    scale: 1;
+    translate: 0 0;
+    filter: blur(0px);
   }
-
   to {
     opacity: 0;
+    scale: 0.94;
+    translate: 0 -4px;
+    filter: blur(6px);
   }
 }
 
 .ow-menu-surface[data-state="open"],
 .ow-menu-surface[data-state="delayed-open"],
 .ow-menu-surface[data-state="instant-open"] {
-  animation: owMenuFadeIn 125ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: owMenuIn 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: var(--radix-popper-transform-origin, top center);
 }
 
 .ow-menu-surface[data-state="closed"] {
-  animation: owMenuFadeOut 80ms cubic-bezier(0.4, 0, 1, 1) both;
+  animation: owMenuOut 160ms cubic-bezier(0.4, 0, 1, 1) both;
+  transform-origin: var(--radix-popper-transform-origin, top center);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

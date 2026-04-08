@@ -19,10 +19,13 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             isInline ? "pt-0 pb-0" : "pb-24 pt-[calc(3.5rem+var(--maintenance-banner-height))]"
         )}>
             {isInline && (
-                <div className="sticky top-[var(--maintenance-banner-height)] z-40 w-full glass-nav">
-                    <div className="mx-auto w-full max-w-4xl border-b border-border/20 px-6 py-3">
-                        <InlineNav />
+                <div className="sticky top-[var(--maintenance-banner-height)] z-40 w-full">
+                    <div className="w-full bg-background">
+                        <div className="mx-auto w-full max-w-4xl border-b border-border/10 px-6 py-3">
+                            <InlineNav />
+                        </div>
                     </div>
+                    <div className="pointer-events-none h-12 w-full bg-gradient-to-b from-background/80 to-transparent" />
                 </div>
             )}
             {children}
