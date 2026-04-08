@@ -11,6 +11,108 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { canGoNextChapter, canGoPrevChapter, getAdjacentChapter } from "@/lib/chapter-navigation"
 
+function SlidingHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {
+    const [rect, setRect] = React.useState<{ top: number; height: number } | null>(null)
+
+    React.useEffect(() => {
+        if (hoveredIndex === null || !containerRef.current) {
+            setRect(null)
+            return
+        }
+        const buttons = containerRef.current.querySelectorAll<HTMLElement>("[data-slide-item]")
+        const el = buttons[hoveredIndex]
+        if (!el) { setRect(null); return }
+        const parentRect = containerRef.current.getBoundingClientRect()
+        const elRect = el.getBoundingClientRect()
+        setRect({ top: elRect.top - parentRect.top + containerRef.current.scrollTop, height: elRect.height })
+    }, [hoveredIndex, containerRef])
+
+    return (
+        <motion.div
+            aria-hidden
+            className="pointer-events-none absolute left-1 right-1 z-0 rounded-lg bg-foreground/[0.05] dark:bg-white/[0.07]"
+            initial={false}
+            animate={
+                rect
+                    ? { opacity: 1, top: rect.top, height: rect.height }
+                    : { opacity: 0 }
+            }
+            transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
+            style={{ position: "absolute" }}
+        />
+    )
+}
+
+function BookList({ books, currentBook, onSelect }: { books: { id: string; name: string }[]; currentBook: string; onSelect: (id: string) => void }) {
+    const listRef = React.useRef<HTMLDivElement>(null)
+    const [hovered, setHovered] = React.useState<number | null>(null)
+
+    if (books.length === 0) {
+        return <div className="py-6 text-center text-sm text-muted-foreground">No results</div>
+    }
+
+    return (
+        <div
+            ref={listRef}
+            className="relative max-h-[320px] overflow-y-auto p-1"
+            onPointerLeave={() => setHovered(null)}
+        >
+            <SlidingHighlight containerRef={listRef} hoveredIndex={hovered} />
+            {books.map((book, i) => (
+                <button
+                    key={book.id}
+                    type="button"
+                    data-slide-item
+                    onClick={() => onSelect(book.id)}
+                    onPointerEnter={() => setHovered(i)}
+                    className={cn(
+                        "relative z-10 flex w-full items-center rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+                        book.id === currentBook ? "text-foreground" : "text-foreground/70"
+                    )}
+                >
+                    {book.name}
+                </button>
+            ))}
+        </div>
+    )
+}
+
+function TranslationList({ translations, currentTranslation, onSelect }: { translations: { id: string; name: string; abbreviation?: string }[]; currentTranslation: string; onSelect: (id: string) => void }) {
+    const listRef = React.useRef<HTMLDivElement>(null)
+    const [hovered, setHovered] = React.useState<number | null>(null)
+
+    return (
+        <div
+            ref={listRef}
+            className="relative max-h-[360px] overflow-y-auto p-1"
+            onPointerLeave={() => setHovered(null)}
+        >
+            <SlidingHighlight containerRef={listRef} hoveredIndex={hovered} />
+            {translations.map((t, i) => {
+                const abbrev = ((t as any).abbreviation || t.id).toUpperCase()
+                const selected = t.id === currentTranslation
+                return (
+                    <button
+                        key={t.id}
+                        type="button"
+                        data-slide-item
+                        onClick={() => onSelect(t.id)}
+                        onPointerEnter={() => setHovered(i)}
+                        className="relative z-10 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors"
+                    >
+                        <span className={cn("w-14 shrink-0 text-xs font-semibold tabular-nums", selected ? "text-foreground" : "text-muted-foreground")}>
+                            {abbrev}
+                        </span>
+                        <span className={cn("text-[13px] font-medium truncate", selected ? "text-foreground" : "text-foreground/70")}>
+                            {t.name}
+                        </span>
+                    </button>
+                )
+            })}
+        </div>
+    )
+}
+
 const ChapterInput = ({ currentChapter, maxChapters, onChange }: { currentChapter: number, maxChapters: number, onChange: (val: number) => void }) => {
     const [isEditing, setIsEditing] = React.useState(false)
     const [value, setValue] = React.useState(currentChapter.toString())
@@ -34,31 +136,31 @@ const ChapterInput = ({ currentChapter, maxChapters, onChange }: { currentChapte
         }
     }
 
-    if (isEditing) {
-        return (
-            <input
-                ref={inputRef}
-                type="text"
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                onBlur={handleSubmit}
-                onKeyDown={(e) => {
-                    if (e.key === "Enter") { handleSubmit(); inputRef.current?.blur() }
-                    if (e.key === "Escape") { setIsEditing(false); setValue(currentChapter.toString()) }
-                }}
-                className="w-8 text-center text-[13px] font-semibold bg-transparent outline-none text-foreground tabular-nums"
-            />
-        )
-    }
-
     return (
-        <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            className="min-w-[1.5rem] text-center text-[13px] font-semibold text-foreground tabular-nums transition-colors hover:text-primary"
-        >
-            {currentChapter}
-        </button>
+        <span className="inline-flex w-7 items-center justify-center">
+            {isEditing ? (
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    onBlur={handleSubmit}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") { handleSubmit(); inputRef.current?.blur() }
+                        if (e.key === "Escape") { setIsEditing(false); setValue(currentChapter.toString()) }
+                    }}
+                    className="w-full text-center text-[13px] font-semibold bg-transparent outline-none text-foreground tabular-nums"
+                />
+            ) : (
+                <button
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    className="w-full text-center text-[13px] font-semibold text-foreground tabular-nums transition-colors hover:text-foreground/70"
+                >
+                    {currentChapter}
+                </button>
+            )}
+        </span>
     )
 }
 
@@ -262,26 +364,11 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                                 }}
                             />
                         </div>
-                        <div className="max-h-[320px] overflow-y-auto p-1">
-                            {filteredBooks.map((book) => (
-                                <button
-                                    key={book.id}
-                                    type="button"
-                                    onClick={() => { handleBookChange(book.id); setBookSearch("") }}
-                                    className={cn(
-                                        "flex w-full items-center rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
-                                        book.id === currentBook
-                                            ? "bg-primary/[0.07] text-primary dark:bg-primary/[0.12]"
-                                            : "text-foreground/80 hover:bg-muted/50"
-                                    )}
-                                >
-                                    {book.name}
-                                </button>
-                            ))}
-                            {filteredBooks.length === 0 && (
-                                <div className="py-6 text-center text-sm text-muted-foreground">No results</div>
-                            )}
-                        </div>
+                        <BookList
+                            books={filteredBooks}
+                            currentBook={currentBook}
+                            onSelect={(id) => { handleBookChange(id); setBookSearch("") }}
+                        />
                     </PopoverContent>
                 </Popover>
 
@@ -320,38 +407,12 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                             />
                         </button>
                     </PopoverTrigger>
-                    <PopoverContent align="center" className="w-[300px] p-1">
-                        <div className="max-h-[360px] overflow-y-auto">
-                            {availableTranslations.map((t) => {
-                                const abbrev = ((t as any).abbreviation || t.id).toUpperCase()
-                                return (
-                                    <button
-                                        key={t.id}
-                                        type="button"
-                                        onClick={() => handleTranslationChange(t.id)}
-                                        className={cn(
-                                            "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
-                                            t.id === currentTranslation
-                                                ? "bg-primary/[0.07] dark:bg-primary/[0.12]"
-                                                : "hover:bg-muted/50"
-                                        )}
-                                    >
-                                        <span className={cn(
-                                            "w-14 shrink-0 text-xs font-semibold tabular-nums",
-                                            t.id === currentTranslation ? "text-primary" : "text-muted-foreground"
-                                        )}>
-                                            {abbrev}
-                                        </span>
-                                        <span className={cn(
-                                            "text-[13px] font-medium truncate",
-                                            t.id === currentTranslation ? "text-foreground" : "text-foreground/70"
-                                        )}>
-                                            {t.name}
-                                        </span>
-                                    </button>
-                                )
-                            })}
-                        </div>
+                    <PopoverContent align="center" className="w-[300px] p-0">
+                        <TranslationList
+                            translations={availableTranslations}
+                            currentTranslation={currentTranslation}
+                            onSelect={handleTranslationChange}
+                        />
                     </PopoverContent>
                 </Popover>
 

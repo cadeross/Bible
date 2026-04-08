@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useCallback, useEffect, useRef, useState } from "react"
-import { motion, type Transition } from "framer-motion"
+import React, { useCallback, useRef, useState } from "react"
+import { motion } from "framer-motion"
 import { Check, Copy, Share2, StickyNote, X } from "lucide-react"
 import {
     ContextMenuContent,
@@ -26,365 +26,169 @@ export interface VerseHighlightMenuHandlers {
     onCopy: () => void
     onShare: () => void
     copyDone: boolean
-    /** When every selected verse uses this color, that swatch shows an X and removes on click. */
     activeHighlightColor: string | null
 }
 
-const menuSurfaceClass =
-    "ow-menu-surface glass w-56 overflow-visible rounded-xl border border-white/[0.15] bg-foreground/90 p-1 text-background shadow-[var(--shadow-elevated)] dark:border-white/[0.08] dark:bg-muted/90 dark:text-foreground/85"
-
-/** Tight strip: closer to menu left/right edges */
-const colorDotsRowClass =
-    "flex flex-row flex-wrap items-center justify-center gap-0.5 px-0 py-1.5 -mx-1.5"
-
-const menuSeparatorClass = "bg-white/12 dark:bg-border/40"
-
-const colorDotItemClass =
-    "cursor-pointer relative z-0 h-8 w-8 shrink-0 justify-center rounded-full p-0 outline-none transition-colors data-[highlighted]:z-10 data-[highlighted]:bg-white/12 dark:data-[highlighted]:bg-white/10"
-
-const menuActionItemClass =
-    "cursor-pointer text-background focus:bg-white/12 focus:text-background data-[highlighted]:bg-white/12 data-[highlighted]:text-background dark:text-foreground/90 dark:focus:bg-accent/50 dark:focus:text-accent-foreground dark:data-[highlighted]:bg-accent/50 dark:data-[highlighted]:text-accent-foreground"
-
-const springIn: Transition = {
-    type: "spring",
-    stiffness: 320,
-    damping: 22,
-    mass: 0.48,
-    bounce: 0.22,
-}
-
-const springOut: Transition = {
-    type: "spring",
-    stiffness: 240,
-    damping: 26,
-    mass: 0.55,
-    bounce: 0.16,
-}
-
-const springTap: Transition = {
-    type: "spring",
-    stiffness: 480,
-    damping: 16,
-    mass: 0.42,
-    bounce: 0.2,
-}
+const colorDotsRowClass = "flex flex-row items-center justify-center gap-1 px-2 py-2.5"
 
 type DotMenuItem = typeof ContextMenuItem | typeof DropdownMenuItem
 
-function HighlightColorDotVisual({
-    c,
-    index,
-    hot,
-    isActiveColor,
-}: {
-    c: HighlightMenuColor
-    index: number
-    hot: boolean
-    isActiveColor: boolean
-}) {
+function SlidingHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {
+    const [rect, setRect] = React.useState<{ top: number; height: number } | null>(null)
+
+    React.useEffect(() => {
+        if (hoveredIndex === null || !containerRef.current) {
+            setRect(null)
+            return
+        }
+        const items = containerRef.current.querySelectorAll<HTMLElement>("[data-slide-item]")
+        const el = items[hoveredIndex]
+        if (!el) { setRect(null); return }
+        const parentRect = containerRef.current.getBoundingClientRect()
+        const elRect = el.getBoundingClientRect()
+        setRect({ top: elRect.top - parentRect.top + containerRef.current.scrollTop, height: elRect.height })
+    }, [hoveredIndex, containerRef])
+
+    return (
+        <motion.div
+            aria-hidden
+            className="pointer-events-none absolute left-1 right-1 z-0 rounded-lg bg-foreground/[0.05] dark:bg-white/[0.07]"
+            initial={false}
+            animate={rect ? { opacity: 1, top: rect.top, height: rect.height } : { opacity: 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
+            style={{ position: "absolute" }}
+        />
+    )
+}
+
+function HighlightDot({ c, hot, isActiveColor }: { c: HighlightMenuColor; hot: boolean; isActiveColor: boolean }) {
     return (
         <motion.span
             className={cn(
-                "relative block h-5 w-5 rounded-full",
+                "relative block h-[22px] w-[22px] rounded-full",
                 c.dotClass,
-                isActiveColor && "ring-2 ring-white/50 dark:ring-white/30"
+                isActiveColor && "ring-2 ring-foreground/20 dark:ring-white/25"
             )}
-            animate={hot ? { scale: 1.25 } : { scale: 1 }}
-            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            animate={hot ? { scale: 1.2 } : { scale: 1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 25 }}
             whileTap={{ scale: 0.85 }}
         >
             {isActiveColor && (
-                <span
-                    className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/25 dark:bg-black/35"
-                    aria-hidden
-                >
-                    <X className="h-3 w-3 text-white drop-shadow-sm" strokeWidth={2.5} />
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/20 dark:bg-black/30" aria-hidden>
+                    <X className="h-3 w-3 text-white" strokeWidth={2.5} />
                 </span>
             )}
         </motion.span>
     )
 }
 
-function useHighlightColorDotsRowState() {
-    const [pointerInRow, setPointerInRow] = useState(false)
+function useDotsHover() {
     const [hoveredId, setHoveredId] = useState<string | null>(null)
-    const [focusedId, setFocusedId] = useState<string | null>(null)
-
-    const leaveRowIfOutside = useCallback((current: EventTarget | null, related: EventTarget | null) => {
-        const el = current as HTMLElement | null
-        const next = related as Node | null
-        if (!el) return true
-        if (next && el.contains(next)) return false
-        return true
-    }, [])
-
-    const onRowPointerLeave = useCallback(
-        (e: React.PointerEvent<HTMLElement>) => {
-            if (!leaveRowIfOutside(e.currentTarget, e.relatedTarget)) return
-            setPointerInRow(false)
-            setHoveredId(null)
-        },
-        [leaveRowIfOutside]
-    )
-
     const rowRef = useRef<HTMLDivElement>(null)
-
-    useEffect(() => {
-        const el = rowRef.current
-        if (!el) return
-        const onFocusOut = (e: FocusEvent) => {
-            if (!leaveRowIfOutside(e.currentTarget, e.relatedTarget)) return
-            setFocusedId(null)
-        }
-        el.addEventListener("focusout", onFocusOut)
-        return () => el.removeEventListener("focusout", onFocusOut)
-    }, [leaveRowIfOutside])
-
-    const isHot = useCallback(
-        (id: string) => (pointerInRow ? hoveredId === id : focusedId === id),
-        [pointerInRow, hoveredId, focusedId]
-    )
-
-    const bindDotItem = useCallback((id: string) => ({
-        onPointerEnter: () => {
-            setPointerInRow(true)
-            setHoveredId(id)
-        },
-        onFocus: () => setFocusedId(id),
+    const onLeave = useCallback(() => setHoveredId(null), [])
+    const bind = useCallback((id: string) => ({
+        onPointerEnter: () => setHoveredId(id),
+        onFocus: () => setHoveredId(id),
     }), [])
-
-    return { rowRef, onRowPointerLeave, isHot, bindDotItem }
+    return { rowRef, hoveredId, onLeave, bind }
 }
 
-function HighlightColorPickItem({
+function DotPicker({ Item, applyColor, activeHighlightColor }: { Item: DotMenuItem; applyColor: (c: string) => void; activeHighlightColor: string | null }) {
+    const { rowRef, hoveredId, onLeave, bind } = useDotsHover()
+    const GroupComp = Item === ContextMenuItem ? ContextMenuGroup : DropdownMenuGroup
+
+    return (
+        <GroupComp className="p-0">
+            <div ref={rowRef} role="presentation" className={colorDotsRowClass} onPointerLeave={onLeave}>
+                {HIGHLIGHT_MENU_COLORS.map((c) => {
+                    const { onPointerEnter, onFocus } = bind(c.id)
+                    const isActive = activeHighlightColor === c.id
+                    return (
+                        <Item
+                            key={c.id}
+                            aria-label={isActive ? c.removeLabel : c.label}
+                            className="cursor-pointer relative h-7 w-7 shrink-0 items-center justify-center rounded-full p-0 outline-none !bg-transparent"
+                            onSelect={() => applyColor(c.id)}
+                            onPointerEnter={onPointerEnter}
+                            onFocus={onFocus}
+                        >
+                            <HighlightDot c={c} hot={hoveredId === c.id} isActiveColor={isActive} />
+                        </Item>
+                    )
+                })}
+            </div>
+        </GroupComp>
+    )
+}
+
+function ActionItems({
     Item,
-    c,
-    index,
-    applyColor,
-    hot,
-    bindDotItem,
-    activeHighlightColor,
+    Separator,
+    onNote,
+    onCopy,
+    onShare,
+    copyDone,
 }: {
     Item: DotMenuItem
-    c: HighlightMenuColor
-    index: number
-    applyColor: (id: string) => void
-    hot: boolean
-    bindDotItem: (id: string) => {
-        onPointerEnter: () => void
-        onFocus: () => void
-    }
-    activeHighlightColor: string | null
+    Separator: React.ComponentType<{ className?: string }>
+    onNote: () => void
+    onCopy: () => void
+    onShare: () => void
+    copyDone: boolean
 }) {
-    const { onPointerEnter, onFocus } = bindDotItem(c.id)
-    const isActiveColor = activeHighlightColor === c.id
-    return (
-        <Item
-            aria-label={isActiveColor ? c.removeLabel : c.label}
-            className={colorDotItemClass}
-            onSelect={() => applyColor(c.id)}
-            onPointerEnter={onPointerEnter}
-            onFocus={onFocus}
-        >
-            <HighlightColorDotVisual
-                c={c}
-                index={index}
-                hot={hot}
-                isActiveColor={isActiveColor}
-            />
-        </Item>
-    )
-}
+    const listRef = useRef<HTMLDivElement>(null)
+    const [hovered, setHovered] = useState<number | null>(null)
 
-function HighlightColorDotsContext({
-    applyColor,
-    activeHighlightColor,
-}: {
-    applyColor: (c: string) => void
-    activeHighlightColor: string | null
-}) {
-    const { rowRef, onRowPointerLeave, isHot, bindDotItem } = useHighlightColorDotsRowState()
+    const actions = [
+        { label: "Note", icon: <StickyNote className="h-3.5 w-3.5 text-muted-foreground" />, onSelect: onNote },
+        { label: "Copy", icon: copyDone ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />, onSelect: onCopy },
+        { label: "Share", icon: <Share2 className="h-3.5 w-3.5 text-muted-foreground" />, onSelect: onShare },
+    ]
+
     return (
-        <ContextMenuGroup className="p-0">
-            <div
-                ref={rowRef}
-                role="presentation"
-                className={colorDotsRowClass}
-                onPointerLeave={onRowPointerLeave}
-            >
-                {HIGHLIGHT_MENU_COLORS.map((c, index) => (
-                    <HighlightColorPickItem
-                        key={c.id}
-                        Item={ContextMenuItem}
-                        c={c}
-                        index={index}
-                        applyColor={applyColor}
-                        hot={isHot(c.id)}
-                        bindDotItem={bindDotItem}
-                        activeHighlightColor={activeHighlightColor}
-                    />
+        <>
+            <Separator className="bg-foreground/[0.06] dark:bg-white/[0.06]" />
+            <div ref={listRef} className="relative py-0.5" onPointerLeave={() => setHovered(null)}>
+                <SlidingHighlight containerRef={listRef} hoveredIndex={hovered} />
+                {actions.map((a, i) => (
+                    <Item
+                        key={a.label}
+                        data-slide-item
+                        onSelect={a.onSelect}
+                        onPointerEnter={() => setHovered(i)}
+                        className="relative z-10 flex cursor-default select-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium outline-none transition-colors text-popover-foreground !bg-transparent"
+                    >
+                        {a.icon}
+                        {a.label}
+                    </Item>
                 ))}
             </div>
-        </ContextMenuGroup>
+        </>
     )
 }
 
-function HighlightColorDotsDropdown({
-    applyColor,
-    activeHighlightColor,
-}: {
-    applyColor: (c: string) => void
-    activeHighlightColor: string | null
-}) {
-    const { rowRef, onRowPointerLeave, isHot, bindDotItem } = useHighlightColorDotsRowState()
-    return (
-        <DropdownMenuGroup className="p-0">
-            <div
-                ref={rowRef}
-                role="presentation"
-                className={colorDotsRowClass}
-                onPointerLeave={onRowPointerLeave}
-            >
-                {HIGHLIGHT_MENU_COLORS.map((c, index) => (
-                    <HighlightColorPickItem
-                        key={c.id}
-                        Item={DropdownMenuItem}
-                        c={c}
-                        index={index}
-                        applyColor={applyColor}
-                        hot={isHot(c.id)}
-                        bindDotItem={bindDotItem}
-                        activeHighlightColor={activeHighlightColor}
-                    />
-                ))}
-            </div>
-        </DropdownMenuGroup>
-    )
-}
-
-/** Sliding highlight behind Note / Copy / Share as pointer or focus moves. */
-function FluidMenuActionShell({ children }: { children: React.ReactNode }) {
-    const containerRef = useRef<HTMLDivElement>(null)
-    const [dims, setDims] = useState<{ top: number; height: number } | null>(null)
-
-    const showFor = useCallback((target: EventTarget | null) => {
-        const el = target as HTMLElement | null
-        const parent = containerRef.current
-        if (!el || !parent) return
-        const pr = parent.getBoundingClientRect()
-        const er = el.getBoundingClientRect()
-        setDims({ top: er.top - pr.top + parent.scrollTop, height: er.height })
-    }, [])
-
-    const clearIfLeaving = useCallback((e: React.PointerEvent) => {
-        const next = e.relatedTarget as Node | null
-        if (next && containerRef.current?.contains(next)) return
-        setDims(null)
-    }, [])
-
-    return (
-        <div
-            ref={containerRef}
-            className="relative py-0.5"
-            onPointerLeave={clearIfLeaving}
-        >
-            <motion.div
-                aria-hidden
-                className="pointer-events-none absolute left-0.5 right-0.5 z-0 rounded-md bg-white/12 dark:bg-white/10"
-                initial={false}
-                animate={
-                    dims && dims.height > 0
-                        ? { opacity: 1, top: dims.top, height: dims.height }
-                        : { opacity: 0, top: 0, height: 0 }
-                }
-                transition={{ type: "spring", stiffness: 520, damping: 36, mass: 0.55 }}
-                style={{ position: "absolute" }}
-            />
-            {React.Children.map(children, (child) => {
-                if (!React.isValidElement(child)) return child
-                const el = child as React.ReactElement<{
-                    className?: string
-                    onPointerEnter?: React.PointerEventHandler
-                    onPointerLeave?: React.PointerEventHandler
-                    onFocus?: React.FocusEventHandler
-                }>
-                return React.cloneElement(el, {
-                    className: cn(
-                        "relative z-[1] bg-transparent data-[highlighted]:bg-transparent focus-visible:bg-transparent",
-                        el.props.className
-                    ),
-                    onPointerEnter: (e) => {
-                        showFor(e.currentTarget)
-                        el.props.onPointerEnter?.(e)
-                    },
-                    onFocus: (e) => {
-                        showFor(e.currentTarget)
-                        el.props.onFocus?.(e)
-                    },
-                })
-            })}
-        </div>
-    )
-}
-
-export function VerseHighlightContextMenuContent({
-    handlers,
-}: {
-    handlers: VerseHighlightMenuHandlers
-}) {
+export function VerseHighlightContextMenuContent({ handlers }: { handlers: VerseHighlightMenuHandlers }) {
     const { applyColor, onNote, onCopy, onShare, copyDone, activeHighlightColor } = handlers
     return (
-        <ContextMenuContent className={menuSurfaceClass} aria-label="Highlight options">
-            <HighlightColorDotsContext applyColor={applyColor} activeHighlightColor={activeHighlightColor} />
-            <ContextMenuSeparator className={menuSeparatorClass} />
-            <FluidMenuActionShell>
-                <ContextMenuItem className={menuActionItemClass} onSelect={onNote}>
-                    <StickyNote className="h-3.5 w-3.5" />
-                    Note
-                </ContextMenuItem>
-                <ContextMenuItem className={menuActionItemClass} onSelect={onCopy}>
-                    {copyDone ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
-                    Copy
-                </ContextMenuItem>
-                <ContextMenuItem className={menuActionItemClass} onSelect={onShare}>
-                    <Share2 className="h-3.5 w-3.5" />
-                    Share
-                </ContextMenuItem>
-            </FluidMenuActionShell>
+        <ContextMenuContent className="ow-menu-surface glass w-56 overflow-hidden rounded-xl p-1 text-popover-foreground" aria-label="Highlight options">
+            <DotPicker Item={ContextMenuItem} applyColor={applyColor} activeHighlightColor={activeHighlightColor} />
+            <ActionItems Item={ContextMenuItem} Separator={ContextMenuSeparator} onNote={onNote} onCopy={onCopy} onShare={onShare} copyDone={copyDone} />
         </ContextMenuContent>
     )
 }
 
-export function VerseHighlightDropdownMenuContent({
-    handlers,
-}: {
-    handlers: VerseHighlightMenuHandlers
-}) {
+export function VerseHighlightDropdownMenuContent({ handlers }: { handlers: VerseHighlightMenuHandlers }) {
     const { applyColor, onNote, onCopy, onShare, copyDone, activeHighlightColor } = handlers
     return (
         <DropdownMenuContent
-            className={menuSurfaceClass}
+            className="ow-menu-surface glass w-56 overflow-hidden rounded-xl p-1 text-popover-foreground"
             align="start"
             sideOffset={4}
             aria-label="Highlight options"
             onCloseAutoFocus={(e) => e.preventDefault()}
         >
-            <HighlightColorDotsDropdown applyColor={applyColor} activeHighlightColor={activeHighlightColor} />
-            <DropdownMenuSeparator className={menuSeparatorClass} />
-            <FluidMenuActionShell>
-                <DropdownMenuItem className={menuActionItemClass} onSelect={onNote}>
-                    <StickyNote className="h-3.5 w-3.5" />
-                    Note
-                </DropdownMenuItem>
-                <DropdownMenuItem className={menuActionItemClass} onSelect={onCopy}>
-                    {copyDone ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
-                    Copy
-                </DropdownMenuItem>
-                <DropdownMenuItem className={menuActionItemClass} onSelect={onShare}>
-                    <Share2 className="h-3.5 w-3.5" />
-                    Share
-                </DropdownMenuItem>
-            </FluidMenuActionShell>
+            <DotPicker Item={DropdownMenuItem} applyColor={applyColor} activeHighlightColor={activeHighlightColor} />
+            <ActionItems Item={DropdownMenuItem} Separator={DropdownMenuSeparator} onNote={onNote} onCopy={onCopy} onShare={onShare} copyDone={copyDone} />
         </DropdownMenuContent>
     )
 }
