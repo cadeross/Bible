@@ -4,6 +4,8 @@ import Link from "next/link"
 import { Church, BookOpen, Library, Search, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { openCommandMenu } from "@/lib/open-command-menu"
+import { useFocusMode } from "@/contexts/focus-mode"
+import { motion } from "framer-motion"
 
 const tabs = [
     { kind: "link" as const, name: "Read", href: "/read", icon: BookOpen },
@@ -14,11 +16,16 @@ const tabs = [
 ] as const
 
 export function MobileNav() {
+    const { isFocusMode } = useFocusMode()
+
     return (
-        <nav
+        <motion.nav
+            animate={isFocusMode ? { opacity: 0, y: 20 } : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            style={{ pointerEvents: isFocusMode ? "none" : "auto" }}
             className={cn(
                 "fixed bottom-0 left-0 right-0 z-50 flex items-end pb-[env(safe-area-inset-bottom)] md:hidden",
-                "border-t border-white/[0.08] glass-nav"
+                "border-t border-foreground/[0.07] glass-nav"
             )}
             aria-label="Primary mobile"
         >
@@ -63,6 +70,6 @@ export function MobileNav() {
                     )
                 })}
             </div>
-        </nav>
+        </motion.nav>
     )
 }

@@ -1,10 +1,12 @@
 "use client"
 
 import type { ReactNode } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Settings, Search } from "lucide-react"
+import { motion } from "framer-motion"
 
 import { useFocusMode } from "@/contexts/focus-mode"
 import { openCommandMenu } from "@/lib/open-command-menu"
@@ -34,14 +36,30 @@ function HeaderLink({ href, children }: { href: string; children: ReactNode }) {
 export function Header() {
     const pathname = usePathname()
     const { isFocusMode } = useFocusMode()
+    const [isPeeking, setIsPeeking] = useState(false)
+
+    useEffect(() => { if (!isFocusMode) setIsPeeking(false) }, [isFocusMode])
+
+    const hidden = isFocusMode && !isPeeking
 
     return (
-        <header
+        <>
+            {/* Invisible hover-zone strip that allows peek-reveal in focus mode */}
+            {isFocusMode && (
+                <div
+                    className="fixed top-0 left-0 right-0 z-[60] h-16 hidden md:block"
+                    onMouseEnter={() => setIsPeeking(true)}
+                    onMouseLeave={() => setIsPeeking(false)}
+                />
+            )}
+        <motion.header
+            animate={hidden ? { opacity: 0, y: -6 } : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            style={{ pointerEvents: hidden ? "none" : "auto" }}
             className={cn(
-                "z-50 hidden w-full transition-all duration-500 md:block",
+                "z-50 hidden w-full md:block",
                 "fixed left-0 right-0 top-[var(--maintenance-banner-height)]",
-                "border-b border-white/[0.08] glass-nav",
-                isFocusMode ? "opacity-0 hover:opacity-100" : "opacity-100"
+                "border-b border-foreground/[0.07] glass-nav",
             )}
         >
             <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-3">
@@ -76,6 +94,7 @@ export function Header() {
                     </HeaderLink>
                 </div>
             </div>
-        </header>
+        </motion.header>
+        </>
     )
 }

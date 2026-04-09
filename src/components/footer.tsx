@@ -6,24 +6,36 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Eye, EyeOff } from "lucide-react"
 import { useFocusMode } from "@/contexts/focus-mode"
+import { motion } from "framer-motion"
 
 export function Footer() {
     const pathname = usePathname()
     const [mounted, setMounted] = React.useState(false)
+    const [isPeeking, setIsPeeking] = React.useState(false)
     const { isFocusMode, toggleFocusMode } = useFocusMode()
 
-    React.useEffect(() => {
-        setMounted(true)
-    }, [])
+    React.useEffect(() => { setMounted(true) }, [])
+    React.useEffect(() => { if (!isFocusMode) setIsPeeking(false) }, [isFocusMode])
 
     if (!mounted) return null
 
+    const hidden = isFocusMode && !isPeeking
+
     return (
-        <footer className={cn(
-            "w-full p-6 hidden md:flex justify-between items-end z-50 transition-all duration-500",
-            "fixed bottom-0 left-0 right-0",
-            isFocusMode ? "opacity-0 hover:opacity-100" : "opacity-100"
-        )}>
+        <>
+            {isFocusMode && (
+                <div
+                    className="fixed bottom-0 left-0 right-0 z-[60] h-20 hidden md:block"
+                    onMouseEnter={() => setIsPeeking(true)}
+                    onMouseLeave={() => setIsPeeking(false)}
+                />
+            )}
+        <motion.footer
+            animate={hidden ? { opacity: 0, y: 8 } : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            style={{ pointerEvents: hidden ? "none" : "auto" }}
+            className="w-full p-6 hidden md:flex justify-between items-end z-50 fixed bottom-0 left-0 right-0"
+        >
             <div className="flex gap-5 text-xs text-muted-foreground/40">
                 <a
                     href="https://x.com/cadeross"
@@ -66,6 +78,7 @@ export function Footer() {
                     v1.0.2
                 </Link>
             </div>
-        </footer>
+        </motion.footer>
+        </>
     )
 }

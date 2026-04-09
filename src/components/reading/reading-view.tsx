@@ -167,7 +167,12 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
                         <ReadingContent chapter={chapter} bookName={currentBook} chapterNum={currentChapterNum} sharedVerses={sharedVerses} />
 
                         {/* Bottom chapter navigation */}
-                        <div className="w-full max-w-[720px] mx-auto px-6 pt-1 pb-20 flex items-center justify-center gap-3">
+                        <motion.div
+                            animate={isFocusMode ? { opacity: 0 } : { opacity: 1 }}
+                            transition={{ duration: 0.25 }}
+                            style={{ pointerEvents: isFocusMode ? "none" : "auto" }}
+                            className="w-full max-w-[720px] mx-auto px-6 pt-1 pb-20 flex items-center justify-center gap-3"
+                        >
                             {prevOk && prevChapter ? (
                                 <motion.button
                                     type="button"
@@ -195,23 +200,26 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
                                     <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/40" />
                                 </motion.button>
                             ) : null}
-                        </div>
+                        </motion.div>
                     </motion.div>
                 </AnimatePresence>
 
                 {/* Side chevrons temporarily removed */}
             </main>
 
-            {isFocusMode && (
-                <button
-                    type="button"
-                    onClick={toggleFocusMode}
-                    aria-label="Show reading controls"
-                    className="fixed right-4 z-50 flex h-10 w-10 items-center justify-center rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle text-muted-foreground shadow-[var(--shadow-card)] transition-all duration-200 hover:text-foreground hover:shadow-[var(--shadow-elevated)] top-[calc(5rem+var(--maintenance-banner-height))] md:top-[calc(6rem+var(--maintenance-banner-height))]"
-                >
-                    <Eye className="h-4 w-4" strokeWidth={1.5} />
-                </button>
-            )}
+            <motion.button
+                type="button"
+                onClick={toggleFocusMode}
+                aria-label={isFocusMode ? "Exit focus mode" : "Enter focus mode"}
+                animate={isFocusMode ? { opacity: 1 } : { opacity: 0, pointerEvents: "none" }}
+                transition={{ duration: 0.3 }}
+                style={{ pointerEvents: isFocusMode ? "auto" : "none" }}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.93 }}
+                className="fixed right-5 z-50 flex h-9 w-9 items-center justify-center rounded-2xl glass-subtle border border-foreground/[0.10] dark:border-white/[0.08] text-muted-foreground/60 shadow-[var(--shadow-card)] hover:text-foreground hover:shadow-[var(--shadow-elevated)] transition-colors duration-200 top-[calc(4.5rem+var(--maintenance-banner-height,0px))] md:top-[calc(5.5rem+var(--maintenance-banner-height,0px))]"
+            >
+                <Eye className="h-3.5 w-3.5" strokeWidth={1.5} />
+            </motion.button>
         </div>
     )
 }
