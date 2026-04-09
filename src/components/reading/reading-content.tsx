@@ -802,7 +802,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                 animate={{ opacity: 1 }}
                                                 className="w-full mt-10 mb-4 flex justify-center"
                                             >
-                                                <h3 className="max-w-[90%] border-t border-border/25 pt-6 text-center font-sans text-base font-semibold leading-snug tracking-wide text-foreground/85 md:text-lg">
+                                                <h3 className="max-w-[90%] text-center font-sans text-base font-semibold leading-snug tracking-wide text-foreground/85 md:text-lg">
                                                     {verse.heading}
                                                 </h3>
                                             </motion.div>
@@ -836,7 +836,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                     isLoaded && !showTitles && "hidden"
                                                 )}
                                             >
-                                                <h3 className="max-w-[90%] border-t border-border/25 pt-6 text-center font-sans text-base font-semibold leading-snug tracking-wide text-foreground/85 md:text-lg">
+                                                <h3 className="max-w-[90%] text-center font-sans text-base font-semibold leading-snug tracking-wide text-foreground/85 md:text-lg">
                                                     {verse.heading}
                                                 </h3>
                                             </motion.div>

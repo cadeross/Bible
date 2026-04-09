@@ -170,7 +170,7 @@ function ActionItems({
 export function VerseHighlightContextMenuContent({ handlers }: { handlers: VerseHighlightMenuHandlers }) {
     const { applyColor, onNote, onCopy, onShare, copyDone, activeHighlightColor } = handlers
     return (
-        <ContextMenuContent className="ow-menu-surface glass w-56 overflow-hidden rounded-xl p-1 text-popover-foreground" aria-label="Highlight options">
+        <ContextMenuContent className="ow-menu-surface glass w-56 overflow-hidden rounded-2xl p-1 text-popover-foreground" aria-label="Highlight options">
             <DotPicker Item={ContextMenuItem} applyColor={applyColor} activeHighlightColor={activeHighlightColor} />
             <ActionItems Item={ContextMenuItem} Separator={ContextMenuSeparator} onNote={onNote} onCopy={onCopy} onShare={onShare} copyDone={copyDone} />
         </ContextMenuContent>
@@ -181,7 +181,7 @@ export function VerseHighlightDropdownMenuContent({ handlers }: { handlers: Vers
     const { applyColor, onNote, onCopy, onShare, copyDone, activeHighlightColor } = handlers
     return (
         <DropdownMenuContent
-            className="ow-menu-surface glass w-56 overflow-hidden rounded-xl p-1 text-popover-foreground"
+            className="ow-menu-surface glass w-56 overflow-hidden rounded-2xl p-1 text-popover-foreground"
             align="start"
             sideOffset={4}
             aria-label="Highlight options"

@@ -6,9 +6,12 @@ import { BOOK_LIST } from "@/lib/bible-api"
 import { parseReferenceJump } from "@/lib/reference-jump"
 import { OPEN_COMMAND_MENU_EVENT } from "@/lib/open-command-menu"
 import type { BibleSearchVerse } from "@/app/api/bible-search/route"
-import { Search, CornerDownLeft } from "lucide-react"
+import { Search, CornerDownLeft, BookOpen } from "lucide-react"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function isTypingInField(el: EventTarget | null): boolean {
     if (!el || !(el instanceof HTMLElement)) return false
@@ -24,6 +27,87 @@ function isPrintableKey(e: KeyboardEvent): boolean {
     return c >= 32 && c !== 127
 }
 
+// ─── Spring sliding highlight ────────────────────────────────────────────────
+
+function SlidingHighlight({
+    containerRef,
+    hoveredIndex,
+}: {
+    containerRef: React.RefObject<HTMLDivElement | null>
+    hoveredIndex: number | null
+}) {
+    const [rect, setRect] = React.useState<{ top: number; height: number } | null>(null)
+
+    React.useEffect(() => {
+        if (hoveredIndex === null || !containerRef.current) { setRect(null); return }
+        const items = containerRef.current.querySelectorAll<HTMLElement>("[data-result-item]")
+        const el = items[hoveredIndex]
+        if (!el) { setRect(null); return }
+        const parentRect = containerRef.current.getBoundingClientRect()
+        const elRect = el.getBoundingClientRect()
+        setRect({ top: elRect.top - parentRect.top + containerRef.current.scrollTop, height: elRect.height })
+    }, [hoveredIndex, containerRef])
+
+    return (
+        <motion.div
+            aria-hidden
+            className="pointer-events-none absolute left-1 right-1 z-0 rounded-lg bg-foreground/[0.05] dark:bg-white/[0.07]"
+            initial={false}
+            animate={rect ? { opacity: 1, top: rect.top, height: rect.height } : { opacity: 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
+            style={{ position: "absolute" }}
+        />
+    )
+}
+
+// ─── Result group (section body with shared sliding highlight) ───────────────
+
+function ResultGroup({
+    items,
+}: {
+    items: Array<{ key: string; content: React.ReactNode; onClick: () => void }>
+}) {
+    const containerRef = React.useRef<HTMLDivElement>(null)
+    const [hovered, setHovered] = React.useState<number | null>(null)
+
+    return (
+        <div
+            ref={containerRef}
+            className="relative px-1 pb-1"
+            onPointerLeave={() => setHovered(null)}
+        >
+            <SlidingHighlight containerRef={containerRef} hoveredIndex={hovered} />
+            {items.map((item, i) => (
+                <button
+                    key={item.key}
+                    type="button"
+                    data-result-item
+                    onClick={item.onClick}
+                    onPointerEnter={() => setHovered(i)}
+                    className="relative z-10 w-full cursor-pointer text-left rounded-lg"
+                >
+                    {item.content}
+                </button>
+            ))}
+        </div>
+    )
+}
+
+// ─── Section wrapper ─────────────────────────────────────────────────────────
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+        <div>
+            <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/35 select-none">
+                {label}
+            </div>
+            {children}
+        </div>
+    )
+}
+
+// ─── Main panel ──────────────────────────────────────────────────────────────
+
 export function SearchPanel({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
     const [input, setInput] = React.useState("")
     const [verses, setVerses] = React.useState<BibleSearchVerse[]>([])
@@ -36,9 +120,10 @@ export function SearchPanel({ open, onOpenChange }: { open: boolean; onOpenChang
 
     React.useEffect(() => { openRef.current = open }, [open])
 
+    // When the panel opens: focus the input but do NOT clear it —
+    // the keyboard handler may have already pre-filled it with the trigger key.
     React.useEffect(() => {
         if (open) {
-            setInput("")
             setVerses([])
             setSearchSource(null)
             setTimeout(() => inputRef.current?.focus(), 50)
@@ -53,6 +138,7 @@ export function SearchPanel({ open, onOpenChange }: { open: boolean; onOpenChang
         setSearchLoading(false)
     }, [onOpenChange])
 
+    // Custom event (e.g. from nav button)
     React.useEffect(() => {
         const onPaletteOpen = (e: Event) => {
             const detail = (e as CustomEvent<{ query?: string }>).detail
@@ -63,6 +149,7 @@ export function SearchPanel({ open, onOpenChange }: { open: boolean; onOpenChang
         return () => window.removeEventListener(OPEN_COMMAND_MENU_EVENT, onPaletteOpen as EventListener)
     }, [onOpenChange])
 
+    // Global keydown: ⌘K or any printable char opens the panel
     React.useEffect(() => {
         const down = (e: KeyboardEvent) => {
             const el = document.activeElement as HTMLElement | null
@@ -81,7 +168,7 @@ export function SearchPanel({ open, onOpenChange }: { open: boolean; onOpenChang
             if (!isPrintableKey(e)) return
 
             e.preventDefault()
-            setInput(e.key)
+            setInput(e.key)   // pre-fill with the trigger key
             onOpenChange(true)
         }
 
@@ -89,6 +176,7 @@ export function SearchPanel({ open, onOpenChange }: { open: boolean; onOpenChang
         return () => document.removeEventListener("keydown", down)
     }, [close, onOpenChange])
 
+    // Debounced full-text search
     React.useEffect(() => {
         const q = input.trim()
         if (q.length < 2) {
@@ -122,16 +210,13 @@ export function SearchPanel({ open, onOpenChange }: { open: boolean; onOpenChang
         if (!input.trim()) return []
         const lower = input.toLowerCase()
         return BOOK_LIST.filter((b) => b.toLowerCase().includes(lower)).map((b) => ({
-            id: b,
+            key: b,
             label: b,
-            action: () => {
-                router.push(`/read/${b}/1?translation=${bibleVersion || "web"}`)
-                close()
-            },
+            action: () => { router.push(`/read/${b}/1?translation=${bibleVersion || "web"}`); close() },
         }))
     }, [input, router, bibleVersion, close])
 
-    const jumpFromParser = React.useMemo(() => {
+    const jumpItem = React.useMemo(() => {
         if (!jumpTarget || !input.trim()) return null
         const { book, chapter, verse } = jumpTarget
         const refLabel = verse ? `${book} ${chapter}:${verse}` : `${book} ${chapter}`
@@ -146,69 +231,92 @@ export function SearchPanel({ open, onOpenChange }: { open: boolean; onOpenChang
         }
     }, [jumpTarget, input, router, bibleVersion, close])
 
-    const hasJumpRow = Boolean(jumpFromParser)
-    const hasBooks = bookItems.length > 0
+    const hasJump   = Boolean(jumpItem)
+    const hasBooks  = bookItems.length > 0
     const hasVerses = verses.length > 0
-    const showEmptyHint = input.trim().length > 0 && !hasJumpRow && !hasBooks && !hasVerses && !searchLoading
+    const showEmpty = input.trim().length > 0 && !hasJump && !hasBooks && !hasVerses && !searchLoading
 
     return (
-        <div className="w-[340px] max-h-[min(70vh,480px)] overflow-hidden flex flex-col">
-            <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-3 py-2">
+        <div className="w-[360px] max-h-[min(70vh,480px)] overflow-hidden flex flex-col">
+
+            {/* ── Input row ── */}
+            <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-3.5 py-2.5">
                 <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
                 <input
                     ref={inputRef}
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Escape") close()
-                    }}
-                    placeholder="Book, reference, or search..."
-                    className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
+                    onKeyDown={(e) => { if (e.key === "Escape") close() }}
+                    placeholder="Book, reference, or search…"
+                    className="flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/35"
                 />
-                {input && (
+                {input ? (
                     <kbd className="text-[10px] text-muted-foreground/30 shrink-0">esc</kbd>
+                ) : (
+                    <kbd className="text-[10px] text-muted-foreground/25 shrink-0 border border-muted-foreground/15 rounded px-1 py-0.5">⌘K</kbd>
                 )}
             </div>
 
+            {/* ── Results ── */}
             <div className="flex-1 overflow-y-auto">
+
+                {/* Idle state */}
                 {!input.trim() && (
-                    <div className="px-3 py-6 text-center text-xs text-muted-foreground/40">
-                        Type to search · ⌘K
+                    <div className="px-3 py-8 text-center text-xs text-muted-foreground/35 select-none">
+                        Type to search scripture
                     </div>
                 )}
 
-                {jumpFromParser && (
-                    <Section label="Jump">
-                        <ResultItem onClick={jumpFromParser.action}>
-                            {jumpFromParser.label}
-                            <CornerDownLeft className="ml-auto h-3 w-3 shrink-0 text-muted-foreground/30" />
-                        </ResultItem>
+                {/* Jump to reference */}
+                {hasJump && jumpItem && (
+                    <Section label="Jump to">
+                        <ResultGroup items={[{
+                            key: "jump",
+                            onClick: jumpItem.action,
+                            content: (
+                                <div className="flex items-center gap-2.5 px-3 py-2">
+                                    <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
+                                    <span className="text-[13px] font-medium text-foreground">{jumpItem.label}</span>
+                                </div>
+                            ),
+                        }]} />
                     </Section>
                 )}
 
+                {/* Books */}
                 {hasBooks && (
                     <Section label="Books">
-                        {bookItems.slice(0, 8).map((item) => (
-                            <ResultItem key={item.id} onClick={item.action}>
-                                {item.label}
-                            </ResultItem>
-                        ))}
+                        <ResultGroup items={bookItems.slice(0, 8).map((item) => ({
+                            key: item.key,
+                            onClick: item.action,
+                            content: (
+                                <div className="flex items-center gap-2.5 px-3 py-2">
+                                    <BookOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
+                                    <span className="text-[13px] font-medium text-foreground">{item.label}</span>
+                                </div>
+                            ),
+                        }))} />
                     </Section>
                 )}
 
-                {(searchLoading || hasVerses || (searchSource === "no-api-key" && input.trim().length >= 2)) && (
+                {/* Verses */}
+                {(searchLoading || hasVerses || searchSource === "no-api-key") && (
                     <Section label="Verses">
                         {searchLoading && (
-                            <div className="px-4 py-3 text-xs text-muted-foreground/50">Searching...</div>
+                            <div className="px-4 py-3 text-[12px] text-muted-foreground/40">
+                                Searching…
+                            </div>
                         )}
                         {!searchLoading && searchSource === "no-api-key" && (
-                            <div className="px-4 py-3 text-xs text-muted-foreground/50">Full-text search requires API key</div>
+                            <div className="px-4 py-3 text-[12px] text-muted-foreground/40">
+                                Full-text search requires an API key
+                            </div>
                         )}
-                        {!searchLoading && verses.map((v, i) => (
-                            <ResultItem
-                                key={`${v.reference}-${i}`}
-                                onClick={() => {
+                        {!searchLoading && hasVerses && (
+                            <ResultGroup items={verses.map((v, i) => ({
+                                key: `${v.reference}-${i}`,
+                                onClick: () => {
                                     const j = parseReferenceJump(v.reference)
                                     if (j) {
                                         let url = `/read/${j.book}/${j.chapter}?translation=${bibleVersion || "web"}`
@@ -216,48 +324,32 @@ export function SearchPanel({ open, onOpenChange }: { open: boolean; onOpenChang
                                         router.push(url)
                                     }
                                     close()
-                                }}
-                            >
-                                <span className="flex min-w-0 flex-col gap-0.5">
-                                    <span className="truncate text-[13px] font-medium text-foreground">{v.reference}</span>
-                                    <span className="line-clamp-2 text-xs text-muted-foreground/60">{v.text}</span>
-                                </span>
-                            </ResultItem>
-                        ))}
+                                },
+                                content: (
+                                    <div className="flex flex-col gap-0.5 px-3 py-2.5">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-[12px] font-semibold text-foreground/70 tabular-nums">
+                                                {v.reference}
+                                            </span>
+                                            <CornerDownLeft className="h-3 w-3 shrink-0 text-muted-foreground/25" />
+                                        </div>
+                                        <span className="line-clamp-2 text-[12px] leading-relaxed text-muted-foreground/60">
+                                            {v.text}
+                                        </span>
+                                    </div>
+                                ),
+                            }))} />
+                        )}
                     </Section>
                 )}
 
-                {showEmptyHint && (
-                    <div className="px-4 py-8 text-center text-sm text-muted-foreground/50">
+                {/* No results */}
+                {showEmpty && (
+                    <div className="px-4 py-8 text-center text-[13px] text-muted-foreground/40">
                         No matches found
                     </div>
                 )}
             </div>
         </div>
-    )
-}
-
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
-    return (
-        <div className="border-b border-white/[0.04]">
-            <div className="px-4 pt-2.5 pb-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/35">
-                {label}
-            </div>
-            <div className="px-1 pb-1">
-                {children}
-            </div>
-        </div>
-    )
-}
-
-function ResultItem({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium text-foreground/80 transition-colors hover:bg-foreground/[0.05] dark:hover:bg-white/[0.07]"
-        >
-            {children}
-        </button>
     )
 }

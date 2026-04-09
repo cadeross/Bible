@@ -6,19 +6,18 @@ import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { BOOK_LIST, TRANSLATIONS } from "@/lib/bible-api"
 import { BIBLE_BOOKS } from "@/lib/bible-data"
-import { ChevronLeft, ChevronRight, ChevronDown, SlidersHorizontal, Hash, Palette, Heading, Minus, Plus } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { ChevronLeft, ChevronRight, ChevronDown, SlidersHorizontal, Hash, Palette, Heading } from "lucide-react"
+import { motion } from "framer-motion"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { canGoNextChapter, canGoPrevChapter, getAdjacentChapter } from "@/lib/chapter-navigation"
+
+// ─── Sliding highlight used in list menus ──────────────────────────────────
 
 function SlidingHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {
     const [rect, setRect] = React.useState<{ top: number; height: number } | null>(null)
 
     React.useEffect(() => {
-        if (hoveredIndex === null || !containerRef.current) {
-            setRect(null)
-            return
-        }
+        if (hoveredIndex === null || !containerRef.current) { setRect(null); return }
         const buttons = containerRef.current.querySelectorAll<HTMLElement>("[data-slide-item]")
         const el = buttons[hoveredIndex]
         if (!el) { setRect(null); return }
@@ -32,16 +31,14 @@ function SlidingHighlight({ containerRef, hoveredIndex }: { containerRef: React.
             aria-hidden
             className="pointer-events-none absolute left-1 right-1 z-0 rounded-lg bg-foreground/[0.05] dark:bg-white/[0.07]"
             initial={false}
-            animate={
-                rect
-                    ? { opacity: 1, top: rect.top, height: rect.height }
-                    : { opacity: 0 }
-            }
+            animate={rect ? { opacity: 1, top: rect.top, height: rect.height } : { opacity: 0 }}
             transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
             style={{ position: "absolute" }}
         />
     )
 }
+
+// ─── Book list ──────────────────────────────────────────────────────────────
 
 function BookList({ books, currentBook, onSelect }: { books: { id: string; name: string }[]; currentBook: string; onSelect: (id: string) => void }) {
     const listRef = React.useRef<HTMLDivElement>(null)
@@ -52,11 +49,7 @@ function BookList({ books, currentBook, onSelect }: { books: { id: string; name:
     }
 
     return (
-        <div
-            ref={listRef}
-            className="relative max-h-[320px] overflow-y-auto p-1"
-            onPointerLeave={() => setHovered(null)}
-        >
+        <div ref={listRef} className="relative max-h-[320px] overflow-y-auto p-1" onPointerLeave={() => setHovered(null)}>
             <SlidingHighlight containerRef={listRef} hoveredIndex={hovered} />
             {books.map((book, i) => (
                 <button
@@ -77,53 +70,95 @@ function BookList({ books, currentBook, onSelect }: { books: { id: string; name:
     )
 }
 
-function TranslationList({ translations, currentTranslation, onSelect }: { translations: { id: string; name: string; abbreviation?: string }[]; currentTranslation: string; onSelect: (id: string) => void }) {
+// ─── Translation list ───────────────────────────────────────────────────────
+
+function TranslationList({
+    translations,
+    currentTranslation,
+    onSelect,
+    search,
+    setSearch,
+    inputRef,
+}: {
+    translations: { id: string; name: string; abbreviation?: string }[]
+    currentTranslation: string
+    onSelect: (id: string) => void
+    search: string
+    setSearch: (s: string) => void
+    inputRef: React.RefObject<HTMLInputElement | null>
+}) {
     const listRef = React.useRef<HTMLDivElement>(null)
     const [hovered, setHovered] = React.useState<number | null>(null)
 
+    const filtered = React.useMemo(() => {
+        if (!search) return translations
+        const q = search.toLowerCase()
+        return translations.filter(t => {
+            const abbrev = ((t as any).abbreviation || t.id).toLowerCase()
+            return abbrev.includes(q) || t.name.toLowerCase().includes(q)
+        })
+    }, [translations, search])
+
     return (
-        <div
-            ref={listRef}
-            className="relative max-h-[360px] overflow-y-auto p-1"
-            onPointerLeave={() => setHovered(null)}
-        >
-            <SlidingHighlight containerRef={listRef} hoveredIndex={hovered} />
-            {translations.map((t, i) => {
-                const abbrev = ((t as any).abbreviation || t.id).toUpperCase()
-                const selected = t.id === currentTranslation
-                return (
-                    <button
-                        key={t.id}
-                        type="button"
-                        data-slide-item
-                        onClick={() => onSelect(t.id)}
-                        onPointerEnter={() => setHovered(i)}
-                        className="relative z-10 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors"
-                    >
-                        <span className={cn("w-14 shrink-0 text-xs font-semibold tabular-nums", selected ? "text-foreground" : "text-muted-foreground")}>
-                            {abbrev}
-                        </span>
-                        <span className={cn("text-[13px] font-medium truncate", selected ? "text-foreground" : "text-foreground/70")}>
-                            {t.name}
-                        </span>
-                    </button>
-                )
-            })}
-        </div>
+        <>
+            <div className="border-b border-border/20 px-3 py-2">
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search versions..."
+                    className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/40"
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" && filtered.length > 0) { onSelect(filtered[0].id); setSearch("") }
+                        if (e.key === "Escape") { setSearch("") }
+                    }}
+                />
+            </div>
+            <div ref={listRef} className="relative max-h-[320px] overflow-y-auto p-1" onPointerLeave={() => setHovered(null)}>
+                {filtered.length === 0 ? (
+                    <div className="py-6 text-center text-sm text-muted-foreground">No results</div>
+                ) : (
+                    <>
+                        <SlidingHighlight containerRef={listRef} hoveredIndex={hovered} />
+                        {filtered.map((t, i) => {
+                            const abbrev = ((t as any).abbreviation || t.id).toUpperCase()
+                            const selected = t.id === currentTranslation
+                            return (
+                                <button
+                                    key={t.id}
+                                    type="button"
+                                    data-slide-item
+                                    onClick={() => { onSelect(t.id); setSearch("") }}
+                                    onPointerEnter={() => setHovered(i)}
+                                    className="relative z-10 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors"
+                                >
+                                    <span className={cn("w-14 shrink-0 text-xs font-semibold tabular-nums", selected ? "text-foreground" : "text-muted-foreground")}>
+                                        {abbrev}
+                                    </span>
+                                    <span className={cn("text-[13px] font-medium truncate", selected ? "text-foreground" : "text-foreground/70")}>
+                                        {t.name}
+                                    </span>
+                                </button>
+                            )
+                        })}
+                    </>
+                )}
+            </div>
+        </>
     )
 }
 
-const ChapterInput = ({ currentChapter, maxChapters, onChange }: { currentChapter: number, maxChapters: number, onChange: (val: number) => void }) => {
+// ─── Chapter input ──────────────────────────────────────────────────────────
+
+const ChapterInput = ({ currentChapter, maxChapters, onChange }: { currentChapter: number; maxChapters: number; onChange: (val: number) => void }) => {
     const [isEditing, setIsEditing] = React.useState(false)
     const [value, setValue] = React.useState(currentChapter.toString())
     const inputRef = React.useRef<HTMLInputElement>(null)
 
     React.useEffect(() => { setValue(currentChapter.toString()) }, [currentChapter])
     React.useEffect(() => {
-        if (isEditing && inputRef.current) {
-            inputRef.current.focus()
-            inputRef.current.select()
-        }
+        if (isEditing && inputRef.current) { inputRef.current.focus(); inputRef.current.select() }
     }, [isEditing])
 
     const handleSubmit = () => {
@@ -137,7 +172,7 @@ const ChapterInput = ({ currentChapter, maxChapters, onChange }: { currentChapte
     }
 
     return (
-        <span className="inline-flex w-7 items-center justify-center">
+        <span className="inline-flex w-7 items-center justify-end">
             {isEditing ? (
                 <input
                     ref={inputRef}
@@ -164,19 +199,12 @@ const ChapterInput = ({ currentChapter, maxChapters, onChange }: { currentChapte
     )
 }
 
-const SPRING_LAYOUT = { type: "spring" as const, stiffness: 400, damping: 30, mass: 0.8 }
+// ─── Animated pill (book / translation labels) ──────────────────────────────
 
+const SPRING_LAYOUT = { type: "spring" as const, stiffness: 400, damping: 30, mass: 0.8 }
 const PILL_WIDTH_CACHE = new Map<string, number>()
 
-function AnimatedPill({
-    text,
-    icon,
-    className: extraClassName,
-}: {
-    text: string
-    icon?: React.ReactNode
-    className?: string
-}) {
+function AnimatedPill({ text, icon, className: extraClassName }: { text: string; icon?: React.ReactNode; className?: string }) {
     const [displayText, setDisplayText] = React.useState(text)
     const cachedWidth = PILL_WIDTH_CACHE.get(text)
     const [width, setWidth] = React.useState<number>(cachedWidth ?? 0)
@@ -198,23 +226,13 @@ function AnimatedPill({
     }, [text, displayText])
 
     return (
-        <span
-            className={cn(
-                "relative inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)] cursor-pointer select-none transition-[box-shadow,border-color] duration-200 hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] active:scale-[0.97]",
-                extraClassName
-            )}
-        >
+        <span className={cn(
+            "relative inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)] cursor-pointer select-none transition-[box-shadow,border-color] duration-200 hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] active:scale-[0.97]",
+            extraClassName
+        )}>
             <span className="absolute left-0 top-0 opacity-0 pointer-events-none whitespace-nowrap text-[13px] font-medium" ref={sizerRef} aria-hidden>{text}</span>
-            <motion.span
-                className="inline-block overflow-hidden whitespace-nowrap"
-                initial={false}
-                animate={{ width: ready ? width : undefined }}
-                transition={SPRING_LAYOUT}
-            >
-                <span className={cn(
-                    "inline-block transition-[opacity,filter] duration-150",
-                    displayText !== text ? "opacity-0 blur-[3px]" : "opacity-100 blur-0"
-                )}>
+            <motion.span className="inline-block overflow-hidden whitespace-nowrap" initial={false} animate={{ width: ready ? width : undefined }} transition={SPRING_LAYOUT}>
+                <span className={cn("inline-block transition-[opacity,filter] duration-150", displayText !== text ? "opacity-0 blur-[3px]" : "opacity-100 blur-0")}>
                     {displayText}
                 </span>
             </motion.span>
@@ -223,15 +241,7 @@ function AnimatedPill({
     )
 }
 
-function ToolbarPill({
-    children,
-    onClick,
-    className: extraClassName,
-}: {
-    children: React.ReactNode
-    onClick?: () => void
-    className?: string
-}) {
+function ToolbarPill({ children, onClick, className: extraClassName }: { children: React.ReactNode; onClick?: () => void; className?: string }) {
     return (
         <button
             type="button"
@@ -246,14 +256,90 @@ function ToolbarPill({
     )
 }
 
-const FONT_OPTIONS: { id: FontType; label: string; preview: string; family: string }[] = [
-    { id: "sans", label: "Sans", preview: "Aa", family: "var(--font-geist-sans), system-ui, sans-serif" },
-    { id: "serif", label: "Serif", preview: "Aa", family: "Merriweather, Georgia, serif" },
-    { id: "mono", label: "Mono", preview: "Aa", family: "var(--font-geist-mono), monospace" },
-    { id: "pixel", label: "Round", preview: "Aa", family: "var(--font-nunito), system-ui, sans-serif" },
+// ─── Appearance panel components ────────────────────────────────────────────
+
+const FONT_OPTIONS: { id: FontType; label: string; family: string }[] = [
+    { id: "sans",  label: "Sans",  family: "var(--font-geist-sans), system-ui, sans-serif" },
+    { id: "serif", label: "Serif", family: "Merriweather, Georgia, serif" },
+    { id: "mono",  label: "Mono",  family: "var(--font-geist-mono), monospace" },
+    { id: "pixel", label: "Round", family: "var(--font-nunito), system-ui, sans-serif" },
 ]
 
-const PREVIEW_TEXT = "\u201CThe Lord is my shepherd; I shall not want.\u201D"
+/** A standalone glass-surface toggle row. Used inside the Appearance panel. */
+function ToggleRow({
+    active,
+    onClick,
+    icon,
+    label,
+    accent = "primary",
+}: {
+    active: boolean
+    onClick: () => void
+    icon: React.ReactNode
+    label: string
+    accent?: "primary" | "red"
+}) {
+    const trackOn = accent === "red"
+        ? "bg-red-500/75 dark:bg-red-500/65"
+        : "bg-foreground/[0.5] dark:bg-white/[0.5]"
+    const iconColor = accent === "red"
+        ? (active ? "text-red-500" : "text-muted-foreground/50")
+        : (active ? "text-foreground" : "text-muted-foreground/50")
+
+    return (
+        <motion.button
+            type="button"
+            suppressHydrationWarning
+            onClick={onClick}
+            whileTap={{ scale: 0.97 }}
+            className="relative w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer
+                       transition-all duration-150"
+            style={{
+                background: "color-mix(in srgb, var(--popover) 60%, transparent)",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+                boxShadow: "inset 0 0.5px 0 rgba(255,255,255,0.1), inset 0 -0.5px 0 rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.05)",
+                border: "0.5px solid rgba(255,255,255,0.09)",
+            }}
+        >
+            {/* Bare icon — no badge container */}
+            <span className={cn("shrink-0 transition-colors duration-150", iconColor)}>
+                {icon}
+            </span>
+
+            {/* Label */}
+            <span className={cn(
+                "flex-1 text-left text-[13px] font-medium transition-colors duration-150",
+                active ? "text-foreground" : "text-foreground/55"
+            )}>
+                {label}
+            </span>
+
+            {/* Glass toggle switch */}
+            <div
+                className={cn(
+                    "relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors duration-200",
+                    active ? trackOn : "bg-foreground/[0.08] dark:bg-white/[0.07]"
+                )}
+                style={{ boxShadow: "inset 0 1.5px 3px rgba(0,0,0,0.2), inset 0 0 0 0.5px rgba(0,0,0,0.06)" }}
+            >
+                <motion.div
+                    className="absolute top-[3px] h-4 w-4 rounded-full bg-white"
+                    style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.3), inset 0 0.5px 0 rgba(255,255,255,0.95)" }}
+                    animate={{ x: active ? 17 : 3 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+            </div>
+        </motion.button>
+    )
+}
+
+/** Thin divider between panel sections. */
+function PanelDivider() {
+    return <div className="h-px bg-border/[0.07]" />
+}
+
+// ─── Main toolbar ───────────────────────────────────────────────────────────
 
 interface ReadingToolbarProps {
     currentBook?: string
@@ -263,7 +349,13 @@ interface ReadingToolbarProps {
     onNavigate?: (book: string, chapter: number, translation?: string) => void
 }
 
-export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, currentTranslation = "dra", hasSectionTitles = false, onNavigate }: ReadingToolbarProps) {
+export function ReadingToolbar({
+    currentBook = "Genesis",
+    currentChapter = 1,
+    currentTranslation = "dra",
+    hasSectionTitles = false,
+    onNavigate,
+}: ReadingToolbarProps) {
     const router = useRouter()
     const {
         isLoaded, fontFamily, setFontFamily, fontSize, setFontSize,
@@ -275,6 +367,9 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
     const [bookOpen, setBookOpen] = React.useState(false)
     const [bookSearch, setBookSearch] = React.useState("")
     const bookInputRef = React.useRef<HTMLInputElement>(null)
+    const [translationOpen, setTranslationOpen] = React.useState(false)
+    const [translationSearch, setTranslationSearch] = React.useState("")
+    const translationInputRef = React.useRef<HTMLInputElement>(null)
 
     const chapterCount = React.useMemo(() => {
         const bookData = BIBLE_BOOKS.find(b => b.name === currentBook)
@@ -295,27 +390,17 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
         }
     }, [onNavigate, router, currentTranslation])
 
-    const handleBookChange = (book: string) => {
-        nav(book, 1)
-        setBookOpen(false)
-    }
-    const handleChapterChange = (chapter: string) => {
-        nav(currentBook, parseInt(chapter, 10))
-    }
-    const handleTranslationChange = (translationId: string) => {
-        setBibleVersion(translationId)
-        nav(currentBook, currentChapter, translationId)
-    }
+    const handleBookChange = (book: string) => { nav(book, 1); setBookOpen(false) }
+    const handleChapterChange = (chapter: string) => { nav(currentBook, parseInt(chapter, 10)) }
+    const handleTranslationChange = (translationId: string) => { setBibleVersion(translationId); nav(currentBook, currentChapter, translationId); setTranslationOpen(false) }
 
     const prevNav = getAdjacentChapter(currentBook, currentChapter, -1)
     const nextNav = getAdjacentChapter(currentBook, currentChapter, 1)
-    const prevOk = canGoPrevChapter(currentBook, currentChapter)
-    const nextOk = canGoNextChapter(currentBook, currentChapter)
+    const prevOk  = canGoPrevChapter(currentBook, currentChapter)
+    const nextOk  = canGoNextChapter(currentBook, currentChapter)
 
     const normalizedBooks = React.useMemo(() =>
-        BOOK_LIST.map(b => typeof b === "string" ? { id: b, name: b } : b),
-        []
-    )
+        BOOK_LIST.map(b => typeof b === "string" ? { id: b, name: b } : b), [])
 
     const filteredBooks = React.useMemo(() => {
         if (!bookSearch) return normalizedBooks
@@ -328,14 +413,13 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
         return t ? ((t as any).abbreviation || t.id).toUpperCase() : currentTranslation.toUpperCase()
     }, [availableTranslations, currentTranslation])
 
-    const currentFontFamily = React.useMemo(() => {
-        return FONT_OPTIONS.find(f => f.id === (isLoaded ? fontFamily : "serif"))?.family || "serif"
-    }, [isLoaded, fontFamily])
+    const activeFontSize = isLoaded ? fontSize : 18
 
     return (
         <div className="w-full max-w-3xl mx-auto mb-8">
             <div className="flex items-center justify-center gap-2 flex-wrap">
-                {/* Book Selector */}
+
+                {/* ── Book Selector ── */}
                 <Popover open={bookOpen} onOpenChange={(o) => { setBookOpen(o); if (o) setTimeout(() => bookInputRef.current?.focus(), 50) }}>
                     <PopoverTrigger asChild>
                         <button type="button">
@@ -356,23 +440,16 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                                 placeholder="Search books..."
                                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/40"
                                 onKeyDown={(e) => {
-                                    if (e.key === "Enter" && filteredBooks.length > 0) {
-                                        handleBookChange(filteredBooks[0].id)
-                                        setBookSearch("")
-                                    }
+                                    if (e.key === "Enter" && filteredBooks.length > 0) { handleBookChange(filteredBooks[0].id); setBookSearch("") }
                                     if (e.key === "Escape") { setBookOpen(false); setBookSearch("") }
                                 }}
                             />
                         </div>
-                        <BookList
-                            books={filteredBooks}
-                            currentBook={currentBook}
-                            onSelect={(id) => { handleBookChange(id); setBookSearch("") }}
-                        />
+                        <BookList books={filteredBooks} currentBook={currentBook} onSelect={(id) => { handleBookChange(id); setBookSearch("") }} />
                     </PopoverContent>
                 </Popover>
 
-                {/* Chapter Nav */}
+                {/* ── Chapter Nav ── */}
                 <div className="flex items-center gap-0 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-1 py-0.5 shadow-[var(--shadow-sm)]">
                     <button
                         type="button"
@@ -382,9 +459,9 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                     >
                         <ChevronLeft className="h-3.5 w-3.5" />
                     </button>
-                    <div className="flex items-baseline gap-0.5 px-1">
+                    <div className="flex items-baseline gap-0 px-1">
                         <ChapterInput currentChapter={currentChapter} maxChapters={chapterCount} onChange={(v) => handleChapterChange(v.toString())} />
-                        <span className="text-[11px] text-muted-foreground/40 tabular-nums">/{chapterCount}</span>
+                        <span className="text-[11px] font-medium text-muted-foreground/35 tabular-nums leading-none">/{chapterCount}</span>
                     </div>
                     <button
                         type="button"
@@ -396,8 +473,15 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                     </button>
                 </div>
 
-                {/* Translation Selector */}
-                <Popover>
+                {/* ── Translation Selector ── */}
+                <Popover
+                    open={translationOpen}
+                    onOpenChange={(o) => {
+                        setTranslationOpen(o)
+                        if (o) setTimeout(() => translationInputRef.current?.focus(), 50)
+                        else setTranslationSearch("")
+                    }}
+                >
                     <PopoverTrigger asChild>
                         <button type="button">
                             <AnimatedPill
@@ -412,11 +496,14 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                             translations={availableTranslations}
                             currentTranslation={currentTranslation}
                             onSelect={handleTranslationChange}
+                            search={translationSearch}
+                            setSearch={setTranslationSearch}
+                            inputRef={translationInputRef}
                         />
                     </PopoverContent>
                 </Popover>
 
-                {/* Appearance */}
+                {/* ── Appearance ── */}
                 <Popover>
                     <PopoverTrigger asChild>
                         <div>
@@ -425,43 +512,48 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                             </ToolbarPill>
                         </div>
                     </PopoverTrigger>
-                    <PopoverContent align="center" className="w-[min(100vw-2rem,22rem)] p-0 overflow-hidden">
-                        <div className="p-4 space-y-5">
-                            {/* Font Family */}
-                            <div className="relative grid grid-cols-4 rounded-xl border border-white/[0.06] bg-white/[0.03] dark:bg-white/[0.02] p-1 gap-0">
-                                {/* Sliding indicator */}
-                                <motion.div
-                                    className="absolute top-1 bottom-1 rounded-[10px] bg-primary/[0.1] ring-1 ring-primary/25 dark:bg-primary/[0.18]"
-                                    layout
-                                    transition={{ type: "spring", stiffness: 500, damping: 32 }}
-                                    style={{
-                                        width: `calc(25% - 2px)`,
-                                        left: `calc(${FONT_OPTIONS.findIndex(f => f.id === (isLoaded ? fontFamily : "serif")) * 25}% + 1px)`,
-                                    }}
-                                />
+
+                    <PopoverContent align="center" className="w-[min(100vw-2rem,17rem)] p-0 overflow-hidden">
+
+                        {/* ── Typeface ── */}
+                        <div className="p-3">
+                            <div className="grid grid-cols-4 gap-1.5">
                                 {FONT_OPTIONS.map((f) => {
-                                    const selected = isLoaded && fontFamily === f.id
+                                    const selected = isLoaded ? fontFamily === f.id : f.id === "serif"
                                     return (
                                         <motion.button
                                             key={f.id}
                                             type="button"
                                             suppressHydrationWarning
                                             onClick={() => setFontFamily(f.id)}
-                                            whileTap={{ scale: 0.95 }}
-                                            className="relative z-10 flex flex-col items-center gap-0.5 rounded-[10px] py-2 transition-colors duration-200"
+                                            whileTap={{ scale: 0.93 }}
+                                            className={cn(
+                                                "relative flex flex-col items-center gap-1 rounded-xl py-2.5 cursor-pointer",
+                                                "transition-colors duration-150",
+                                                selected
+                                                    ? "bg-foreground/[0.07] dark:bg-white/[0.09]"
+                                                    : "hover:bg-foreground/[0.04] active:bg-foreground/[0.08]"
+                                            )}
                                         >
+                                            {selected && (
+                                                <motion.div
+                                                    layoutId="typeface-ring"
+                                                    className="absolute inset-0 rounded-xl ring-1 ring-foreground/[0.14] dark:ring-white/[0.18]"
+                                                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                                                />
+                                            )}
                                             <span
                                                 className={cn(
-                                                    "text-[17px] transition-colors duration-200",
-                                                    selected ? "text-primary" : "text-foreground/50"
+                                                    "relative z-10 text-[17px] leading-none transition-colors duration-150",
+                                                    selected ? "text-foreground" : "text-foreground/40"
                                                 )}
                                                 style={{ fontFamily: f.family }}
                                             >
                                                 Aa
                                             </span>
                                             <span className={cn(
-                                                "text-[10px] font-medium transition-colors duration-200",
-                                                selected ? "text-primary/80" : "text-muted-foreground/50"
+                                                "relative z-10 text-[10px] font-medium transition-colors duration-150",
+                                                selected ? "text-foreground/70" : "text-muted-foreground/35"
                                             )}>
                                                 {f.label}
                                             </span>
@@ -469,114 +561,74 @@ export function ReadingToolbar({ currentBook = "Genesis", currentChapter = 1, cu
                                     )
                                 })}
                             </div>
+                        </div>
 
-                            {/* Font Size */}
-                            <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.03] dark:bg-white/[0.02] px-1.5 py-1.5">
+                        <PanelDivider />
+
+                        {/* ── Font size ── */}
+                        <div className="flex items-center justify-center px-3 py-2.5">
+                            <div className="flex items-center gap-0 rounded-full bg-foreground/[0.05] dark:bg-white/[0.05] p-0.5">
                                 <motion.button
                                     type="button"
-                                    whileTap={{ scale: 0.85 }}
+                                    whileTap={{ scale: 0.82 }}
                                     onClick={() => setFontSize(Math.max(12, fontSize - 2))}
-                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground/60 transition-colors hover:text-foreground hover:bg-white/[0.06]"
+                                    disabled={activeFontSize <= 12}
+                                    className="h-7 w-7 flex items-center justify-center rounded-full
+                                               text-foreground/55 hover:bg-foreground/[0.08] dark:hover:bg-white/[0.09]
+                                               hover:text-foreground transition-colors duration-150
+                                               disabled:opacity-25 disabled:pointer-events-none"
                                 >
-                                    <span className="text-sm font-medium leading-none">A</span>
+                                    <span className="text-[16px] leading-none select-none font-light">−</span>
                                 </motion.button>
-                                <div className="flex items-center gap-2 px-2">
-                                    <span className="text-[10px] text-muted-foreground/30 select-none">small</span>
-                                    <div className="flex items-center gap-[3px]">
-                                        {[12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].map((size) => {
-                                            const active = (isLoaded ? fontSize : 18) === size
-                                            return (
-                                                <motion.button
-                                                    key={size}
-                                                    type="button"
-                                                    onClick={() => setFontSize(size)}
-                                                    className="relative flex items-end justify-center w-[10px]"
-                                                    whileTap={{ scale: 0.8 }}
-                                                >
-                                                    <motion.div
-                                                        className={cn(
-                                                            "w-[3px] rounded-full transition-colors duration-200",
-                                                            active ? "bg-primary" : "bg-muted-foreground/20 hover:bg-muted-foreground/40"
-                                                        )}
-                                                        animate={{ height: active ? 14 : 4 + ((size - 12) / 20) * 10 }}
-                                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                                    />
-                                                </motion.button>
-                                            )
-                                        })}
-                                    </div>
-                                    <span className="text-[10px] text-muted-foreground/30 select-none">large</span>
-                                </div>
+                                <span suppressHydrationWarning className="w-12 text-center text-[12px] font-semibold tabular-nums text-foreground select-none">
+                                    {activeFontSize}px
+                                </span>
                                 <motion.button
                                     type="button"
-                                    whileTap={{ scale: 0.85 }}
+                                    whileTap={{ scale: 0.82 }}
                                     onClick={() => setFontSize(Math.min(32, fontSize + 2))}
-                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground/60 transition-colors hover:text-foreground hover:bg-white/[0.06]"
+                                    disabled={activeFontSize >= 32}
+                                    className="h-7 w-7 flex items-center justify-center rounded-full
+                                               text-foreground/55 hover:bg-foreground/[0.08] dark:hover:bg-white/[0.09]
+                                               hover:text-foreground transition-colors duration-150
+                                               disabled:opacity-25 disabled:pointer-events-none"
                                 >
-                                    <span className="text-base font-medium leading-none">A</span>
+                                    <span className="text-[16px] leading-none select-none font-light">+</span>
                                 </motion.button>
-                            </div>
-
-                            {/* Toggles */}
-                            <div className="flex flex-wrap gap-1.5">
-                                <ToggleChip
-                                    active={!isLoaded || showVerseNumbers}
-                                    onClick={() => setShowVerseNumbers(!showVerseNumbers)}
-                                    icon={<Hash className="h-3 w-3" />}
-                                    label="Numbers"
-                                />
-                                <ToggleChip
-                                    active={!isLoaded || redLetters}
-                                    onClick={() => setRedLetters(!redLetters)}
-                                    icon={<Palette className="h-3 w-3" />}
-                                    label="Red Letters"
-                                    activeColor="text-red-500 bg-red-500/10 ring-red-500/20"
-                                />
-                                {hasSectionTitles && (
-                                    <ToggleChip
-                                        active={isLoaded && showTitles}
-                                        onClick={() => setShowTitles(!showTitles)}
-                                        icon={<Heading className="h-3 w-3" />}
-                                        label="Titles"
-                                    />
-                                )}
                             </div>
                         </div>
+
+                        <PanelDivider />
+
+                        {/* ── Display toggles — each is its own glass surface ── */}
+                        <div className="flex flex-col gap-1.5 p-3">
+                            <ToggleRow
+                                active={!isLoaded || showVerseNumbers}
+                                onClick={() => setShowVerseNumbers(!showVerseNumbers)}
+                                icon={<Hash className="h-3.5 w-3.5" />}
+                                label="Verse Numbers"
+                            />
+                            <ToggleRow
+                                active={!isLoaded || redLetters}
+                                onClick={() => setRedLetters(!redLetters)}
+                                icon={<Palette className="h-3.5 w-3.5" />}
+                                label="Red Letters"
+                                accent="red"
+                            />
+                            {hasSectionTitles && (
+                                <ToggleRow
+                                    active={isLoaded && showTitles}
+                                    onClick={() => setShowTitles(!showTitles)}
+                                    icon={<Heading className="h-3.5 w-3.5" />}
+                                    label="Headings"
+                                />
+                            )}
+                        </div>
+
                     </PopoverContent>
                 </Popover>
+
             </div>
         </div>
-    )
-}
-
-function ToggleChip({
-    active,
-    onClick,
-    icon,
-    label,
-    activeColor,
-}: {
-    active: boolean
-    onClick: () => void
-    icon: React.ReactNode
-    label: string
-    activeColor?: string
-}) {
-    return (
-        <motion.button
-            type="button"
-            suppressHydrationWarning
-            onClick={onClick}
-            whileTap={{ scale: 0.94 }}
-            className={cn(
-                "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-all duration-200 ring-1 ring-transparent",
-                active
-                    ? activeColor || "text-primary bg-primary/[0.08] ring-primary/20 dark:bg-primary/[0.15]"
-                    : "text-muted-foreground bg-transparent hover:bg-muted/40"
-            )}
-        >
-            {icon}
-            {label}
-        </motion.button>
     )
 }

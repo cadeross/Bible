@@ -15,170 +15,173 @@ interface CustomHeatmapProps {
     data: Record<string, number>; // date "YYYY-MM-DD" -> seconds
 }
 
+const CELL = 12; // px
+const GAP = 3;   // px
+const STEP = CELL + GAP;
+
+const COLOR_STEPS = [
+    "bg-foreground/[0.07]",
+    "bg-primary/25",
+    "bg-primary/50",
+    "bg-primary/75",
+    "bg-primary",
+] as const;
+
+function getColorClass(minutes: number) {
+    if (minutes === 0) return COLOR_STEPS[0];
+    if (minutes < 15) return COLOR_STEPS[1];
+    if (minutes < 30) return COLOR_STEPS[2];
+    if (minutes < 60) return COLOR_STEPS[3];
+    return COLOR_STEPS[4];
+}
+
 export function CustomHeatmap({ data }: CustomHeatmapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [columns, setColumns] = useState(0);
     const [hoveredDate, setHoveredDate] = useState<string | null>(null);
 
-    // Update number of columns based on width
     useEffect(() => {
         const updateColumns = () => {
             if (!containerRef.current) return;
             const width = containerRef.current.clientWidth;
-            // box = 10px, gap = 4px (gap-1) -> step = 14px?
-            // Let's use 10px box + 2px gap = 12px step.
-            // Using gap-1 in tailwind is 0.25rem = 4px.
-            // box w-2.5 (10px) + gap-1 (4px) = 14px.
-            const boxSize = 10;
-            const gap = 3; // minimal gap
-            const step = boxSize + gap;
-
-            // Calculate how many columns fit
-            const cols = Math.floor(width / step);
-            setColumns(Math.max(cols, 10)); // Ensure at least 10 cols
+            const cols = Math.floor((width + GAP) / STEP);
+            setColumns(Math.max(cols, 10));
         };
 
-        // Initial
         updateColumns();
-
-        // Resize observer
         const observer = new ResizeObserver(updateColumns);
-        if (containerRef.current) {
-            observer.observe(containerRef.current);
-        }
-
+        if (containerRef.current) observer.observe(containerRef.current);
         return () => observer.disconnect();
     }, []);
 
-    // Generate calendar data
-    const weeks = useMemo(() => {
+    const days = useMemo(() => {
         if (columns === 0) return [];
 
         const today = new Date();
         const totalDays = columns * 7;
-        const days = [];
-
-        // We want the grid to end today.
-        // But usually heatmaps are "Week aligned".
-        // The last column should contain today.
-        // Today's day of week (0=Sun, 6=Sat).
         const dayOfWeek = today.getDay();
 
-        // Strategy:
-        // We render 'columns' number of weeks.
-        // The last column is the current week.
-        // The last displayed day will be Saturday of the current week (even if in future).
-        // Or we just stop at "Today"?
-        // Contribution graphs usually show the full row/col grid. specific squares are empty if future.
-        // Let's generate 'columns' weeks, ending with the week containing today.
-
-        // Find the Saturday of the current week
         const endOfCurrentWeek = new Date(today);
         endOfCurrentWeek.setDate(today.getDate() + (6 - dayOfWeek));
 
-        // Start date is (columns - 1) weeks ago, Sunday.
         const startDate = new Date(endOfCurrentWeek);
-        startDate.setDate(startDate.getDate() - (columns * 7) + 1);
+        startDate.setDate(startDate.getDate() - totalDays + 1);
 
-        // Generate all days
-        for (let i = 0; i < totalDays; i++) {
+        return Array.from({ length: totalDays }, (_, i) => {
             const d = new Date(startDate);
             d.setDate(d.getDate() + i);
             const dateStr = d.toISOString().split("T")[0];
-            const valueSeconds = data[dateStr] || 0;
-            const isFuture = d > today;
-
-            days.push({
+            return {
                 date: d,
                 dateStr,
-                value: valueSeconds, // seconds
-                minutes: Math.round(valueSeconds / 60),
-                isFuture
-            });
-        }
-        return days;
+                minutes: Math.round((data[dateStr] ?? 0) / 60),
+                isFuture: d > today,
+            };
+        });
     }, [columns, data]);
 
-    // Helper to get color class based on minutes
-    const getColor = (minutes: number) => {
-        if (minutes === 0) return "bg-primary/[0.02]"; // Empty, ultra faint
-        if (minutes < 15) return "bg-primary/20";
-        if (minutes < 30) return "bg-primary/40";
-        if (minutes < 60) return "bg-primary/70";
-        return "bg-primary"; // 60+
-    };
-
     if (columns === 0) {
-        return <div ref={containerRef} className="w-full h-[92px] bg-secondary/5 animate-pulse rounded-md" />;
+        return (
+            <div
+                ref={containerRef}
+                className="w-full h-[106px] rounded-lg animate-pulse bg-muted/20"
+            />
+        );
     }
 
     return (
-        <div ref={containerRef} className="w-full overflow-hidden">
+        <div ref={containerRef} className="w-full">
             <TooltipProvider delayDuration={0}>
-                <div
-                    className="grid grid-flow-col gap-[3px]"
-                    style={{
-                        gridTemplateRows: "repeat(7, 10px)",
-                        width: "fit-content" // Let the grid shrink/grow defined by columns
-                    }}
-                >
-                    {weeks.map((day, i) => (
-                        <Tooltip key={day.dateStr}>
-                            <TooltipTrigger asChild>
-                                <div
-                                    onMouseEnter={() => !day.isFuture && setHoveredDate(day.dateStr)}
-                                    onMouseLeave={() => setHoveredDate(null)}
-                                    className={cn(
-                                        "w-[10px] h-[10px] cursor-default flex items-center justify-center",
-                                        day.isFuture && "opacity-0 pointer-events-none"
+                {/*
+                 * overflow-x: clip clips horizontal overflow without forcing overflow-y: auto,
+                 * so the vertical pop of the scale animation is visible.
+                 * py-2 / -my-2 creates vertical breathing room for scale overflow.
+                 */}
+                <div className="py-2 -my-2" style={{ overflowX: "clip" }}>
+                    <div
+                        className="grid grid-flow-col"
+                        style={{
+                            gridTemplateRows: `repeat(7, ${CELL}px)`,
+                            gap: `${GAP}px`,
+                        }}
+                    >
+                        {days.map((day) => {
+                            const isHovered = hoveredDate === day.dateStr;
+                            return (
+                                <Tooltip key={day.dateStr}>
+                                    <TooltipTrigger asChild>
+                                        <div
+                                            onMouseEnter={() =>
+                                                !day.isFuture && setHoveredDate(day.dateStr)
+                                            }
+                                            onMouseLeave={() => setHoveredDate(null)}
+                                            style={{
+                                                width: CELL,
+                                                height: CELL,
+                                                position: "relative",
+                                                // z-index on a positioned grid item stacks it above siblings
+                                                zIndex: isHovered ? 10 : 0,
+                                            }}
+                                            className={
+                                                day.isFuture ? "pointer-events-none" : "cursor-default"
+                                            }
+                                        >
+                                            <motion.div
+                                                animate={{ scale: isHovered ? 1.5 : 1 }}
+                                                transition={SPRING_FAST}
+                                                className={cn(
+                                                    "absolute inset-0 rounded-[2px]",
+                                                    day.isFuture
+                                                        ? "opacity-0"
+                                                        : getColorClass(day.minutes)
+                                                )}
+                                            />
+                                        </div>
+                                    </TooltipTrigger>
+                                    {!day.isFuture && (
+                                        <TooltipContent
+                                            side="top"
+                                            sideOffset={6}
+                                            className="ow-menu-surface glass rounded-xl border border-white/[0.12] dark:border-white/[0.06] px-3 py-2 shadow-[var(--shadow-elevated)]"
+                                        >
+                                            <p className="text-[11px] font-medium text-muted-foreground">
+                                                {day.date.toLocaleDateString("en-US", {
+                                                    month: "short",
+                                                    day: "numeric",
+                                                    year: "numeric",
+                                                })}
+                                            </p>
+                                            <p
+                                                className={cn(
+                                                    "text-[13px] font-semibold mt-0.5",
+                                                    day.minutes > 0
+                                                        ? "text-foreground"
+                                                        : "text-muted-foreground/50"
+                                                )}
+                                            >
+                                                {day.minutes > 0
+                                                    ? `${day.minutes} min read`
+                                                    : "No reading"}
+                                            </p>
+                                        </TooltipContent>
                                     )}
-                                >
-                                    <motion.div
-                                        animate={hoveredDate === day.dateStr ? { scale: 1.5 } : { scale: 1 }}
-                                        transition={SPRING_FAST}
-                                        style={{ pointerEvents: "none" }}
-                                        className={cn(
-                                            "w-[10px] h-[10px] rounded-[1px]",
-                                            day.isFuture ? "" : getColor(day.minutes)
-                                        )}
-                                    />
-                                </div>
-                            </TooltipTrigger>
-                            {!day.isFuture && (
-                                <TooltipContent
-                                    className="min-w-[8rem] flex flex-col items-start gap-1 rounded-lg border border-border/50 bg-background/95 px-3 py-2 text-xs shadow-xl backdrop-blur-3xl"
-                                >
-                                    <span className="font-mono text-muted-foreground">
-                                        {day.date.toLocaleDateString("en-US", {
-                                            month: "short",
-                                            day: "numeric",
-                                            year: "numeric"
-                                        })}
-                                    </span>
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="font-mono font-bold text-foreground">
-                                            {day.minutes}
-                                        </span>
-                                        <span className="text-muted-foreground">minutes read</span>
-                                    </div>
-                                </TooltipContent>
-                            )}
-                        </Tooltip>
-                    ))}
+                                </Tooltip>
+                            );
+                        })}
+                    </div>
                 </div>
             </TooltipProvider>
 
-            {/* Legend */}
-            <div className="flex justify-end items-center mt-3 text-[10px] text-muted-foreground font-mono">
-                <div className="flex items-center gap-1">
-                    <span className="mr-1">Less</span>
-                    <div className="w-[10px] h-[10px] rounded-[1px] bg-primary/[0.02]" />
-                    <div className="w-[10px] h-[10px] rounded-[1px] bg-primary/20" />
-                    <div className="w-[10px] h-[10px] rounded-[1px] bg-primary/40" />
-                    <div className="w-[10px] h-[10px] rounded-[1px] bg-primary/70" />
-                    <div className="w-[10px] h-[10px] rounded-[1px] bg-primary" />
-                    <span className="ml-1">More</span>
-                </div>
+            <div className="mt-2.5 flex items-center justify-end gap-1.5 text-[10px] text-muted-foreground/50 select-none">
+                <span>Less</span>
+                {COLOR_STEPS.map((cls, i) => (
+                    <div
+                        key={i}
+                        className={cn("rounded-[2px]", cls)}
+                        style={{ width: CELL, height: CELL }}
+                    />
+                ))}
+                <span>More</span>
             </div>
         </div>
     );
