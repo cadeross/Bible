@@ -1,15 +1,19 @@
-import { getDailyReadings, DailyReadingsData } from "@/lib/daily-readings"
+import { getDailyReadings } from "@/lib/daily-readings"
+import { getLiturgicalDay } from "@/lib/liturgical-calendar"
 import { DailyClient } from "@/components/daily/daily-client"
 
 export const revalidate = 3600
 
 export default async function DailyPage() {
-    let dailyReadings: DailyReadingsData | null = null
-    try {
-        dailyReadings = await getDailyReadings()
-    } catch (e) {
-        console.error("Failed to pre-fetch daily readings:", e)
-    }
+    const today = new Date().toISOString().split("T")[0]
 
-    return <DailyClient dailyReadings={dailyReadings} />
+    const [readingsResult, liturgyResult] = await Promise.allSettled([
+        getDailyReadings(),
+        getLiturgicalDay(today),
+    ])
+
+    const dailyReadings = readingsResult.status === "fulfilled" ? readingsResult.value : null
+    const liturgicalDay = liturgyResult.status === "fulfilled" ? liturgyResult.value : null
+
+    return <DailyClient dailyReadings={dailyReadings} liturgicalDay={liturgicalDay} />
 }

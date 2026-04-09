@@ -293,13 +293,13 @@ function ToggleRow({
             onClick={onClick}
             whileTap={{ scale: 0.97 }}
             className="relative w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer
+                       border border-black/[0.06] dark:border-white/[0.09]
                        transition-all duration-150"
             style={{
                 background: "color-mix(in srgb, var(--popover) 60%, transparent)",
                 backdropFilter: "blur(16px)",
                 WebkitBackdropFilter: "blur(16px)",
                 boxShadow: "inset 0 0.5px 0 rgba(255,255,255,0.1), inset 0 -0.5px 0 rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.05)",
-                border: "0.5px solid rgba(255,255,255,0.09)",
             }}
         >
             {/* Bare icon — no badge container */}
@@ -336,7 +336,7 @@ function ToggleRow({
 
 /** Thin divider between panel sections. */
 function PanelDivider() {
-    return <div className="h-px bg-border/[0.07]" />
+    return <div className="h-px bg-foreground/[0.06]" />
 }
 
 // ─── Main toolbar ───────────────────────────────────────────────────────────

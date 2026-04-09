@@ -240,7 +240,7 @@ export function SearchPanel({ open, onOpenChange }: { open: boolean; onOpenChang
         <div className="w-[360px] max-h-[min(70vh,480px)] overflow-hidden flex flex-col">
 
             {/* ── Input row ── */}
-            <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-3.5 py-2.5">
+            <div className="flex items-center gap-2.5 border-b border-foreground/[0.06] px-3.5 py-2.5">
                 <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
                 <input
                     ref={inputRef}

@@ -86,10 +86,10 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                         exit={{ opacity: 0, x: 40 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
                     >
-                        <div className="border-b border-white/[0.06] px-3 py-2">
+                        <div className="border-b border-foreground/[0.06] px-3 py-2">
                             <button
                                 onClick={() => setView("settings")}
-                                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-white/[0.04]"
+                                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-foreground/[0.04]"
                             >
                                 <ChevronLeft className="h-3.5 w-3.5" />
                                 Back
@@ -123,13 +123,13 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                         transition={{ duration: 0.2, ease: "easeOut" }}
                     >
                         {/* Account */}
-                        <div className="border-b border-white/[0.06] px-3 py-2">
+                        <div className="border-b border-foreground/[0.06] px-3 py-2">
                             {isSignedIn ? (
                                 <div className="space-y-0.5">
                                     <Link
                                         href="/profile"
                                         onClick={onClose}
-                                        className="flex items-center justify-between rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.04] dark:hover:bg-white/[0.05]"
+                                        className="flex items-center justify-between rounded-lg px-2 py-2 transition-colors hover:bg-foreground/[0.04]"
                                     >
                                         <div className="flex items-center gap-2.5">
                                             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -144,7 +144,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                                     </Link>
                                     <button
                                         onClick={() => { clerk.signOut(); onClose?.() }}
-                                        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-[13px] text-destructive/80 transition-colors hover:bg-white/[0.04] dark:hover:bg-white/[0.05]"
+                                        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-[13px] text-destructive/80 transition-colors hover:bg-foreground/[0.04]"
                                     >
                                         <LogOut className="h-3.5 w-3.5" />
                                         Sign out
@@ -153,7 +153,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                             ) : (
                                 <button
                                     onClick={() => setView("signin")}
-                                    className="flex w-full items-center justify-between rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.04] dark:hover:bg-white/[0.05]"
+                                    className="flex w-full items-center justify-between rounded-lg px-2 py-2 transition-colors hover:bg-foreground/[0.04]"
                                 >
                                     <div className="flex items-center gap-2.5">
                                         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -170,8 +170,8 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                         </div>
 
                         {/* Theme - elegant toggle */}
-                        <div className="border-b border-white/[0.06] px-4 py-3">
-                            <div className="relative flex rounded-xl bg-white/[0.03] dark:bg-white/[0.02] border border-white/[0.06] p-1">
+                        <div className="border-b border-foreground/[0.06] px-4 py-3">
+                            <div className="relative flex rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] p-1">
                                 <motion.div
                                     className="absolute top-1 bottom-1 rounded-[10px] bg-primary/[0.1] ring-1 ring-primary/25 dark:bg-primary/[0.18]"
                                     layout
@@ -198,13 +198,13 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                         </div>
 
                         {/* Language */}
-                        <div className="border-b border-white/[0.06] px-4 py-3">
+                        <div className="border-b border-foreground/[0.06] px-4 py-3">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <p className="text-[13px] font-medium text-foreground">Language</p>
                                     <span className="text-[9px] font-semibold uppercase tracking-wider bg-primary/10 text-primary/60 px-1.5 py-0.5 rounded-full select-none">Coming soon</span>
                                 </div>
-                                <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 bg-white/[0.03] border border-white/[0.06] opacity-50 cursor-not-allowed select-none">
+                                <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 bg-foreground/[0.04] border border-foreground/[0.07] opacity-50 cursor-not-allowed select-none">
                                     <Globe className="h-3 w-3 text-muted-foreground/50" />
                                     <span className="text-[12px] text-muted-foreground/60">English</span>
                                     <ChevronDown className="h-3 w-3 text-muted-foreground/30" />
