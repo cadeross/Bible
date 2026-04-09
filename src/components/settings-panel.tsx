@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
-import { Monitor, Moon, Sun, LogOut, User, ChevronRight, ChevronLeft } from "lucide-react"
+import { Monitor, Moon, Sun, LogOut, User, ChevronRight, ChevronLeft, Globe, ChevronDown } from "lucide-react"
 import { useAuth, useUser, useClerk, SignIn } from "@clerk/nextjs"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -194,6 +194,21 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                                         {label}
                                     </button>
                                 ))}
+                            </div>
+                        </div>
+
+                        {/* Language */}
+                        <div className="border-b border-white/[0.06] px-4 py-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <p className="text-[13px] font-medium text-foreground">Language</p>
+                                    <span className="text-[9px] font-semibold uppercase tracking-wider bg-primary/10 text-primary/60 px-1.5 py-0.5 rounded-full select-none">Coming soon</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 bg-white/[0.03] border border-white/[0.06] opacity-50 cursor-not-allowed select-none">
+                                    <Globe className="h-3 w-3 text-muted-foreground/50" />
+                                    <span className="text-[12px] text-muted-foreground/60">English</span>
+                                    <ChevronDown className="h-3 w-3 text-muted-foreground/30" />
+                                </div>
                             </div>
                         </div>
 

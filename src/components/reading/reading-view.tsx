@@ -41,6 +41,8 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
     const hasSectionTitles = chapter.verses.some(v => v.heading)
     const prevOk = canGoPrevChapter(currentBook, currentChapterNum)
     const nextOk = canGoNextChapter(currentBook, currentChapterNum)
+    const prevChapter = React.useMemo(() => getAdjacentChapter(currentBook, currentChapterNum, -1), [currentBook, currentChapterNum])
+    const nextChapter = React.useMemo(() => getAdjacentChapter(currentBook, currentChapterNum, 1), [currentBook, currentChapterNum])
 
     const navigateTo = useCallback(async (nextBook: string, nextChapter: number, nextTranslation?: string) => {
         const trans = nextTranslation || currentTranslation
@@ -55,6 +57,7 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
             setCurrentChapterNum(nextChapter)
             setCurrentTranslation(trans)
             setChapter(data)
+            window.scrollTo({ top: 0, behavior: "smooth" })
         } catch (err) {
             console.error("Failed to load chapter:", err)
         } finally {
@@ -148,17 +151,7 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
 
             <main className="flex-1 w-full max-w-4xl relative flex items-start justify-center">
 
-                <div className="hidden lg:flex fixed left-8 top-1/2 -translate-y-1/2 flex-col gap-2 opacity-15 hover:opacity-80 transition-opacity duration-300">
-                    <button
-                        type="button"
-                        onClick={handlePrev}
-                        disabled={!prevOk}
-                        aria-label="Previous chapter"
-                        className="flex h-12 w-12 items-center justify-center rounded-2xl text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 disabled:pointer-events-none disabled:opacity-0 cursor-pointer"
-                    >
-                        <ChevronLeft className="h-8 w-8" strokeWidth={1.5} />
-                    </button>
-                </div>
+                {/* Side chevrons temporarily removed */}
 
                 <AnimatePresence mode="wait" custom={navDirection.current}>
                     <motion.div
@@ -172,20 +165,41 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
                         className="w-full"
                     >
                         <ReadingContent chapter={chapter} bookName={currentBook} chapterNum={currentChapterNum} sharedVerses={sharedVerses} />
+
+                        {/* Bottom chapter navigation */}
+                        <div className="w-full max-w-[720px] mx-auto px-6 pt-1 pb-20 flex items-center justify-center gap-3">
+                            {prevOk && prevChapter ? (
+                                <motion.button
+                                    type="button"
+                                    onClick={handlePrev}
+                                    whileTap={{ scale: 0.96 }}
+                                    whileHover={{ scale: 1.02 }}
+                                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                    className="flex items-center gap-2 px-3.5 py-2 rounded-full border border-border/20 bg-foreground/[0.03] hover:bg-foreground/[0.06] hover:border-border/40 transition-colors duration-200 cursor-pointer"
+                                >
+                                    <ChevronLeft className="h-3 w-3 shrink-0 text-muted-foreground/40" />
+                                    <span className="text-[12px] font-medium text-muted-foreground/55 truncate">{prevChapter.book} {prevChapter.chapter}</span>
+                                </motion.button>
+                            ) : null}
+
+                            {nextOk && nextChapter ? (
+                                <motion.button
+                                    type="button"
+                                    onClick={handleNext}
+                                    whileTap={{ scale: 0.96 }}
+                                    whileHover={{ scale: 1.02 }}
+                                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                    className="flex items-center gap-2 px-3.5 py-2 rounded-full border border-border/20 bg-foreground/[0.03] hover:bg-foreground/[0.06] hover:border-border/40 transition-colors duration-200 cursor-pointer"
+                                >
+                                    <span className="text-[12px] font-medium text-muted-foreground/55 truncate">{nextChapter.book} {nextChapter.chapter}</span>
+                                    <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/40" />
+                                </motion.button>
+                            ) : null}
+                        </div>
                     </motion.div>
                 </AnimatePresence>
 
-                <div className="hidden lg:flex fixed right-8 top-1/2 -translate-y-1/2 flex-col gap-2 opacity-15 hover:opacity-80 transition-opacity duration-300">
-                    <button
-                        type="button"
-                        onClick={handleNext}
-                        disabled={!nextOk}
-                        aria-label="Next chapter"
-                        className="flex h-12 w-12 items-center justify-center rounded-2xl text-muted-foreground hover:text-primary hover:bg-accent/50 transition-all duration-200 disabled:pointer-events-none disabled:opacity-0 cursor-pointer"
-                    >
-                        <ChevronRight className="h-8 w-8" strokeWidth={1.5} />
-                    </button>
-                </div>
+                {/* Side chevrons temporarily removed */}
             </main>
 
             {isFocusMode && (
