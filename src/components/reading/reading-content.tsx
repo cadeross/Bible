@@ -661,13 +661,13 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
     // Imperatively apply styles after preferences load — React's suppressHydrationWarning
     // can cause the initial server-rendered style to persist through reconciliation
+    // Only override fontFamily imperatively — fontSize and lineHeight are owned by the style
+    // prop so their CSS transitions fire exactly once per change with no stutter.
     React.useEffect(() => {
         if (containerRef.current && isLoaded) {
             containerRef.current.style.fontFamily = fontFamilyStyle
-            containerRef.current.style.fontSize = `${fontSize}px`
-            containerRef.current.style.lineHeight = `${lineHeight}`
         }
-    }, [isLoaded, fontFamily, fontSize, lineHeight, fontFamilyStyle])
+    }, [isLoaded, fontFamily, fontFamilyStyle])
 
     return (
         <div
@@ -682,6 +682,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 lineHeight: isLoaded ? lineHeight : 1.6,
                 fontFamily: fontFamilyStyle,
                 userSelect: 'none',
+                transition: 'line-height 0.35s cubic-bezier(0.25, 0.1, 0.25, 1), font-size 0.35s cubic-bezier(0.25, 0.1, 0.25, 1)',
             }}
         >
             <Dialog
@@ -883,6 +884,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                     )}
                                                     style={{ touchAction: "manipulation" }}
                                                     onClick={() => handleVerseClick(verse.verse, verse.text)}
+                                                    onContextMenu={(e) => { if ("ontouchstart" in window) e.preventDefault() }}
                                                     onMouseDown={(e) => {
                                                         handleTouchStart(verse.verse, e)
                                                         startDrag(verse.verse, e)

@@ -7,9 +7,10 @@ import { useRouter } from "next/navigation"
 import { BOOK_LIST, TRANSLATIONS } from "@/lib/bible-api"
 import { BIBLE_BOOKS } from "@/lib/bible-data"
 import { ChevronLeft, ChevronRight, ChevronDown, SlidersHorizontal, Hash, Palette, Heading } from "lucide-react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { canGoNextChapter, canGoPrevChapter, getAdjacentChapter } from "@/lib/chapter-navigation"
+import { hapticLight } from "@/lib/haptics"
 
 // ─── Sliding highlight used in list menus ──────────────────────────────────
 
@@ -32,6 +33,33 @@ function SlidingHighlight({ containerRef, hoveredIndex }: { containerRef: React.
             className="pointer-events-none absolute left-1 right-1 z-0 rounded-[12px] bg-foreground/[0.05] dark:bg-white/[0.07]"
             initial={false}
             animate={rect ? { opacity: 1, top: rect.top, height: rect.height } : { opacity: 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
+            style={{ position: "absolute" }}
+        />
+    )
+}
+
+// ─── Sliding highlight for 2D grids (typeface selector) ─────────────────────
+
+function GridHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {
+    const [rect, setRect] = React.useState<{ top: number; left: number; width: number; height: number } | null>(null)
+
+    React.useEffect(() => {
+        if (hoveredIndex === null || !containerRef.current) { setRect(null); return }
+        const buttons = containerRef.current.querySelectorAll<HTMLElement>("[data-slide-item]")
+        const el = buttons[hoveredIndex]
+        if (!el) { setRect(null); return }
+        const parentRect = containerRef.current.getBoundingClientRect()
+        const elRect = el.getBoundingClientRect()
+        setRect({ top: elRect.top - parentRect.top, left: elRect.left - parentRect.left, width: elRect.width, height: elRect.height })
+    }, [hoveredIndex, containerRef])
+
+    return (
+        <motion.div
+            aria-hidden
+            className="pointer-events-none absolute z-0 rounded-xl bg-foreground/[0.05] dark:bg-white/[0.07]"
+            initial={false}
+            animate={rect ? { opacity: 1, top: rect.top, left: rect.left, width: rect.width, height: rect.height } : { opacity: 0 }}
             transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
             style={{ position: "absolute" }}
         />
@@ -339,6 +367,27 @@ function PanelDivider() {
     return <div className="h-px bg-foreground/[0.06]" />
 }
 
+// ─── Animated stepper value ─────────────────────────────────────────────────
+
+function StepperValue({ value }: { value: string }) {
+    return (
+        <div className="relative w-11 overflow-hidden flex items-center justify-center" style={{ height: "1.125rem" }}>
+            <AnimatePresence mode="popLayout" initial={false}>
+                <motion.span
+                    key={value}
+                    initial={{ opacity: 0, y: 6, filter: "blur(3px)" }}
+                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                    exit={{ opacity: 0, y: -6, filter: "blur(3px)" }}
+                    transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+                    className="absolute text-[12px] font-semibold tabular-nums text-foreground select-none"
+                >
+                    {value}
+                </motion.span>
+            </AnimatePresence>
+        </div>
+    )
+}
+
 // ─── Main toolbar ───────────────────────────────────────────────────────────
 
 interface ReadingToolbarProps {
@@ -359,6 +408,7 @@ export function ReadingToolbar({
     const router = useRouter()
     const {
         isLoaded, fontFamily, setFontFamily, fontSize, setFontSize,
+        lineHeight, setLineHeight,
         showVerseNumbers, setShowVerseNumbers, redLetters, setRedLetters,
         showTitles, setShowTitles, setBibleVersion, enabledTranslations,
     } = useReadingPreferences()
@@ -411,9 +461,9 @@ export function ReadingToolbar({
         }
     }, [onNavigate, router, currentTranslation])
 
-    const handleBookChange = (book: string) => { nav(book, 1); setBookOpen(false) }
+    const handleBookChange = (book: string) => { hapticLight(); nav(book, 1); setBookOpen(false) }
     const handleChapterChange = (chapter: string) => { nav(currentBook, parseInt(chapter, 10)) }
-    const handleTranslationChange = (translationId: string) => { setBibleVersion(translationId); nav(currentBook, currentChapter, translationId); setTranslationOpen(false) }
+    const handleTranslationChange = (translationId: string) => { hapticLight(); setBibleVersion(translationId); nav(currentBook, currentChapter, translationId); setTranslationOpen(false) }
 
     const prevNav = getAdjacentChapter(currentBook, currentChapter, -1)
     const nextNav = getAdjacentChapter(currentBook, currentChapter, 1)
@@ -435,6 +485,10 @@ export function ReadingToolbar({
     }, [availableTranslations, currentTranslation])
 
     const activeFontSize = isLoaded ? fontSize : 18
+    const activeLineHeight = isLoaded ? lineHeight : 1.6
+
+    const gridRef = React.useRef<HTMLDivElement>(null)
+    const [hoveredFont, setHoveredFont] = React.useState<number | null>(null)
 
     return (
         <div className="w-full max-w-3xl mx-auto mb-8">
@@ -538,22 +592,27 @@ export function ReadingToolbar({
 
                         {/* ── Typeface ── */}
                         <div className="p-3">
-                            <div className="grid grid-cols-4 gap-1.5">
-                                {FONT_OPTIONS.map((f) => {
+                            <div
+                                ref={gridRef}
+                                className="relative grid grid-cols-4 gap-1.5"
+                                onPointerLeave={() => setHoveredFont(null)}
+                            >
+                                <GridHighlight containerRef={gridRef} hoveredIndex={hoveredFont} />
+                                {FONT_OPTIONS.map((f, i) => {
                                     const selected = isLoaded ? fontFamily === f.id : f.id === "serif"
                                     return (
                                         <motion.button
                                             key={f.id}
                                             type="button"
                                             suppressHydrationWarning
+                                            data-slide-item
                                             onClick={() => setFontFamily(f.id)}
+                                            onPointerEnter={() => setHoveredFont(i)}
                                             whileTap={{ scale: 0.93 }}
                                             className={cn(
-                                                "relative flex flex-col items-center gap-1 rounded-xl py-2.5 cursor-pointer",
+                                                "relative z-10 flex flex-col items-center gap-1 rounded-xl py-2.5 cursor-pointer",
                                                 "transition-colors duration-150",
-                                                selected
-                                                    ? "bg-foreground/[0.07] dark:bg-white/[0.09]"
-                                                    : "hover:bg-foreground/[0.04] active:bg-foreground/[0.08]"
+                                                selected ? "bg-foreground/[0.07] dark:bg-white/[0.09]" : ""
                                             )}
                                         >
                                             {selected && (
@@ -586,37 +645,63 @@ export function ReadingToolbar({
 
                         <PanelDivider />
 
-                        {/* ── Font size ── */}
-                        <div className="flex items-center justify-center px-3 py-2.5">
-                            <div className="flex items-center gap-0 rounded-full bg-foreground/[0.05] dark:bg-white/[0.05] p-0.5">
-                                <motion.button
-                                    type="button"
-                                    whileTap={{ scale: 0.82 }}
-                                    onClick={() => setFontSize(Math.max(12, fontSize - 2))}
-                                    disabled={activeFontSize <= 12}
-                                    className="h-7 w-7 flex items-center justify-center rounded-full
-                                               text-foreground/55 hover:bg-foreground/[0.08] dark:hover:bg-white/[0.09]
-                                               hover:text-foreground transition-colors duration-150
-                                               disabled:opacity-25 disabled:pointer-events-none"
-                                >
-                                    <span className="text-[16px] leading-none select-none font-light">−</span>
-                                </motion.button>
-                                <span suppressHydrationWarning className="w-12 text-center text-[12px] font-semibold tabular-nums text-foreground select-none">
-                                    {activeFontSize}px
-                                </span>
-                                <motion.button
-                                    type="button"
-                                    whileTap={{ scale: 0.82 }}
-                                    onClick={() => setFontSize(Math.min(32, fontSize + 2))}
-                                    disabled={activeFontSize >= 32}
-                                    className="h-7 w-7 flex items-center justify-center rounded-full
-                                               text-foreground/55 hover:bg-foreground/[0.08] dark:hover:bg-white/[0.09]
-                                               hover:text-foreground transition-colors duration-150
-                                               disabled:opacity-25 disabled:pointer-events-none"
-                                >
-                                    <span className="text-[16px] leading-none select-none font-light">+</span>
-                                </motion.button>
+                        {/* ── Font size + Line height ── */}
+                        <div className="flex items-center justify-around gap-2 px-3 py-2.5">
+
+                            {/* Font size */}
+                            <div className="flex flex-col items-center gap-1.5">
+                                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">Size</span>
+                                <div className="flex items-center gap-0 rounded-full bg-foreground/[0.05] dark:bg-white/[0.05] p-0.5">
+                                    <motion.button
+                                        type="button"
+                                        whileTap={{ scale: 0.82 }}
+                                        onClick={() => setFontSize(Math.max(12, fontSize - 2))}
+                                        disabled={activeFontSize <= 12}
+                                        className="h-7 w-7 flex items-center justify-center rounded-full text-foreground/55 hover:bg-foreground/[0.08] dark:hover:bg-white/[0.09] hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:pointer-events-none"
+                                    >
+                                        <span className="text-[16px] leading-none select-none font-light">−</span>
+                                    </motion.button>
+                                    <StepperValue value={`${activeFontSize}px`} />
+                                    <motion.button
+                                        type="button"
+                                        whileTap={{ scale: 0.82 }}
+                                        onClick={() => setFontSize(Math.min(32, fontSize + 2))}
+                                        disabled={activeFontSize >= 32}
+                                        className="h-7 w-7 flex items-center justify-center rounded-full text-foreground/55 hover:bg-foreground/[0.08] dark:hover:bg-white/[0.09] hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:pointer-events-none"
+                                    >
+                                        <span className="text-[16px] leading-none select-none font-light">+</span>
+                                    </motion.button>
+                                </div>
                             </div>
+
+                            <div className="w-px self-stretch bg-foreground/[0.06]" />
+
+                            {/* Line height */}
+                            <div className="flex flex-col items-center gap-1.5">
+                                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">Spacing</span>
+                                <div className="flex items-center gap-0 rounded-full bg-foreground/[0.05] dark:bg-white/[0.05] p-0.5">
+                                    <motion.button
+                                        type="button"
+                                        whileTap={{ scale: 0.82 }}
+                                        onClick={() => setLineHeight(Math.max(1.2, parseFloat((lineHeight - 0.1).toFixed(1))))}
+                                        disabled={activeLineHeight <= 1.2}
+                                        className="h-7 w-7 flex items-center justify-center rounded-full text-foreground/55 hover:bg-foreground/[0.08] dark:hover:bg-white/[0.09] hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:pointer-events-none"
+                                    >
+                                        <span className="text-[16px] leading-none select-none font-light">−</span>
+                                    </motion.button>
+                                    <StepperValue value={activeLineHeight.toFixed(1)} />
+                                    <motion.button
+                                        type="button"
+                                        whileTap={{ scale: 0.82 }}
+                                        onClick={() => setLineHeight(Math.min(2.4, parseFloat((lineHeight + 0.1).toFixed(1))))}
+                                        disabled={activeLineHeight >= 2.4}
+                                        className="h-7 w-7 flex items-center justify-center rounded-full text-foreground/55 hover:bg-foreground/[0.08] dark:hover:bg-white/[0.09] hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:pointer-events-none"
+                                    >
+                                        <span className="text-[16px] leading-none select-none font-light">+</span>
+                                    </motion.button>
+                                </div>
+                            </div>
+
                         </div>
 
                         <PanelDivider />
