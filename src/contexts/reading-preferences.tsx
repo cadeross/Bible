@@ -13,6 +13,8 @@ export interface ReadingPreferences {
     showTitles: boolean
     defaultHighlightColor: string
     bibleVersion: string
+    /** null = all translations shown; string[] = only these IDs shown */
+    enabledTranslations: string[] | null
 }
 
 interface ReadingPreferencesContextType extends ReadingPreferences {
@@ -25,6 +27,7 @@ interface ReadingPreferencesContextType extends ReadingPreferences {
     setShowTitles: (show: boolean) => void
     setDefaultHighlightColor: (color: string) => void
     setBibleVersion: (version: string) => void
+    setEnabledTranslations: (ids: string[] | null) => void
     resetPreferences: () => void
 }
 
@@ -37,6 +40,7 @@ const defaultPreferences: ReadingPreferences = {
     showTitles: true,
     defaultHighlightColor: "yellow",
     bibleVersion: "nrsvce",
+    enabledTranslations: null,
 }
 
 const ReadingPreferencesContext = createContext<ReadingPreferencesContextType | undefined>(undefined)
@@ -86,6 +90,7 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
     const setDefaultHighlightColor = (defaultHighlightColor: string) =>
         setPreferences((prev) => ({ ...prev, defaultHighlightColor }))
     const setBibleVersion = (bibleVersion: string) => setPreferences((prev) => ({ ...prev, bibleVersion }))
+    const setEnabledTranslations = (enabledTranslations: string[] | null) => setPreferences((prev) => ({ ...prev, enabledTranslations }))
     const resetPreferences = () => setPreferences(defaultPreferences)
 
     const value = {
@@ -99,6 +104,7 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
         setShowTitles,
         setDefaultHighlightColor,
         setBibleVersion,
+        setEnabledTranslations,
         resetPreferences,
     }
 

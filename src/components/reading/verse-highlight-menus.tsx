@@ -52,7 +52,7 @@ function SlidingHighlight({ containerRef, hoveredIndex }: { containerRef: React.
     return (
         <motion.div
             aria-hidden
-            className="pointer-events-none absolute left-1 right-1 z-0 rounded-lg bg-foreground/[0.05] dark:bg-white/[0.07]"
+            className="pointer-events-none absolute left-1 right-1 z-0 rounded-[12px] bg-foreground/[0.05] dark:bg-white/[0.07]"
             initial={false}
             animate={rect ? { opacity: 1, top: rect.top, height: rect.height } : { opacity: 0 }}
             transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}

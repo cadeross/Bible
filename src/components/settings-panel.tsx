@@ -3,13 +3,168 @@
 import { useEffect, useState, useRef, useCallback } from "react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
-import { Monitor, Moon, Sun, LogOut, User, ChevronRight, ChevronLeft, Globe, ChevronDown } from "lucide-react"
+import { Monitor, Moon, Sun, LogOut, User, ChevronRight, ChevronLeft, Globe, ChevronDown, Check } from "lucide-react"
 import { useAuth, useUser, useClerk, SignIn } from "@clerk/nextjs"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import HeatMap from "@uiw/react-heat-map"
+import { useReadingPreferences } from "@/contexts/reading-preferences"
 
 const SPRING_RESIZE = { type: "spring" as const, stiffness: 350, damping: 30, mass: 0.8 }
+
+function SlidingHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {
+    const [rect, setRect] = useState<{ top: number; height: number } | null>(null)
+
+    useEffect(() => {
+        if (hoveredIndex === null || !containerRef.current) { setRect(null); return }
+        const buttons = containerRef.current.querySelectorAll<HTMLElement>("[data-slide-item]")
+        const el = buttons[hoveredIndex]
+        if (!el) { setRect(null); return }
+        const parentRect = containerRef.current.getBoundingClientRect()
+        const elRect = el.getBoundingClientRect()
+        setRect({ top: elRect.top - parentRect.top + containerRef.current.scrollTop, height: elRect.height })
+    }, [hoveredIndex, containerRef])
+
+    return (
+        <motion.div
+            aria-hidden
+            className="pointer-events-none absolute left-1 right-1 z-0 rounded-[12px] bg-foreground/[0.05] dark:bg-white/[0.07]"
+            initial={false}
+            animate={rect ? { opacity: 1, top: rect.top, height: rect.height } : { opacity: 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
+            style={{ position: "absolute" }}
+        />
+    )
+}
+
+interface Translation {
+    id: string
+    name: string
+    abbreviation?: string
+}
+
+function VersionsSection() {
+    const { bibleVersion, enabledTranslations, setEnabledTranslations } = useReadingPreferences()
+    const [translations, setTranslations] = useState<Translation[]>([])
+    const [open, setOpen] = useState(false)
+    const listRef = useRef<HTMLDivElement>(null)
+    const [hovered, setHovered] = useState<number | null>(null)
+
+    useEffect(() => {
+        import("@/lib/bible-api").then(({ getAllTranslations }) => {
+            getAllTranslations().then(setTranslations)
+        })
+    }, [])
+
+    const isEnabled = (id: string) => {
+        if (enabledTranslations === null) return true
+        return enabledTranslations.includes(id)
+    }
+
+    const toggle = (id: string) => {
+        if (enabledTranslations === null) {
+            // Currently all enabled — disable everything except this one... actually deselect one
+            const all = translations.map(t => t.id)
+            const next = all.filter(tid => tid !== id)
+            setEnabledTranslations(next.length === translations.length - 1 ? next : null)
+        } else {
+            const next = enabledTranslations.includes(id)
+                ? enabledTranslations.filter(tid => tid !== id)
+                : [...enabledTranslations, id]
+            // If all selected, use null (show all)
+            setEnabledTranslations(next.length === translations.length ? null : next)
+        }
+    }
+
+    const enabledCount = enabledTranslations === null ? translations.length : enabledTranslations.length
+
+    return (
+        <div className="border-b border-foreground/[0.06]">
+            <button
+                type="button"
+                onClick={() => setOpen(o => !o)}
+                className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-foreground/[0.02]"
+            >
+                <p className="text-[13px] font-medium text-foreground">Bible Versions</p>
+                <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-muted-foreground/50">
+                        {translations.length > 0 ? `${enabledCount} of ${translations.length}` : ""}
+                    </span>
+                    <motion.div
+                        animate={{ rotate: open ? 180 : 0 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    >
+                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/40" />
+                    </motion.div>
+                </div>
+            </button>
+
+            <AnimatePresence initial={false}>
+                {open && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 32, mass: 0.8 }}
+                        className="overflow-hidden"
+                    >
+                        <div className="relative">
+                            <div className="pointer-events-none absolute top-0 left-0 right-0 h-6 z-10 bg-gradient-to-b from-[var(--popover)] to-transparent" />
+                            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 z-10 bg-gradient-to-t from-[var(--popover)] to-transparent" />
+                        <div ref={listRef} className="relative px-3 py-3 max-h-[240px] overflow-y-auto" onPointerLeave={() => setHovered(null)}>
+                            {translations.length === 0 ? (
+                                <p className="py-3 text-center text-[12px] text-muted-foreground/40">Loading…</p>
+                            ) : (
+                                <>
+                                    <SlidingHighlight containerRef={listRef} hoveredIndex={hovered} />
+                                    <div className="flex flex-col gap-0.5">
+                                    {translations.map((t, i) => {
+                                        const abbrev = (t.abbreviation || t.id).toUpperCase()
+                                        const enabled = isEnabled(t.id)
+                                        const isCurrent = t.id === bibleVersion
+                                        return (
+                                            <button
+                                                key={t.id}
+                                                type="button"
+                                                data-slide-item
+                                                onClick={() => { if (!isCurrent) toggle(t.id) }}
+                                                onPointerEnter={() => setHovered(i)}
+                                                className={cn(
+                                                    "relative z-10 flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left",
+                                                    isCurrent ? "cursor-default" : "cursor-pointer"
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors duration-150",
+                                                    enabled
+                                                        ? "border-primary/50 bg-primary/15"
+                                                        : "border-foreground/[0.12] bg-transparent"
+                                                )}>
+                                                    {enabled && <Check className="h-2.5 w-2.5 text-primary" strokeWidth={2.5} />}
+                                                </div>
+                                                <span className={cn("w-12 shrink-0 text-[11px] font-semibold tabular-nums", enabled ? "text-foreground/80" : "text-muted-foreground/40")}>
+                                                    {abbrev}
+                                                </span>
+                                                <span className={cn("flex-1 truncate text-[12px]", enabled ? "text-foreground/70" : "text-muted-foreground/35")}>
+                                                    {t.name}
+                                                </span>
+                                                {isCurrent && (
+                                                    <span className="text-[10px] font-medium text-primary/60 shrink-0">active</span>
+                                                )}
+                                            </button>
+                                        )
+                                    })}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    )
+}
 
 type PanelView = "settings" | "signin"
 
@@ -55,6 +210,17 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
         const timer = setTimeout(measureHeight, 150)
         return () => clearTimeout(timer)
     }, [view, measureHeight, isSignedIn])
+
+    // Re-measure whenever the active content div resizes (e.g. accordion open/close)
+    useEffect(() => {
+        const ref = view === "settings" ? settingsRef : signinRef
+        if (!ref.current) return
+        const observer = new ResizeObserver(() => {
+            if (ref.current) setContentHeight(ref.current.scrollHeight)
+        })
+        observer.observe(ref.current)
+        return () => observer.disconnect()
+    }, [view])
 
     const isDark = resolvedTheme === "dark"
 
@@ -211,6 +377,9 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Versions */}
+                        <VersionsSection />
 
                         {/* Reading Heatmap */}
                         <div className="px-4 py-3">
