@@ -100,6 +100,11 @@ function LibraryToolbar({ activeTab, onTabChange, counts }: LibraryToolbarProps)
                     Library
                 </span>
 
+                {/* Redesign badge */}
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1 text-[11px] font-medium text-primary select-none">
+                    Redesign in progress
+                </span>
+
                 {/* Tab pills */}
                 {TABS.map((tab) => {
                     const count = counts[tab.id]
