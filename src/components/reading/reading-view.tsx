@@ -13,6 +13,7 @@ import {
     canGoPrevChapter,
     getAdjacentChapter,
 } from "@/lib/chapter-navigation"
+import { hapticMedium, hapticSuccess } from "@/lib/haptics"
 
 interface ReadingViewProps {
     chapter: BibleChapter
@@ -37,6 +38,8 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
     const hasRedirected = useRef(false)
     const navDirection = useRef(0)
     const contentKey = `${currentBook}-${currentChapterNum}-${currentTranslation}`
+    const swipeStartRef = useRef<{ x: number; y: number; t: number } | null>(null)
+    const SWIPE_MIN_X = 55
 
     const hasSectionTitles = chapter.verses.some(v => v.heading)
     const prevOk = canGoPrevChapter(currentBook, currentChapterNum)
@@ -102,6 +105,23 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
         return () => window.removeEventListener("popstate", onPopState)
     }, [currentTranslation, navigateTo])
 
+    const handleSwipeTouchStart = useCallback((e: React.TouchEvent) => {
+        swipeStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() }
+    }, [])
+
+    const handleSwipeTouchEnd = useCallback((e: React.TouchEvent) => {
+        const start = swipeStartRef.current
+        if (!start) return
+        swipeStartRef.current = null
+        const dx = e.changedTouches[0].clientX - start.x
+        const dy = e.changedTouches[0].clientY - start.y
+        const elapsed = Date.now() - start.t
+        // Ignore if too short, too vertical, or held too long (long-press, not a swipe)
+        if (Math.abs(dx) < SWIPE_MIN_X || Math.abs(dx) < Math.abs(dy) * 1.4 || elapsed > 450) return
+        if (dx < 0 && nextOk) { hapticMedium(); handleNext() }
+        else if (dx > 0 && prevOk) { hapticMedium(); handlePrev() }
+    }, [handleNext, handlePrev, nextOk, prevOk])
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const el = e.target as HTMLElement | null
@@ -125,7 +145,12 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
         : { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const }
 
     return (
-        <div className="min-h-screen bg-background flex flex-col items-center py-8">
+        <div
+            className="min-h-screen bg-background flex flex-col items-center py-8"
+            style={{ touchAction: "pan-y", overscrollBehaviorX: "none" } as React.CSSProperties}
+            onTouchStart={handleSwipeTouchStart}
+            onTouchEnd={handleSwipeTouchEnd}
+        >
 
             <motion.div
                 data-reading-chrome
@@ -171,12 +196,12 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
                             animate={isFocusMode ? { opacity: 0 } : { opacity: 1 }}
                             transition={{ duration: 0.25 }}
                             style={{ pointerEvents: isFocusMode ? "none" : "auto" }}
-                            className="w-full max-w-[720px] mx-auto px-6 pt-1 pb-20 flex items-center justify-center gap-3"
+                            className="w-full max-w-[720px] mx-auto px-6 pt-1 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-20 flex items-center justify-center gap-3"
                         >
                             {prevOk && prevChapter ? (
                                 <motion.button
                                     type="button"
-                                    onClick={handlePrev}
+                                    onClick={() => { hapticMedium(); handlePrev() }}
                                     whileTap={{ scale: 0.96 }}
                                     whileHover={{ scale: 1.02 }}
                                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
@@ -190,7 +215,7 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
                             {nextOk && nextChapter ? (
                                 <motion.button
                                     type="button"
-                                    onClick={handleNext}
+                                    onClick={() => { hapticMedium(); handleNext() }}
                                     whileTap={{ scale: 0.96 }}
                                     whileHover={{ scale: 1.02 }}
                                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
@@ -209,7 +234,7 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
 
             <motion.button
                 type="button"
-                onClick={toggleFocusMode}
+                onClick={() => { hapticSuccess(); toggleFocusMode() }}
                 aria-label={isFocusMode ? "Exit focus mode" : "Enter focus mode"}
                 animate={isFocusMode ? { opacity: 1 } : { opacity: 0, pointerEvents: "none" }}
                 transition={{ duration: 0.3 }}

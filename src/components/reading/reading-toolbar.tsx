@@ -29,7 +29,7 @@ function SlidingHighlight({ containerRef, hoveredIndex }: { containerRef: React.
     return (
         <motion.div
             aria-hidden
-            className="pointer-events-none absolute left-1 right-1 z-0 rounded-lg bg-foreground/[0.05] dark:bg-white/[0.07]"
+            className="pointer-events-none absolute left-1 right-1 z-0 rounded-[12px] bg-foreground/[0.05] dark:bg-white/[0.07]"
             initial={false}
             animate={rect ? { opacity: 1, top: rect.top, height: rect.height } : { opacity: 0 }}
             transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
@@ -227,7 +227,7 @@ function AnimatedPill({ text, icon, className: extraClassName }: { text: string;
 
     return (
         <span className={cn(
-            "relative inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)] cursor-pointer select-none transition-[box-shadow,border-color] duration-200 hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] active:scale-[0.97]",
+            "relative inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)] cursor-pointer select-none transition-[box-shadow,border-color] duration-200 hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] active:scale-[0.97] [touch-action:manipulation]",
             extraClassName
         )}>
             <span className="absolute left-0 top-0 opacity-0 pointer-events-none whitespace-nowrap text-[13px] font-medium" ref={sizerRef} aria-hidden>{text}</span>
@@ -247,7 +247,7 @@ function ToolbarPill({ children, onClick, className: extraClassName }: { childre
             type="button"
             onClick={onClick}
             className={cn(
-                "flex cursor-pointer items-center gap-1.5 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)] transition-[box-shadow,border-color] duration-200 hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] active:scale-[0.97]",
+                "flex cursor-pointer items-center gap-1.5 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)] transition-[box-shadow,border-color] duration-200 hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] active:scale-[0.97] [touch-action:manipulation]",
                 extraClassName
             )}
         >
@@ -360,10 +360,21 @@ export function ReadingToolbar({
     const {
         isLoaded, fontFamily, setFontFamily, fontSize, setFontSize,
         showVerseNumbers, setShowVerseNumbers, redLetters, setRedLetters,
-        showTitles, setShowTitles, setBibleVersion,
+        showTitles, setShowTitles, setBibleVersion, enabledTranslations,
     } = useReadingPreferences()
 
-    const [availableTranslations, setAvailableTranslations] = React.useState(TRANSLATIONS)
+    const [allTranslations, setAllTranslations] = React.useState(TRANSLATIONS)
+    const [translationsLoaded, setTranslationsLoaded] = React.useState(false)
+
+    // Load cached translations before first paint so the label is correct without a flash.
+    // useLayoutEffect is intentionally used here: it runs synchronously after hydration but
+    // before the browser paints, so the user never sees the raw API Bible ID.
+    React.useLayoutEffect(() => {
+        try {
+            const cached = localStorage.getItem("cached-translations")
+            if (cached) setAllTranslations(JSON.parse(cached))
+        } catch {}
+    }, [])
     const [bookOpen, setBookOpen] = React.useState(false)
     const [bookSearch, setBookSearch] = React.useState("")
     const bookInputRef = React.useRef<HTMLInputElement>(null)
@@ -378,9 +389,19 @@ export function ReadingToolbar({
 
     React.useEffect(() => {
         import("@/lib/bible-api").then(({ getAllTranslations }) => {
-            getAllTranslations().then(setAvailableTranslations)
+            getAllTranslations().then((ts) => {
+                setAllTranslations(ts)
+                setTranslationsLoaded(true)
+                try { localStorage.setItem("cached-translations", JSON.stringify(ts)) } catch {}
+            })
         })
     }, [])
+
+    const availableTranslations = React.useMemo(() => {
+        if (enabledTranslations === null) return allTranslations
+        // Always include current translation even if not in enabled list
+        return allTranslations.filter(t => enabledTranslations.includes(t.id) || t.id === currentTranslation)
+    }, [allTranslations, enabledTranslations, currentTranslation])
 
     const nav = React.useCallback((book: string, chapter: number, translation?: string) => {
         if (onNavigate) {

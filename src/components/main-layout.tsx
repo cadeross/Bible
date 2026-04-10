@@ -16,7 +16,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         <main className={cn(
             "flex flex-col w-full",
             isHomePage ? "flex-1" : "min-h-screen",
-            isInline ? "pt-0 pb-0" : "pb-24 pt-[calc(3.5rem+var(--maintenance-banner-height))]"
+            isInline ? "pt-0 pb-0" : "pb-[calc(5rem+env(safe-area-inset-bottom))] pt-[calc(3.5rem+var(--maintenance-banner-height))]"
         )}>
             {isInline && (
                 <div className="sticky top-[var(--maintenance-banner-height)] z-40 w-full">

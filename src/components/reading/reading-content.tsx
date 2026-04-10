@@ -1,4 +1,5 @@
 import React from "react"
+import { hapticLight, hapticHeavy } from "@/lib/haptics"
 import { createPortal } from "react-dom"
 import { BibleChapter } from "@/lib/bible-api"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
@@ -272,6 +273,8 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
         if (sel && sel.toString().length > 0) return
         if (menuOpen) return
 
+        hapticLight()
+
         const existing = highlights.find(h => h.verse === verseNum)
         if (existing) {
             setHighlights(prev => prev.filter(h => h.verse !== verseNum))
@@ -300,6 +303,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
         if (longPressTimeout.current) clearTimeout(longPressTimeout.current)
 
         longPressTimeout.current = setTimeout(() => {
+            hapticHeavy()
             openMenu(e.target as HTMLElement, verseNum, 0, 0, true)
         }, 500)
     }
@@ -877,6 +881,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                             !bgClass &&
                                                             "underline decoration-dotted decoration-primary/50"
                                                     )}
+                                                    style={{ touchAction: "manipulation" }}
                                                     onClick={() => handleVerseClick(verse.verse, verse.text)}
                                                     onMouseDown={(e) => {
                                                         handleTouchStart(verse.verse, e)
