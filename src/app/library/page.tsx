@@ -1,130 +1,224 @@
-"use client";
+"use client"
 
-import { useEffect, useState, useMemo, useRef } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { getAllHighlights, getAllWisdom, Highlight, SavedWisdom } from "@/lib/persistence";
-import { PenTool, ArrowRight, BookOpen, Heart, Quote, StickyNote, Share2, Trash2, Pencil, Library } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { NotePanel } from "@/components/reading/note-dialog";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { motion, AnimatePresence } from "framer-motion";
-import { BIBLE_BOOKS } from "@/lib/bible-data";
-import Loading from "../loading";
-import { useReadingPreferences } from "@/contexts/reading-preferences";
-import { useAuth } from "@clerk/nextjs";
-import { HIGHLIGHT_MENU_COLORS } from "@/lib/highlight-menu";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import Link from "next/link"
+import { getAllHighlights, getAllWisdom, type Highlight, type SavedWisdom } from "@/lib/persistence"
+import { PenTool, StickyNote, Share2, ArrowRight, Library, Quote, Trash2 } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { NotePanel } from "@/components/reading/note-dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
+import { BIBLE_BOOKS } from "@/lib/bible-data"
+import Loading from "../loading"
+import { useReadingPreferences } from "@/contexts/reading-preferences"
+import { useAuth } from "@clerk/nextjs"
+import { HIGHLIGHT_MENU_COLORS } from "@/lib/highlight-menu"
+import { hapticLight, hapticMedium } from "@/lib/haptics"
 
-const HIGHLIGHT_DOT_CLASS: Record<string, string> = Object.fromEntries(
-    HIGHLIGHT_MENU_COLORS.map((c) => [c.id, c.dotClass])
-) as Record<string, string>;
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 interface GroupedHighlight extends Highlight {
-    verseEnd: number;
+    verseEnd: number
 }
 
+type TabId = "highlights" | "notes" | "wisdom"
+
+// ─── Color map ───────────────────────────────────────────────────────────────
+
+const HIGHLIGHT_COLOR: Record<string, { dot: string; accent: string }> = {
+    yellow:  { dot: "bg-[#FFCC00]",                       accent: "#FFCC00" },
+    green:   { dot: "bg-[#34C759]",                       accent: "#34C759" },
+    blue:    { dot: "bg-[#007AFF] dark:bg-[#0A84FF]",     accent: "#007AFF" },
+    pink:    { dot: "bg-[#FF2D55]",                       accent: "#FF2D55" },
+    purple:  { dot: "bg-[#AF52DE] dark:bg-[#BF5AF2]",     accent: "#AF52DE" },
+    orange:  { dot: "bg-[#FF9500] dark:bg-[#FF9F0A]",     accent: "#FF9500" },
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function formatDate(isoString: string) {
+    const date = new Date(isoString)
+    const now = new Date()
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / 86_400_000)
+    if (diffDays === 0) return "Today"
+    if (diffDays === 1) return "Yesterday"
+    if (diffDays < 7) return `${diffDays}d ago`
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+}
+
+// ─── Pill button (mirrors ToolbarPill from reading-toolbar) ──────────────────
+
+function Pill({
+    children,
+    active,
+    onClick,
+    className,
+}: {
+    children: React.ReactNode
+    active?: boolean
+    onClick?: () => void
+    className?: string
+}) {
+    return (
+        <motion.button
+            type="button"
+            onClick={onClick}
+            whileTap={{ scale: 0.96 }}
+            className={cn(
+                "flex cursor-pointer items-center gap-1.5 rounded-full border glass-subtle px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)] transition-[box-shadow,border-color] duration-200 hover:shadow-[var(--shadow-card)] active:scale-[0.97] [touch-action:manipulation]",
+                active
+                    ? "border-white/[0.25] dark:border-white/[0.15] text-foreground"
+                    : "border-white/[0.12] dark:border-white/[0.06] text-muted-foreground hover:border-white/[0.2]",
+                className
+            )}
+        >
+            {children}
+        </motion.button>
+    )
+}
+
+// ─── Library toolbar ─────────────────────────────────────────────────────────
+
+interface LibraryToolbarProps {
+    activeTab: TabId
+    onTabChange: (tab: TabId) => void
+    counts: { highlights: number; notes: number; wisdom: number }
+}
+
+const TABS = [
+    { id: "highlights" as const, label: "Highlights", icon: PenTool },
+    { id: "notes"      as const, label: "Notes",      icon: StickyNote },
+    { id: "wisdom"     as const, label: "Wisdom",     icon: Quote },
+]
+
+function LibraryToolbar({ activeTab, onTabChange, counts }: LibraryToolbarProps) {
+    return (
+        <div className="w-full max-w-3xl mx-auto mb-8">
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+                {/* Title pill – non-interactive */}
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-semibold text-foreground shadow-[var(--shadow-sm)] select-none">
+                    Library
+                </span>
+
+                {/* Tab pills */}
+                {TABS.map((tab) => {
+                    const count = counts[tab.id]
+                    return (
+                        <Pill
+                            key={tab.id}
+                            active={activeTab === tab.id}
+                            onClick={() => { hapticLight(); onTabChange(tab.id) }}
+                        >
+                            <tab.icon className="h-3.5 w-3.5 shrink-0" />
+                            {tab.label}
+                            {count > 0 && (
+                                <span className="tabular-nums text-[11px] opacity-50">{count}</span>
+                            )}
+                        </Pill>
+                    )
+                })}
+            </div>
+        </div>
+    )
+}
+
+// ─── Empty state ─────────────────────────────────────────────────────────────
+
+function EmptyTab({ icon: Icon, title, hint }: { icon: React.ElementType; title: string; hint: string }) {
+    return (
+        <div className="flex flex-col items-center gap-5 py-20 text-center">
+            <div className="h-12 w-12 rounded-2xl glass-subtle border border-white/[0.12] dark:border-white/[0.06] flex items-center justify-center shadow-[var(--shadow-card)]">
+                <Icon className="h-5 w-5 text-muted-foreground/40" />
+            </div>
+            <div className="space-y-1.5">
+                <p className="text-sm font-medium text-foreground/60">{title}</p>
+                <p className="text-xs text-muted-foreground/45 max-w-[220px] leading-relaxed">{hint}</p>
+            </div>
+            <Link
+                href="/read"
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-4 py-2 text-[13px] font-medium text-foreground/70 shadow-[var(--shadow-sm)] transition-[box-shadow] duration-200 hover:shadow-[var(--shadow-card)] hover:text-foreground"
+            >
+                Start reading <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+        </div>
+    )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function LibraryPage() {
-    const { isLoaded, isSignedIn } = useAuth();
-    const [rawHighlights, setRawHighlights] = useState<Highlight[]>([]);
-    const [wisdom, setWisdom] = useState<SavedWisdom[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [isGuest, setIsGuest] = useState(false);
+    const { isLoaded: authLoaded, isSignedIn } = useAuth()
+    const { fontFamily, bibleVersion, isLoaded: prefsLoaded } = useReadingPreferences()
+    const reduceMotion = useReducedMotion()
+
+    const [rawHighlights, setRawHighlights] = useState<Highlight[]>([])
+    const [wisdom, setWisdom] = useState<SavedWisdom[]>([])
+    const [loading, setLoading] = useState(true)
+    const [isGuest, setIsGuest] = useState(false)
+    const [activeTab, setActiveTab] = useState<TabId>("highlights")
+
+    // Note editor state
+    const [editingNote, setEditingNote] = useState<Highlight | null>(null)
+    const [isNoteOpen, setIsNoteOpen] = useState(false)
+    const [noteSaveStatus, setNoteSaveStatus] = useState<"idle" | "saving" | "saved">("idle")
+    const noteSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     useEffect(() => {
-        if (!isLoaded) return;
-        const fetchData = async () => {
-            setIsGuest(!isSignedIn);
-            const [highlightsData, wisdomData] = await Promise.all([
-                getAllHighlights(),
-                getAllWisdom()
-            ]);
-            setRawHighlights(highlightsData);
-            setWisdom(wisdomData);
-            setLoading(false);
-        };
+        if (!authLoaded) return
+        void (async () => {
+            setIsGuest(!isSignedIn)
+            const [h, w] = await Promise.all([getAllHighlights(), getAllWisdom()])
+            setRawHighlights(h)
+            setWisdom(w)
+            setLoading(false)
+        })()
+    }, [authLoaded, isSignedIn])
 
-        void fetchData();
-    }, [isLoaded, isSignedIn]);
+    const fontClass = useMemo(() => {
+        if (!prefsLoaded) return "font-serif"
+        return { sans: "font-sans", serif: "font-serif", mono: "font-mono", pixel: "font-pixel" }[fontFamily] ?? "font-serif"
+    }, [prefsLoaded, fontFamily])
 
-    const { fontFamily, bibleVersion, isLoaded: preferencesLoaded } = useReadingPreferences();
-    const getFontClass = () => {
-        if (!preferencesLoaded) return "font-serif";
-        switch (fontFamily) {
-            case "sans": return "font-sans";
-            case "mono": return "font-mono";
-            case "pixel": return "font-pixel";
-            case "serif":
-            default: return "font-serif";
-        }
-    };
-
-
-
-    const groupedHighlights = useMemo(() => {
-        if (rawHighlights.length === 0) return [];
-        // ... (sorting remains same)
+    // Group consecutive same-color verses in the same chapter
+    const groupedHighlights = useMemo<GroupedHighlight[]>(() => {
+        if (!rawHighlights.length) return []
         const sorted = [...rawHighlights].sort((a, b) => {
-            const bookA = BIBLE_BOOKS.findIndex(book => book.name === a.book);
-            const bookB = BIBLE_BOOKS.findIndex(book => book.name === b.book);
-
-            if (bookA !== bookB) return bookA - bookB;
-            if (a.chapter !== b.chapter) return a.chapter - b.chapter;
-            return a.verse - b.verse;
-        });
-
-        const grouped: GroupedHighlight[] = [];
-        let currentGroup: GroupedHighlight | null = null;
-
-        sorted.forEach((h) => {
-            // ... (grouping logic remains same)
-            if (!currentGroup) {
-                currentGroup = { ...h, verseEnd: h.verse };
-                return;
-            }
-            const isNextVerse = h.verse === currentGroup.verseEnd + 1;
-            const isSameBook = h.book === currentGroup.book;
-            const isSameChapter = h.chapter === currentGroup.chapter;
-            const isSameColor = h.color === currentGroup.color;
-
-            if (isSameBook && isSameChapter && isNextVerse && isSameColor) {
-                currentGroup.verseEnd = h.verse;
-                currentGroup.content = `${currentGroup.content} ${h.content}`;
-                if (new Date(h.created_at) > new Date(currentGroup.created_at)) {
-                    currentGroup.created_at = h.created_at;
-                }
+            const bookA = BIBLE_BOOKS.findIndex(bk => bk.name === a.book)
+            const bookB = BIBLE_BOOKS.findIndex(bk => bk.name === b.book)
+            if (bookA !== bookB) return bookA - bookB
+            if (a.chapter !== b.chapter) return a.chapter - b.chapter
+            return a.verse - b.verse
+        })
+        const groups: GroupedHighlight[] = []
+        let cur: GroupedHighlight | null = null
+        for (const h of sorted) {
+            if (!cur) { cur = { ...h, verseEnd: h.verse }; continue }
+            if (h.book === cur.book && h.chapter === cur.chapter && h.verse === cur.verseEnd + 1 && h.color === cur.color) {
+                cur.verseEnd = h.verse
+                cur.content = `${cur.content} ${h.content}`
+                if (new Date(h.created_at) > new Date(cur.created_at)) cur.created_at = h.created_at
             } else {
-                grouped.push(currentGroup);
-                currentGroup = { ...h, verseEnd: h.verse };
+                groups.push(cur)
+                cur = { ...h, verseEnd: h.verse }
             }
-        });
-
-        if (currentGroup) {
-            grouped.push(currentGroup);
         }
-
-        return grouped.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-    }, [rawHighlights]);
-
-    const notes = useMemo(() => {
-        return rawHighlights
-            .filter(h => h.note && h.note.trim().length > 0)
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        if (cur) groups.push(cur)
+        return groups.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     }, [rawHighlights])
 
-    const [activeTab, setActiveTab] = useState<'highlights' | 'notes'>('highlights');
-    const router = useRouter()
+    const notes = useMemo(() =>
+        rawHighlights
+            .filter(h => h.note && h.note.trim())
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+        [rawHighlights]
+    )
 
-    // Note Editing State
-    const [editingNote, setEditingNote] = useState<Highlight | null>(null)
-    const [isNoteSheetOpen, setIsNoteSheetOpen] = useState(false)
-    const [noteSaveStatus, setNoteSaveStatus] = useState<"idle" | "saving" | "saved">("idle")
-    const noteSaveTimeout = useRef<NodeJS.Timeout | null>(null)
-
-    const handleEditNote = (note: Highlight) => {
-        setEditingNote(note)
+    // Note editing
+    const handleEditNote = (h: Highlight) => {
+        hapticLight()
+        setEditingNote(h)
         setNoteSaveStatus("idle")
-        setIsNoteSheetOpen(true)
+        setIsNoteOpen(true)
     }
 
     const handleNoteContentChange = (content: string) => {
@@ -132,125 +226,55 @@ export default function LibraryPage() {
         setNoteSaveStatus("saving")
         if (noteSaveTimeout.current) clearTimeout(noteSaveTimeout.current)
         noteSaveTimeout.current = setTimeout(async () => {
-            const persistence = await import("@/lib/persistence")
-            const noteValue = content.trim().length > 0 ? content : undefined
-
-            // Optimistic Update
-            const updatedHighlights = rawHighlights.map(h => {
-                if (h.id === editingNote.id) {
-                    return { ...h, note: noteValue }
-                }
-                return h
-            })
-            setRawHighlights(updatedHighlights)
-
-            // DB Update
-            const updatedNote = { ...editingNote, note: noteValue }
-            await persistence.saveHighlight(updatedNote)
+            const { saveHighlight } = await import("@/lib/persistence")
+            const noteValue = content.trim() ? content : undefined
+            setRawHighlights(prev => prev.map(h => h.id === editingNote.id ? { ...h, note: noteValue } : h))
+            await saveHighlight({ ...editingNote, note: noteValue })
             setNoteSaveStatus("saved")
         }, 600)
     }
 
     const handleDeleteNote = async () => {
         if (!editingNote) return
-
-        const persistence = await import("@/lib/persistence")
-
-        // Optimistic Update
-        const updatedHighlights = rawHighlights.map(h => {
-            if (h.id === editingNote.id) {
-                return { ...h, note: undefined }
-            }
-            return h
-        })
-        setRawHighlights(updatedHighlights)
-
-        const updatedNote = { ...editingNote, note: undefined }
-        await persistence.saveHighlight(updatedNote)
-
-        setIsNoteSheetOpen(false)
+        const { saveHighlight } = await import("@/lib/persistence")
+        setRawHighlights(prev => prev.map(h => h.id === editingNote.id ? { ...h, note: undefined } : h))
+        await saveHighlight({ ...editingNote, note: undefined })
+        setIsNoteOpen(false)
         setEditingNote(null)
     }
 
-    const handleShareNote = async (h: Highlight) => {
-        const ref = `${h.book} ${h.chapter}:${h.verse}`
-        const url = `${window.location.origin}/share?ref=${encodeURIComponent(ref)}&text=${encodeURIComponent(h.content)}&note=${encodeURIComponent(h.note || "")}`
-
+    const handleShare = async (title: string, text: string, url: string) => {
+        hapticLight()
         if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: `Note on ${ref}`,
-                    url
-                })
-            } catch (e) { console.error(e) }
+            try { await navigator.share({ title, url }) } catch { /* cancelled */ }
         } else {
-            navigator.clipboard.writeText(url)
-            // simplified toast or alert checking
-            alert("Deep link copied to clipboard")
+            await navigator.clipboard.writeText(url)
         }
     }
 
-    const handleShareWisdom = async (w: SavedWisdom) => {
-        const ref = w.source || "Daily Wisdom"
-        const url = `${window.location.origin}/share?ref=${encodeURIComponent(ref)}&text=${encodeURIComponent(w.content)}&note=${encodeURIComponent("")}`
+    // Animation variants — same as reading-view.tsx
+    const slideVariants = {
+        enter: () => reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, filter: "blur(4px)" },
+        center: { opacity: 1, y: 0, filter: "blur(0px)" },
+        exit:  () => reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4, filter: "blur(4px)" },
+    } as const
+    const contentTransition = reduceMotion
+        ? { duration: 0.15 }
+        : { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const }
 
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: `Wisdom from ${ref}`,
-                    url
-                })
-            } catch (e) { console.error(e) }
-        } else {
-            navigator.clipboard.writeText(url)
-            alert("Deep link copied to clipboard")
-        }
-    }
+    if (loading) return <Loading />
 
-    if (loading) {
-        return <Loading />
-    }
-
-    if (rawHighlights.length === 0 && wisdom.length === 0) {
-        // ... (Empty state remains same)
-        return (
-            <div className="flex min-h-[70vh] flex-col items-center justify-center p-6">
-                <div className="text-center space-y-5">
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-                        <Library className="h-7 w-7" />
-                    </div>
-                    <div className="space-y-2">
-                        <h1 className="text-xl font-semibold tracking-tight text-foreground">Library is empty</h1>
-                        <p className="mx-auto max-w-[280px] text-sm text-muted-foreground leading-relaxed">
-                            {isGuest
-                                ? "Saved items stay on this device until you sign in to sync."
-                                : "Start reading to highlight verses or save daily wisdom."
-                            }
-                        </p>
-                    </div>
-                    <div className="flex flex-col gap-3 items-center pt-2">
-                        <Link href="/read" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sm)] transition-all duration-200 hover:opacity-90 active:scale-[0.98]">
-                            Start reading <ArrowRight className="h-4 w-4" />
-                        </Link>
-                        {isGuest && (
-                            <Link href="/profile" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                                Sign in to sync
-                            </Link>
-                        )}
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    const isEmpty = rawHighlights.length === 0 && wisdom.length === 0
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring" as const, stiffness: 400, damping: 25 }}
-            className="w-full max-w-[720px] mx-auto px-6 py-12 space-y-12"
-        >
-            <Dialog open={isNoteSheetOpen} onOpenChange={setIsNoteSheetOpen}>
+        <div className="min-h-screen bg-background flex flex-col items-center py-8">
+
+            {/* ── Gradient fades — same as reading page ─────────────── */}
+            <div className="fixed top-[calc(3.5rem+var(--maintenance-banner-height,0px))] left-0 right-0 h-16 bg-gradient-to-b from-background/75 to-transparent z-30 pointer-events-none hidden max-[1500px]:block" />
+            <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent z-30 pointer-events-none hidden max-[1500px]:block" />
+
+            {/* ── Note editor dialog ─────────────────────────────────── */}
+            <Dialog open={isNoteOpen} onOpenChange={setIsNoteOpen}>
                 <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden bg-background">
                     <DialogTitle className="sr-only">
                         Note for {editingNote ? `${editingNote.book} ${editingNote.chapter}:${editingNote.verse}` : ""}
@@ -261,9 +285,9 @@ export default function LibraryPage() {
                                 verseLabel={`${editingNote.book} ${editingNote.chapter}:${editingNote.verse}`}
                                 versePreview={editingNote.content}
                                 highlightColor={editingNote.color}
-                                initialContent={editingNote.note || ""}
+                                initialContent={editingNote.note ?? ""}
                                 saveStatus={noteSaveStatus}
-                                fontClass={getFontClass()}
+                                fontClass={fontClass}
                                 onContentChange={handleNoteContentChange}
                                 onDelete={handleDeleteNote}
                             />
@@ -272,183 +296,278 @@ export default function LibraryPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Header */}
-            <div className="mb-10 space-y-5">
-                <div className="space-y-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1 text-[11px] font-medium text-primary">
-                        Redesign coming soon
-                    </span>
-                    <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                        Library
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        Verses, highlights, and notes
-                    </p>
-                </div>
+            {/* ── Toolbar ───────────────────────────────────────────── */}
+            <LibraryToolbar
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                counts={{ highlights: groupedHighlights.length, notes: notes.length, wisdom: wisdom.length }}
+            />
 
-                <div className="flex rounded-xl border border-border/30 bg-muted/30 p-1">
-                    {[
-                        { id: 'highlights', label: 'Highlights', count: groupedHighlights.length, icon: PenTool },
-                        { id: 'notes', label: 'Notes', count: notes.length, icon: StickyNote }
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => setActiveTab(tab.id as "highlights" | "notes")}
-                            className={cn(
-                                "relative z-10 flex items-center justify-center gap-2 rounded-[10px] px-5 py-2.5 text-[13px] font-medium transition-colors duration-200",
-                                activeTab === tab.id
-                                    ? "text-foreground"
-                                    : "text-muted-foreground hover:text-foreground"
-                            )}
-                        >
-                            {activeTab === tab.id && (
-                                <motion.div
-                                    layoutId="activeTab"
-                                    className="absolute inset-0 -z-10 rounded-[10px] bg-primary/[0.07] dark:bg-primary/[0.12]"
-                                    transition={{ type: "spring", bounce: 0.12, duration: 0.45 }}
-                                />
-                            )}
-                            <tab.icon className="h-3.5 w-3.5" />
-                            {tab.label}
-                            <span className="text-xs text-muted-foreground/60 tabular-nums">{tab.count}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            <div className="space-y-8">
-                {/* Guest Banner */}
-                {isGuest && (
-                    <div className="flex animate-in items-center justify-between gap-4 rounded-[length:var(--radius)] border border-border/40 bg-nav p-3 fade-in slide-in-from-top-2">
-                        <div className="flex items-center gap-3">
-                            <div className="h-2 w-2 animate-pulse rounded-full bg-amber-500/70" />
-                            <p className="text-xs text-muted-foreground">
-                                <span className="font-medium text-foreground">Local only:</span> highlights stay on this device until you sync.
+            {/* ── Content ───────────────────────────────────────────── */}
+            <main className="flex-1 w-full max-w-4xl relative flex items-start justify-center">
+                {isEmpty ? (
+                    /* Global empty state */
+                    <motion.div
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                        className="w-full max-w-[720px] mx-auto px-6 flex flex-col items-center justify-center py-24 text-center gap-6"
+                    >
+                        <div className="h-14 w-14 rounded-2xl glass-subtle border border-white/[0.12] dark:border-white/[0.06] flex items-center justify-center shadow-[var(--shadow-card)]">
+                            <Library className="h-7 w-7 text-muted-foreground/40" />
+                        </div>
+                        <div className="space-y-2">
+                            <h1 className="text-xl font-semibold tracking-tight">Library is empty</h1>
+                            <p className="text-sm text-muted-foreground max-w-[280px] leading-relaxed mx-auto">
+                                {isGuest
+                                    ? "Items saved locally until you sign in to sync across devices."
+                                    : "Start reading to highlight verses, add notes, and save daily wisdom."}
                             </p>
                         </div>
-                        <Link href="/profile" className="text-xs font-medium text-primary transition-colors hover:text-foreground hover:underline underline-offset-4">
-                            Sign in
-                        </Link>
-                    </div>
-                )}
-
-                {/* Content */}
-                <div className="min-h-[200px]">
-
+                        <div className="flex flex-col items-center gap-3 pt-1">
+                            <Link
+                                href="/read"
+                                className="inline-flex items-center gap-2 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-5 py-2.5 text-sm font-medium text-foreground shadow-[var(--shadow-sm)] transition-[box-shadow] hover:shadow-[var(--shadow-card)]"
+                            >
+                                Start reading <ArrowRight className="h-3.5 w-3.5" />
+                            </Link>
+                            {isGuest && (
+                                <Link href="/profile" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                    Sign in to sync
+                                </Link>
+                            )}
+                        </div>
+                    </motion.div>
+                ) : (
                     <AnimatePresence mode="wait">
-                        {activeTab === 'highlights' ? (
-                            <motion.div
-                                key="highlights"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                                className="space-y-6"
-                            >
-                                {groupedHighlights.length === 0 ? (
-                                    <div className="py-12 text-center text-sm text-muted-foreground">No highlights yet.</div>
-                                ) : (
-                                    <div className="grid grid-cols-1 gap-3">
-                                        {groupedHighlights.map((highlight, idx) => (
-                                            <div
-                                                key={highlight.id || idx}
-                                                className="group relative block rounded-2xl border border-border/25 bg-card p-5 shadow-[var(--shadow-card)] transition-all duration-200 hover:shadow-[var(--shadow-elevated)] hover:border-border/40"
-                                            >
-                                                <div className="space-y-2.5">
-                                                    <div className="flex items-center justify-between">
-                                                        <Link
-                                                            href={`/read/${highlight.book}/${highlight.chapter}?translation=${bibleVersion}`}
-                                                            className="text-xs font-semibold text-primary/80 group-hover:text-primary transition-colors flex items-center gap-2"
-                                                        >
-                                                            <span
-                                                                className={cn(
-                                                                    "h-2 w-2 shrink-0 rounded-full",
-                                                                    HIGHLIGHT_DOT_CLASS[highlight.color] ?? "bg-muted-foreground"
-                                                                )}
-                                                            />
-                                                            {highlight.book} {highlight.chapter}:{highlight.verse}{highlight.verseEnd > highlight.verse ? `-${highlight.verseEnd}` : ''}
-                                                        </Link>
-                                                        <span className="text-xs text-muted-foreground/50">
-                                                            {new Date(highlight.created_at).toLocaleDateString()}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-start justify-between gap-4">
-                                                        <p className="text-sm leading-relaxed text-foreground/80 font-serif italic line-clamp-3">
-                                                            &ldquo;{highlight.content || "view verse content"}&rdquo;
-                                                        </p>
-                                                        <button
-                                                            onClick={() => handleShareNote(highlight)}
-                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200 shrink-0"
-                                                            title="Share Highlight"
-                                                        >
-                                                            <Share2 className="h-3.5 w-3.5" />
-                                                            <span className="sr-only">Share</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                        <motion.div
+                            key={activeTab}
+                            variants={slideVariants}
+                            initial="enter"
+                            animate="center"
+                            exit="exit"
+                            transition={contentTransition}
+                            className="w-full"
+                        >
+                            <div className="w-full max-w-[720px] mx-auto px-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-20">
+
+                                {/* Guest banner */}
+                                {isGuest && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle shadow-[var(--shadow-sm)] px-4 py-3"
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400/80 animate-pulse shrink-0" />
+                                            <p className="text-xs text-muted-foreground leading-snug">
+                                                <span className="font-medium text-foreground/80">Local only</span> · sign in to sync across devices
+                                            </p>
+                                        </div>
+                                        <Link href="/profile" className="text-xs font-medium text-primary shrink-0 transition-colors hover:text-foreground">
+                                            Sign in
+                                        </Link>
+                                    </motion.div>
                                 )}
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="notes"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                                className="space-y-6"
-                            >
-                                {notes.length === 0 ? (
-                                    <div className="py-12 text-center text-sm text-muted-foreground">No notes yet.</div>
-                                ) : (
-                                    <div className="grid grid-cols-1 gap-3">
-                                        {notes.map((note) => (
-                                            <div
-                                                key={note.id}
-                                                className="group relative block p-5 rounded-2xl border border-border/25 bg-card shadow-[var(--shadow-card)] transition-all duration-200 hover:shadow-[var(--shadow-elevated)] hover:border-border/40 cursor-pointer"
-                                                onClick={() => handleEditNote(note)}
-                                            >
-                                                <div className="space-y-2.5">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-xs font-semibold text-primary/80 group-hover:text-primary transition-colors flex items-center gap-2">
-                                                            <StickyNote className="h-3.5 w-3.5" />
-                                                            {note.book} {note.chapter}:{note.verse}
-                                                        </span>
-                                                        <span className="text-xs text-muted-foreground/50">
-                                                            {new Date(note.created_at).toLocaleDateString()}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-sm leading-relaxed text-foreground/90 line-clamp-3">
-                                                        {note.note}
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground/50 font-serif italic line-clamp-1">
-                                                        &ldquo;{note.content}&rdquo;
-                                                    </p>
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleShareNote(note) }}
-                                                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
-                                                            title="Share Note"
-                                                        >
-                                                            <Share2 className="h-3.5 w-3.5" />
-                                                            <span className="sr-only">Share</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+
+                                {/* ── Highlights tab ─────────────────────────── */}
+                                {activeTab === "highlights" && (
+                                    groupedHighlights.length === 0 ? (
+                                        <EmptyTab
+                                            icon={PenTool}
+                                            title="No highlights yet"
+                                            hint="Long-press any verse while reading to highlight it"
+                                        />
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {groupedHighlights.map((h, idx) => {
+                                                const color = HIGHLIGHT_COLOR[h.color]
+                                                return (
+                                                    <motion.div
+                                                        key={h.id ?? idx}
+                                                        initial={{ opacity: 0, y: 8 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ duration: 0.25, delay: Math.min(idx * 0.035, 0.18), ease: [0.25, 0.1, 0.25, 1] }}
+                                                        className="group relative rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] hover:border-white/[0.22] dark:hover:border-white/[0.12] transition-[box-shadow,border-color] duration-200 overflow-hidden"
+                                                    >
+                                                        {/* Color accent bar */}
+                                                        <div
+                                                            className="absolute left-0 inset-y-0 w-[3px]"
+                                                            style={{ background: color?.accent ?? "#888" }}
+                                                        />
+
+                                                        <div className="pl-5 pr-4 py-4">
+                                                            {/* Header */}
+                                                            <div className="flex items-center justify-between mb-3">
+                                                                <Link
+                                                                    href={`/read/${encodeURIComponent(h.book)}/${h.chapter}?translation=${bibleVersion}`}
+                                                                    className="flex items-center gap-2 text-xs font-semibold text-primary/75 hover:text-primary transition-colors"
+                                                                >
+                                                                    <span className={cn("h-2 w-2 shrink-0 rounded-full", color?.dot ?? "bg-muted-foreground")} />
+                                                                    {h.book} {h.chapter}:{h.verse}{h.verseEnd > h.verse ? `–${h.verseEnd}` : ""}
+                                                                </Link>
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="text-[11px] text-muted-foreground/35 mr-1 tabular-nums">
+                                                                        {formatDate(h.created_at)}
+                                                                    </span>
+                                                                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const ref = `${h.book} ${h.chapter}:${h.verse}`
+                                                                                const url = `${window.location.origin}/share?ref=${encodeURIComponent(ref)}&text=${encodeURIComponent(h.content)}`
+                                                                                void handleShare(`Highlight — ${ref}`, h.content, url)
+                                                                            }}
+                                                                            className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-foreground/[0.06] text-muted-foreground/50 hover:text-foreground transition-colors"
+                                                                        >
+                                                                            <Share2 className="h-3.5 w-3.5" />
+                                                                            <span className="sr-only">Share</span>
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Verse text */}
+                                                            <p className={cn("text-[15px] leading-relaxed text-foreground/80 italic line-clamp-4", fontClass)}>
+                                                                &ldquo;{h.content}&rdquo;
+                                                            </p>
+
+                                                            {/* Inline note preview */}
+                                                            {h.note && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleEditNote(h)}
+                                                                    className="mt-3 pt-3 border-t border-foreground/[0.06] w-full flex items-start gap-2 text-left cursor-pointer hover:opacity-80 transition-opacity"
+                                                                >
+                                                                    <StickyNote className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground/35" />
+                                                                    <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed">{h.note}</p>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </motion.div>
+                                                )
+                                            })}
+                                        </div>
+                                    )
                                 )}
-                            </motion.div>
-                        )}
+
+                                {/* ── Notes tab ──────────────────────────────── */}
+                                {activeTab === "notes" && (
+                                    notes.length === 0 ? (
+                                        <EmptyTab
+                                            icon={StickyNote}
+                                            title="No notes yet"
+                                            hint="Long-press a verse and tap the note icon to add a reflection"
+                                        />
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {notes.map((n, idx) => (
+                                                <motion.div
+                                                    key={n.id}
+                                                    initial={{ opacity: 0, y: 8 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.25, delay: Math.min(idx * 0.035, 0.18), ease: [0.25, 0.1, 0.25, 1] }}
+                                                    onClick={() => handleEditNote(n)}
+                                                    className="group relative rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] hover:border-white/[0.22] dark:hover:border-white/[0.12] transition-[box-shadow,border-color] duration-200 cursor-pointer overflow-hidden px-5 py-4"
+                                                >
+                                                    {/* Header */}
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <span className="flex items-center gap-2 text-xs font-semibold text-muted-foreground/70">
+                                                            <StickyNote className="h-3.5 w-3.5 shrink-0" />
+                                                            {n.book} {n.chapter}:{n.verse}
+                                                        </span>
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-[11px] text-muted-foreground/35 tabular-nums mr-1">{formatDate(n.created_at)}</span>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    const ref = `${n.book} ${n.chapter}:${n.verse}`
+                                                                    const url = `${window.location.origin}/share?ref=${encodeURIComponent(ref)}&text=${encodeURIComponent(n.content)}&note=${encodeURIComponent(n.note ?? "")}`
+                                                                    void handleShare(`Note — ${ref}`, n.content, url)
+                                                                }}
+                                                                className="opacity-0 group-hover:opacity-100 h-7 w-7 flex items-center justify-center rounded-full hover:bg-foreground/[0.06] text-muted-foreground/50 hover:text-foreground transition-all duration-200"
+                                                            >
+                                                                <Share2 className="h-3.5 w-3.5" />
+                                                                <span className="sr-only">Share</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Note body */}
+                                                    <p className="text-[15px] leading-relaxed text-foreground/85 line-clamp-3">{n.note}</p>
+
+                                                    {/* Verse quote */}
+                                                    <p className={cn("mt-3 pt-3 border-t border-foreground/[0.06] text-xs text-muted-foreground/45 italic line-clamp-1", fontClass)}>
+                                                        &ldquo;{n.content}&rdquo;
+                                                    </p>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    )
+                                )}
+
+                                {/* ── Wisdom tab ─────────────────────────────── */}
+                                {activeTab === "wisdom" && (
+                                    wisdom.length === 0 ? (
+                                        <EmptyTab
+                                            icon={Quote}
+                                            title="No saved wisdom"
+                                            hint="Save quotes from the Daily section to find them here"
+                                        />
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {wisdom.map((w, idx) => (
+                                                <motion.div
+                                                    key={w.id}
+                                                    initial={{ opacity: 0, y: 8 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.25, delay: Math.min(idx * 0.035, 0.18), ease: [0.25, 0.1, 0.25, 1] }}
+                                                    className="group relative rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] hover:border-white/[0.22] dark:hover:border-white/[0.12] transition-[box-shadow,border-color] duration-200 overflow-hidden px-5 py-4"
+                                                >
+                                                    {/* Header */}
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        {w.source ? (
+                                                            <span className="flex items-center gap-2 text-xs font-semibold text-muted-foreground/70">
+                                                                <Quote className="h-3.5 w-3.5 shrink-0" />
+                                                                {w.source}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="flex items-center gap-2 text-xs text-muted-foreground/40">
+                                                                <Quote className="h-3.5 w-3.5 shrink-0" />
+                                                                Daily Wisdom
+                                                            </span>
+                                                        )}
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-[11px] text-muted-foreground/35 tabular-nums mr-1">{formatDate(w.created_at)}</span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const ref = w.source ?? "Daily Wisdom"
+                                                                    const url = `${window.location.origin}/share?ref=${encodeURIComponent(ref)}&text=${encodeURIComponent(w.content)}`
+                                                                    void handleShare(`Wisdom — ${ref}`, w.content, url)
+                                                                }}
+                                                                className="opacity-0 group-hover:opacity-100 h-7 w-7 flex items-center justify-center rounded-full hover:bg-foreground/[0.06] text-muted-foreground/50 hover:text-foreground transition-all duration-200"
+                                                            >
+                                                                <Share2 className="h-3.5 w-3.5" />
+                                                                <span className="sr-only">Share</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Quote */}
+                                                    <p className={cn("text-[15px] leading-relaxed text-foreground/80 italic", fontClass)}>
+                                                        &ldquo;{w.content}&rdquo;
+                                                    </p>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    )
+                                )}
+
+                            </div>
+                        </motion.div>
                     </AnimatePresence>
-                </div>
-            </div>
-
-
-        </motion.div>
-    );
+                )}
+            </main>
+        </div>
+    )
 }
