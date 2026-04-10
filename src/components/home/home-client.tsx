@@ -103,6 +103,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
   const [dailyContent, setDailyContent] = useState<DailyContent>(FALLBACK_CONTENT)
   const [isLoading, setIsLoading] = useState(true)
   const [currentVerseSource, setCurrentVerseSource] = useState<string>("") // Track actual Bible version used
+  const [dailyReadingsIndex, setDailyReadingsIndex] = useState(0)
   const { fontFamily, bibleVersion } = useReadingPreferences()
   const { navMode } = useNavMode()
 
@@ -415,7 +416,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
       <motion.div variants={itemVariants}>
         <div className="w-full">
           {dailyReadings ? (
-            <DailyReadings data={dailyReadings} />
+            <DailyReadings data={dailyReadings} currentIndex={dailyReadingsIndex} onIndexChange={setDailyReadingsIndex} />
           ) : (
             <div className="w-full max-w-[720px] mx-auto flex flex-col items-center justify-center gap-4 py-20 text-center">
               <p className="text-sm text-muted-foreground max-w-[320px] leading-relaxed">
