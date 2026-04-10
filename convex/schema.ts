@@ -12,6 +12,8 @@ export default defineSchema({
     updatedAt: v.number(),
     onboardingCompletedAt: v.optional(v.number()),
     legacySupabaseId: v.optional(v.string()),
+    bibleVersion: v.optional(v.string()),
+    enabledTranslations: v.optional(v.union(v.array(v.string()), v.null())),
   })
     .index("by_clerk", ["clerkUserId"])
     .index("by_username", ["username"]),

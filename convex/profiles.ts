@@ -138,6 +138,35 @@ export const updateUsername = mutation({
   },
 });
 
+export const updateReadingPrefs = mutation({
+  args: {
+    bibleVersion: v.string(),
+    enabledTranslations: v.union(v.array(v.string()), v.null()),
+  },
+  handler: async (ctx, { bibleVersion, enabledTranslations }) => {
+    const userId = await requireUserId(ctx);
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_clerk", (q) => q.eq("clerkUserId", userId))
+      .unique();
+    const now = Date.now();
+    if (!profile) {
+      await ctx.db.insert("profiles", {
+        clerkUserId: userId,
+        bibleVersion,
+        enabledTranslations,
+        updatedAt: now,
+      });
+      return;
+    }
+    await ctx.db.patch(profile._id, {
+      bibleVersion,
+      enabledTranslations,
+      updatedAt: now,
+    });
+  },
+});
+
 export const generateAvatarUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {

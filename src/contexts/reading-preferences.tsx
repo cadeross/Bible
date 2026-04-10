@@ -1,6 +1,8 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState } from "react"
+import React, { createContext, useContext, useEffect, useRef, useState } from "react"
+import { useQuery, useMutation, useConvexAuth } from "convex/react"
+import { api } from "../../convex/_generated/api"
 
 export type FontType = "sans" | "serif" | "mono" | "pixel"
 
@@ -56,6 +58,13 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
     const [preferences, setPreferences] = useState<ReadingPreferences>(defaultPreferences)
     const [isLoaded, setIsLoaded] = useState(false)
 
+    // Convex sync (signed-in users only)
+    const { isAuthenticated } = useConvexAuth()
+    const profile = useQuery(api.profiles.getMyProfile)
+    const saveReadingPrefs = useMutation(api.profiles.updateReadingPrefs)
+    const hasHydratedFromCloud = useRef(false)
+    const skipNextConvexWrite = useRef(false)
+
     // Merge persisted preferences after mount so server and first client paint match (no localStorage on SSR).
     useEffect(() => {
         document.documentElement.removeAttribute("data-palette")
@@ -73,6 +82,36 @@ export function ReadingPreferencesProvider({ children }: { children: React.React
         }
         setIsLoaded(true)
     }, [])
+
+    // Apply cloud prefs once after sign-in (Convex wins for version settings)
+    useEffect(() => {
+        if (!isLoaded || !isAuthenticated || hasHydratedFromCloud.current) return
+        if (profile === undefined) return  // still loading
+        hasHydratedFromCloud.current = true
+        if (!profile) return  // new user — no cloud prefs to apply
+        if (profile.bibleVersion !== undefined || profile.enabledTranslations !== undefined) {
+            skipNextConvexWrite.current = true
+            setPreferences(prev => ({
+                ...prev,
+                ...(profile.bibleVersion !== undefined ? { bibleVersion: profile.bibleVersion } : {}),
+                ...(profile.enabledTranslations !== undefined ? { enabledTranslations: profile.enabledTranslations ?? null } : {}),
+            }))
+        }
+    }, [isLoaded, isAuthenticated, profile])
+
+    // Write version prefs to Convex when they change (signed-in users after hydration)
+    useEffect(() => {
+        if (!isLoaded || !hasHydratedFromCloud.current) return
+        if (skipNextConvexWrite.current) {
+            skipNextConvexWrite.current = false
+            return
+        }
+        saveReadingPrefs({
+            bibleVersion: preferences.bibleVersion,
+            enabledTranslations: preferences.enabledTranslations,
+        }).catch(() => { /* ignore network errors */ })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoaded, preferences.bibleVersion, preferences.enabledTranslations])
 
     // Save preferences to local storage when they change
     useEffect(() => {
