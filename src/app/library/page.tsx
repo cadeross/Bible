@@ -246,6 +246,7 @@ export default function LibraryPage() {
     }
 
     // Animation variants — same as reading-view.tsx
+    const ease = [0.25, 0.1, 0.25, 1] as const
     const slideVariants = {
         enter: () => reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, filter: "blur(4px)" },
         center: { opacity: 1, y: 0, filter: "blur(0px)" },
@@ -253,7 +254,12 @@ export default function LibraryPage() {
     } as const
     const contentTransition = reduceMotion
         ? { duration: 0.15 }
-        : { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const }
+        : { duration: 0.35, ease }
+    const fadeUp = (delay = 0) => ({
+        initial: reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, filter: "blur(6px)" },
+        animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+        transition: { duration: 0.4, ease, delay },
+    })
 
     if (loading) return <Loading />
 
@@ -290,20 +296,20 @@ export default function LibraryPage() {
             </Dialog>
 
             {/* ── Toolbar ───────────────────────────────────────────── */}
-            <LibraryToolbar
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                counts={{ highlights: groupedHighlights.length, notes: notes.length }}
-            />
+            <motion.div {...fadeUp(0)} className="w-full">
+                <LibraryToolbar
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    counts={{ highlights: groupedHighlights.length, notes: notes.length }}
+                />
+            </motion.div>
 
             {/* ── Content ───────────────────────────────────────────── */}
             <main className="flex-1 w-full max-w-4xl relative flex items-start justify-center">
                 {isEmpty ? (
                     /* Global empty state */
                     <motion.div
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                        {...fadeUp(0.1)}
                         className="w-full max-w-[720px] mx-auto px-6 flex flex-col items-center justify-center py-24 text-center gap-6"
                     >
                         <div className="h-14 w-14 rounded-2xl glass-subtle border border-white/[0.12] dark:border-white/[0.06] flex items-center justify-center shadow-[var(--shadow-card)]">
@@ -332,7 +338,8 @@ export default function LibraryPage() {
                         </div>
                     </motion.div>
                 ) : (
-                    <AnimatePresence mode="wait">
+                    <motion.div {...fadeUp(0.1)} className="w-full">
+                    <AnimatePresence mode="wait" initial={false}>
                         <motion.div
                             key={activeTab}
                             variants={slideVariants}
@@ -532,6 +539,7 @@ export default function LibraryPage() {
                             </div>
                         </motion.div>
                     </AnimatePresence>
+                    </motion.div>
                 )}
             </main>
         </div>

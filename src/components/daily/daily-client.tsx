@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { motion } from "framer-motion"
+import { motion, useReducedMotion } from "framer-motion"
 import Link from "next/link"
 import { BookOpen, Calendar } from "lucide-react"
 import { getDailyContent, DailyContent, FALLBACK_CONTENT } from "@/lib/daily-content"
@@ -52,18 +52,13 @@ export function DailyClient({ dailyReadings, liturgicalDay }: DailyClientProps) 
         { id: "gospel",   label: "Gospel",      data: dailyReadings.readings.gospel   },
     ].filter(s => s.data) : []
 
-    if (!mounted) {
-        return (
-            <div className="min-h-screen bg-background flex flex-col items-center py-8">
-                <div className="w-full max-w-3xl mx-auto mb-8">
-                    <div className="flex items-center justify-center gap-2">
-                        <div className="h-8 w-16 animate-pulse rounded-full bg-muted/20" />
-                        <div className="h-8 w-48 animate-pulse rounded-full bg-muted/15" />
-                    </div>
-                </div>
-            </div>
-        )
-    }
+    const reduceMotion = useReducedMotion()
+    const ease = [0.25, 0.1, 0.25, 1] as const
+    const fadeUp = (delay = 0) => ({
+        initial: reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, filter: "blur(6px)" },
+        animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+        transition: { duration: 0.4, ease, delay },
+    })
 
     return (
         <div className="min-h-screen bg-background flex flex-col items-center py-8">
@@ -73,7 +68,7 @@ export function DailyClient({ dailyReadings, liturgicalDay }: DailyClientProps) 
             <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent z-30 pointer-events-none hidden max-[1500px]:block" />
 
             {/* ── Toolbar ───────────────────────────────────────────── */}
-            <div className="w-full max-w-3xl mx-auto mb-8 flex flex-col items-center gap-3">
+            <motion.div {...fadeUp(0)} className="w-full max-w-3xl mx-auto mb-8 flex flex-col items-center gap-3">
 
                 {/* Date + liturgical info as plain text */}
                 <div className="text-center space-y-0.5">
@@ -117,14 +112,12 @@ export function DailyClient({ dailyReadings, liturgicalDay }: DailyClientProps) 
                     </Link>
                 </div>
 
-            </div>
+            </motion.div>
 
             {/* ── Content ───────────────────────────────────────────── */}
             <main className="flex-1 w-full max-w-4xl relative flex items-start justify-center">
                 <motion.div
-                    initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
-                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                    transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+                    {...fadeUp(0.1)}
                     className="w-full max-w-[720px] mx-auto px-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-20"
                 >
                     {/* Feast name subtitle */}
