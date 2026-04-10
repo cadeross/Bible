@@ -495,7 +495,7 @@ export function ReadingToolbar({
             <div className="flex items-center justify-center gap-2 flex-wrap">
 
                 {/* ── Book Selector ── */}
-                <Popover open={bookOpen} onOpenChange={(o) => { setBookOpen(o); if (o) setTimeout(() => bookInputRef.current?.focus(), 50) }}>
+                <Popover open={bookOpen} onOpenChange={(o) => { setBookOpen(o); if (o) { hapticLight(); setTimeout(() => bookInputRef.current?.focus(), 50) } }}>
                     <PopoverTrigger asChild>
                         <button type="button">
                             <AnimatedPill
@@ -553,7 +553,7 @@ export function ReadingToolbar({
                     open={translationOpen}
                     onOpenChange={(o) => {
                         setTranslationOpen(o)
-                        if (o) setTimeout(() => translationInputRef.current?.focus(), 50)
+                        if (o) { hapticLight(); setTimeout(() => translationInputRef.current?.focus(), 50) }
                         else setTranslationSearch("")
                     }}
                 >
@@ -579,7 +579,7 @@ export function ReadingToolbar({
                 </Popover>
 
                 {/* ── Appearance ── */}
-                <Popover>
+                <Popover onOpenChange={(o) => { if (o) hapticLight() }}>
                     <PopoverTrigger asChild>
                         <div>
                             <ToolbarPill className="text-muted-foreground">
