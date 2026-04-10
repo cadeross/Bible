@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { getAllHighlights, getAllWisdom, type Highlight, type SavedWisdom } from "@/lib/persistence"
-import { PenTool, StickyNote, Share2, ArrowRight, Library, Quote, Trash2 } from "lucide-react"
+import { getAllHighlights, removeHighlight, type Highlight } from "@/lib/persistence"
+import { PenTool, StickyNote, Share2, ArrowRight, Library, Copy, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NotePanel } from "@/components/reading/note-dialog"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
@@ -21,7 +21,7 @@ interface GroupedHighlight extends Highlight {
     verseEnd: number
 }
 
-type TabId = "highlights" | "notes" | "wisdom"
+type TabId = "highlights" | "notes"
 
 // ─── Color map ───────────────────────────────────────────────────────────────
 
@@ -46,95 +46,67 @@ function formatDate(isoString: string) {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
-// ─── Pill button (mirrors ToolbarPill from reading-toolbar) ──────────────────
-
-function Pill({
-    children,
-    active,
-    onClick,
-    className,
-}: {
-    children: React.ReactNode
-    active?: boolean
-    onClick?: () => void
-    className?: string
-}) {
-    return (
-        <motion.button
-            type="button"
-            onClick={onClick}
-            whileTap={{ scale: 0.96 }}
-            className={cn(
-                "flex cursor-pointer items-center gap-1.5 rounded-full border glass-subtle px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)] transition-[box-shadow,border-color] duration-200 hover:shadow-[var(--shadow-card)] active:scale-[0.97] [touch-action:manipulation]",
-                active
-                    ? "border-white/[0.25] dark:border-white/[0.15] text-foreground"
-                    : "border-white/[0.12] dark:border-white/[0.06] text-muted-foreground hover:border-white/[0.2]",
-                className
-            )}
-        >
-            {children}
-        </motion.button>
-    )
-}
-
 // ─── Library toolbar ─────────────────────────────────────────────────────────
 
 interface LibraryToolbarProps {
     activeTab: TabId
     onTabChange: (tab: TabId) => void
-    counts: { highlights: number; notes: number; wisdom: number }
+    counts: { highlights: number; notes: number }
 }
 
 const TABS = [
     { id: "highlights" as const, label: "Highlights", icon: PenTool },
     { id: "notes"      as const, label: "Notes",      icon: StickyNote },
-    { id: "wisdom"     as const, label: "Wisdom",     icon: Quote },
 ]
 
 function LibraryToolbar({ activeTab, onTabChange, counts }: LibraryToolbarProps) {
     return (
-        <div className="w-full max-w-3xl mx-auto mb-8">
+        <div className="w-full max-w-3xl mx-auto mb-8 flex flex-col items-center gap-3">
+
+            {/* Title as plain text */}
+            <div className="text-center space-y-0.5">
+                <p className="text-[13px] font-medium text-muted-foreground select-none">Library</p>
+                {(counts.highlights > 0 || counts.notes > 0) && (
+                    <p className="text-[12px] text-muted-foreground/50 select-none">
+                        {`You have ${[
+                            counts.highlights > 0 ? `${counts.highlights} highlight${counts.highlights !== 1 ? "s" : ""}` : null,
+                            counts.notes > 0 ? `${counts.notes} note${counts.notes !== 1 ? "s" : ""}` : null,
+                        ].filter(Boolean).join(" and ")}`}
+                    </p>
+                )}
+            </div>
+
+            {/* Tab pills */}
             <div className="flex items-center justify-center gap-2 flex-wrap">
-                {/* Title pill – non-interactive */}
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-semibold text-foreground shadow-[var(--shadow-sm)] select-none">
-                    Library
-                </span>
-
-                {/* Redesign badge */}
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1 text-[11px] font-medium text-primary select-none">
-                    Redesign in progress
-                </span>
-
-                {/* Tab pills */}
                 {TABS.map((tab) => {
-                    const count = counts[tab.id]
+                    const isActive = activeTab === tab.id
                     return (
-                        <Pill
+                        <button
                             key={tab.id}
-                            active={activeTab === tab.id}
+                            type="button"
                             onClick={() => { hapticLight(); onTabChange(tab.id) }}
-                        >
-                            <tab.icon className="h-3.5 w-3.5 shrink-0" />
-                            {tab.label}
-                            {count > 0 && (
-                                <span className="tabular-nums text-[11px] opacity-50">{count}</span>
+                            className={cn(
+                                "inline-flex items-center rounded-full border px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)] transition-[box-shadow,border-color,color] duration-200 cursor-pointer select-none [touch-action:manipulation]",
+                                isActive
+                                    ? "border-white/[0.2] dark:border-white/[0.12] glass-subtle text-foreground shadow-[var(--shadow-card)]"
+                                    : "border-white/[0.12] dark:border-white/[0.06] glass-subtle text-muted-foreground/50 hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] dark:hover:border-white/[0.12] hover:text-muted-foreground"
                             )}
-                        </Pill>
+                        >
+                            {tab.label}
+                        </button>
                     )
                 })}
             </div>
+
         </div>
     )
 }
 
 // ─── Empty state ─────────────────────────────────────────────────────────────
 
-function EmptyTab({ icon: Icon, title, hint }: { icon: React.ElementType; title: string; hint: string }) {
+function EmptyTab({ title, hint }: { title: string; hint: string }) {
     return (
         <div className="flex flex-col items-center gap-5 py-20 text-center">
-            <div className="h-12 w-12 rounded-2xl glass-subtle border border-white/[0.12] dark:border-white/[0.06] flex items-center justify-center shadow-[var(--shadow-card)]">
-                <Icon className="h-5 w-5 text-muted-foreground/40" />
-            </div>
             <div className="space-y-1.5">
                 <p className="text-sm font-medium text-foreground/60">{title}</p>
                 <p className="text-xs text-muted-foreground/45 max-w-[220px] leading-relaxed">{hint}</p>
@@ -157,7 +129,6 @@ export default function LibraryPage() {
     const reduceMotion = useReducedMotion()
 
     const [rawHighlights, setRawHighlights] = useState<Highlight[]>([])
-    const [wisdom, setWisdom] = useState<SavedWisdom[]>([])
     const [loading, setLoading] = useState(true)
     const [isGuest, setIsGuest] = useState(false)
     const [activeTab, setActiveTab] = useState<TabId>("highlights")
@@ -172,9 +143,8 @@ export default function LibraryPage() {
         if (!authLoaded) return
         void (async () => {
             setIsGuest(!isSignedIn)
-            const [h, w] = await Promise.all([getAllHighlights(), getAllWisdom()])
+            const h = await getAllHighlights()
             setRawHighlights(h)
-            setWisdom(w)
             setLoading(false)
         })()
     }, [authLoaded, isSignedIn])
@@ -257,6 +227,24 @@ export default function LibraryPage() {
         }
     }
 
+    const handleCopyText = async (content: string) => {
+        hapticLight()
+        await navigator.clipboard.writeText(content)
+    }
+
+    const handleDeleteHighlight = async (h: GroupedHighlight) => {
+        hapticMedium()
+        setRawHighlights(prev => prev.filter(raw =>
+            !(raw.book === h.book && raw.chapter === h.chapter &&
+              raw.verse >= h.verse && raw.verse <= h.verseEnd)
+        ))
+        const removes: Promise<void>[] = []
+        for (let v = h.verse; v <= h.verseEnd; v++) {
+            removes.push(removeHighlight(h.book, h.chapter, v))
+        }
+        await Promise.all(removes)
+    }
+
     // Animation variants — same as reading-view.tsx
     const slideVariants = {
         enter: () => reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, filter: "blur(4px)" },
@@ -269,7 +257,7 @@ export default function LibraryPage() {
 
     if (loading) return <Loading />
 
-    const isEmpty = rawHighlights.length === 0 && wisdom.length === 0
+    const isEmpty = rawHighlights.length === 0
 
     return (
         <div className="min-h-screen bg-background flex flex-col items-center py-8">
@@ -305,7 +293,7 @@ export default function LibraryPage() {
             <LibraryToolbar
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
-                counts={{ highlights: groupedHighlights.length, notes: notes.length, wisdom: wisdom.length }}
+                counts={{ highlights: groupedHighlights.length, notes: notes.length }}
             />
 
             {/* ── Content ───────────────────────────────────────────── */}
@@ -380,7 +368,6 @@ export default function LibraryPage() {
                                 {activeTab === "highlights" && (
                                     groupedHighlights.length === 0 ? (
                                         <EmptyTab
-                                            icon={PenTool}
                                             title="No highlights yet"
                                             hint="Long-press any verse while reading to highlight it"
                                         />
@@ -393,48 +380,79 @@ export default function LibraryPage() {
                                                         key={h.id ?? idx}
                                                         initial={{ opacity: 0, y: 8 }}
                                                         animate={{ opacity: 1, y: 0 }}
+                                                        whileHover={{ y: -3, transition: { type: "spring", stiffness: 350, damping: 28, mass: 0.6 } }}
+                                                        whileTap={{ y: -1, scale: 0.99, transition: { type: "spring", stiffness: 500, damping: 30 } }}
                                                         transition={{ duration: 0.25, delay: Math.min(idx * 0.035, 0.18), ease: [0.25, 0.1, 0.25, 1] }}
-                                                        className="group relative rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] hover:border-white/[0.22] dark:hover:border-white/[0.12] transition-[box-shadow,border-color] duration-200 overflow-hidden"
+                                                        className="group relative rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] hover:border-white/[0.18] dark:hover:border-white/[0.09] transition-[box-shadow,border-color] duration-200 overflow-hidden"
                                                     >
-                                                        {/* Color accent bar */}
+                                                        {/* Color splash — radial light reflection on glass */}
                                                         <div
-                                                            className="absolute left-0 inset-y-0 w-[3px]"
-                                                            style={{ background: color?.accent ?? "#888" }}
+                                                            className="absolute inset-0 pointer-events-none"
+                                                            style={{
+                                                                background: `radial-gradient(ellipse at 88% 0%, ${color?.accent ?? "#888"}18 0%, ${color?.accent ?? "#888"}07 42%, transparent 68%)`,
+                                                            }}
                                                         />
 
-                                                        <div className="pl-5 pr-4 py-4">
-                                                            {/* Header */}
-                                                            <div className="flex items-center justify-between mb-3">
+                                                        <div className="relative px-5 pt-4 pb-4">
+                                                            {/* Header: reference chip + date/share */}
+                                                            <div className="flex items-center justify-between mb-4 gap-2">
                                                                 <Link
                                                                     href={`/read/${encodeURIComponent(h.book)}/${h.chapter}?translation=${bibleVersion}`}
-                                                                    className="flex items-center gap-2 text-xs font-semibold text-primary/75 hover:text-primary transition-colors"
+                                                                    className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] hover:bg-foreground/[0.04] transition-colors duration-150 shrink-0 -ml-1.5"
                                                                 >
-                                                                    <span className={cn("h-2 w-2 shrink-0 rounded-full", color?.dot ?? "bg-muted-foreground")} />
-                                                                    {h.book} {h.chapter}:{h.verse}{h.verseEnd > h.verse ? `–${h.verseEnd}` : ""}
+                                                                    <span
+                                                                        className="h-2 w-2 rounded-full shrink-0"
+                                                                        style={{ background: color?.accent ?? "#888" }}
+                                                                    />
+                                                                    <span className="font-semibold text-foreground/75">{h.book}</span>
+                                                                    <span className="text-muted-foreground/35 select-none">·</span>
+                                                                    <span className="text-muted-foreground/55 tabular-nums">{h.chapter}:{h.verse}{h.verseEnd > h.verse ? `–${h.verseEnd}` : ""}</span>
                                                                 </Link>
-                                                                <div className="flex items-center gap-1">
-                                                                    <span className="text-[11px] text-muted-foreground/35 mr-1 tabular-nums">
+                                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                                    <span className="text-[11px] text-muted-foreground/30 tabular-nums">
                                                                         {formatDate(h.created_at)}
                                                                     </span>
-                                                                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                                    <div className="flex items-center gap-0.5">
+                                                                        <button
+                                                                            onClick={() => void handleCopyText(h.content)}
+                                                                            className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-foreground/[0.06] text-muted-foreground/40 hover:text-foreground transition-colors duration-100"
+                                                                        >
+                                                                            <Copy className="h-3 w-3" />
+                                                                            <span className="sr-only">Copy text</span>
+                                                                        </button>
                                                                         <button
                                                                             onClick={() => {
                                                                                 const ref = `${h.book} ${h.chapter}:${h.verse}`
                                                                                 const url = `${window.location.origin}/share?ref=${encodeURIComponent(ref)}&text=${encodeURIComponent(h.content)}`
                                                                                 void handleShare(`Highlight — ${ref}`, h.content, url)
                                                                             }}
-                                                                            className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-foreground/[0.06] text-muted-foreground/50 hover:text-foreground transition-colors"
+                                                                            className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-foreground/[0.06] text-muted-foreground/40 hover:text-foreground transition-colors duration-100"
                                                                         >
-                                                                            <Share2 className="h-3.5 w-3.5" />
-                                                                            <span className="sr-only">Share</span>
+                                                                            <Share2 className="h-3 w-3" />
+                                                                            <span className="sr-only">Share link</span>
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => void handleDeleteHighlight(h)}
+                                                                            className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive transition-colors duration-100"
+                                                                        >
+                                                                            <Trash2 className="h-3 w-3" />
+                                                                            <span className="sr-only">Remove</span>
                                                                         </button>
                                                                     </div>
                                                                 </div>
                                                             </div>
 
-                                                            {/* Verse text */}
-                                                            <p className={cn("text-[15px] leading-relaxed text-foreground/80 italic line-clamp-4", fontClass)}>
-                                                                &ldquo;{h.content}&rdquo;
+                                                            {/* Verse text with colored quote marks */}
+                                                            <p className={cn("text-[15px] leading-relaxed text-foreground/80", fontClass)}>
+                                                                <span
+                                                                    className="text-[22px] font-serif leading-[0] relative top-2 mr-0.5 select-none"
+                                                                    style={{ color: `${color?.accent ?? "#888"}70` }}
+                                                                >&ldquo;</span>
+                                                                {h.content}
+                                                                <span
+                                                                    className="text-[22px] font-serif leading-[0] relative top-2 ml-0.5 select-none"
+                                                                    style={{ color: `${color?.accent ?? "#888"}70` }}
+                                                                >&rdquo;</span>
                                                             </p>
 
                                                             {/* Inline note preview */}
@@ -442,7 +460,7 @@ export default function LibraryPage() {
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => handleEditNote(h)}
-                                                                    className="mt-3 pt-3 border-t border-foreground/[0.06] w-full flex items-start gap-2 text-left cursor-pointer hover:opacity-80 transition-opacity"
+                                                                    className="mt-4 pt-3.5 border-t border-foreground/[0.06] w-full flex items-start gap-2 text-left hover:opacity-75 transition-opacity duration-150"
                                                                 >
                                                                     <StickyNote className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground/35" />
                                                                     <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed">{h.note}</p>
@@ -460,7 +478,6 @@ export default function LibraryPage() {
                                 {activeTab === "notes" && (
                                     notes.length === 0 ? (
                                         <EmptyTab
-                                            icon={StickyNote}
                                             title="No notes yet"
                                             hint="Long-press a verse and tap the note icon to add a reflection"
                                         />
@@ -511,62 +528,6 @@ export default function LibraryPage() {
                                     )
                                 )}
 
-                                {/* ── Wisdom tab ─────────────────────────────── */}
-                                {activeTab === "wisdom" && (
-                                    wisdom.length === 0 ? (
-                                        <EmptyTab
-                                            icon={Quote}
-                                            title="No saved wisdom"
-                                            hint="Save quotes from the Daily section to find them here"
-                                        />
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {wisdom.map((w, idx) => (
-                                                <motion.div
-                                                    key={w.id}
-                                                    initial={{ opacity: 0, y: 8 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ duration: 0.25, delay: Math.min(idx * 0.035, 0.18), ease: [0.25, 0.1, 0.25, 1] }}
-                                                    className="group relative rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] hover:border-white/[0.22] dark:hover:border-white/[0.12] transition-[box-shadow,border-color] duration-200 overflow-hidden px-5 py-4"
-                                                >
-                                                    {/* Header */}
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        {w.source ? (
-                                                            <span className="flex items-center gap-2 text-xs font-semibold text-muted-foreground/70">
-                                                                <Quote className="h-3.5 w-3.5 shrink-0" />
-                                                                {w.source}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="flex items-center gap-2 text-xs text-muted-foreground/40">
-                                                                <Quote className="h-3.5 w-3.5 shrink-0" />
-                                                                Daily Wisdom
-                                                            </span>
-                                                        )}
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="text-[11px] text-muted-foreground/35 tabular-nums mr-1">{formatDate(w.created_at)}</span>
-                                                            <button
-                                                                onClick={() => {
-                                                                    const ref = w.source ?? "Daily Wisdom"
-                                                                    const url = `${window.location.origin}/share?ref=${encodeURIComponent(ref)}&text=${encodeURIComponent(w.content)}`
-                                                                    void handleShare(`Wisdom — ${ref}`, w.content, url)
-                                                                }}
-                                                                className="opacity-0 group-hover:opacity-100 h-7 w-7 flex items-center justify-center rounded-full hover:bg-foreground/[0.06] text-muted-foreground/50 hover:text-foreground transition-all duration-200"
-                                                            >
-                                                                <Share2 className="h-3.5 w-3.5" />
-                                                                <span className="sr-only">Share</span>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Quote */}
-                                                    <p className={cn("text-[15px] leading-relaxed text-foreground/80 italic", fontClass)}>
-                                                        &ldquo;{w.content}&rdquo;
-                                                    </p>
-                                                </motion.div>
-                                            ))}
-                                        </div>
-                                    )
-                                )}
 
                             </div>
                         </motion.div>

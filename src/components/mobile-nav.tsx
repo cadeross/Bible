@@ -75,14 +75,14 @@ export function MobileNav() {
                             )}
                             <Icon
                                 className={cn(
-                                    "relative h-[20px] w-[20px] transition-colors duration-200",
+                                    "relative h-[20px] w-[20px] transition-colors duration-100",
                                     isActive ? "text-primary" : "text-muted-foreground"
                                 )}
                                 strokeWidth={isActive ? 2 : 1.5}
                                 aria-hidden
                             />
                             <span className={cn(
-                                "relative max-w-full truncate text-[10px] font-medium transition-colors duration-200",
+                                "relative max-w-full truncate text-[10px] font-medium transition-colors duration-100",
                                 isActive ? "text-primary" : "text-muted-foreground"
                             )}>
                                 {tab.name}

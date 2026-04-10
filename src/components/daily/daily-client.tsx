@@ -10,6 +10,7 @@ import type { LiturgicalDay } from "@/lib/liturgical-calendar"
 import { cn } from "@/lib/utils"
 import { DailyReadings } from "@/components/daily-readings"
 import type { DailyReadingsData } from "@/lib/daily-readings"
+import { hapticLight } from "@/lib/haptics"
 
 interface DailyClientProps {
     dailyReadings: DailyReadingsData | null
@@ -20,6 +21,7 @@ export function DailyClient({ dailyReadings, liturgicalDay }: DailyClientProps) 
     const [mounted, setMounted] = useState(false)
     const [todayLabel, setTodayLabel] = useState("")
     const [dailyContent, setDailyContent] = useState<DailyContent>(FALLBACK_CONTENT)
+    const [currentIndex, setCurrentIndex] = useState(0)
 
     useEffect(() => {
         setMounted(true)
@@ -43,6 +45,13 @@ export function DailyClient({ dailyReadings, liturgicalDay }: DailyClientProps) 
     const colorDotClass  = getLiturgicalColorBg(colorKey)
     const hasLiturgyStrip = !!(season || (rank && rank !== "Weekday") || cycle || week > 0)
 
+    const sections = dailyReadings ? [
+        { id: "reading1", label: "Reading I",  data: dailyReadings.readings.reading1 },
+        { id: "psalm",    label: "Psalm",       data: dailyReadings.readings.psalm    },
+        { id: "reading2", label: "Reading II",  data: dailyReadings.readings.reading2 },
+        { id: "gospel",   label: "Gospel",      data: dailyReadings.readings.gospel   },
+    ].filter(s => s.data) : []
+
     if (!mounted) {
         return (
             <div className="min-h-screen bg-background flex flex-col items-center py-8">
@@ -64,55 +73,50 @@ export function DailyClient({ dailyReadings, liturgicalDay }: DailyClientProps) 
             <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent z-30 pointer-events-none hidden max-[1500px]:block" />
 
             {/* ── Toolbar ───────────────────────────────────────────── */}
-            <div className="w-full max-w-3xl mx-auto mb-8">
-                <div className="flex items-center justify-center gap-2 flex-wrap">
+            <div className="w-full max-w-3xl mx-auto mb-8 flex flex-col items-center gap-3">
 
-                    {/* Title pill */}
-                    <span className="inline-flex items-center rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-semibold text-foreground shadow-[var(--shadow-sm)] select-none">
-                        Daily
-                    </span>
-
-                    {/* Date pill */}
-                    <span className="inline-flex items-center rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-medium text-muted-foreground shadow-[var(--shadow-sm)] select-none">
-                        {todayLabel}
-                    </span>
-
-                    {/* Liturgical context — links to calendar */}
+                {/* Date + liturgical info as plain text */}
+                <div className="text-center space-y-0.5">
+                    <p className="text-[13px] font-medium text-muted-foreground select-none">{todayLabel}</p>
                     {hasLiturgyStrip && (
-                        <Link href="/calendar">
-                            <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-medium text-muted-foreground shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] dark:hover:border-white/[0.12] transition-[box-shadow,border-color] duration-200 cursor-pointer select-none">
-                                <span className={cn("h-1.5 w-1.5 rounded-full shrink-0 opacity-80", colorDotClass)} />
-                                {season && <span>{season}</span>}
-                                {week > 0 && (
-                                    <>
-                                        <span className="text-foreground/15 select-none">·</span>
-                                        <span>Week {week}</span>
-                                    </>
-                                )}
-                                {rank && rank !== "Weekday" && (
-                                    <>
-                                        <span className="text-foreground/15 select-none">·</span>
-                                        <span>{rank}</span>
-                                    </>
-                                )}
-                                {cycle && (
-                                    <>
-                                        <span className="text-foreground/15 select-none">·</span>
-                                        <span>Year {cycle}</span>
-                                    </>
-                                )}
-                            </span>
-                        </Link>
+                        <p className="flex items-center justify-center gap-1.5 text-[12px] text-muted-foreground/50 select-none">
+                            <span className={cn("h-1.5 w-1.5 rounded-full shrink-0 opacity-80", colorDotClass)} />
+                            {[
+                                season,
+                                week > 0 ? `Week ${week}` : null,
+                                rank && rank !== "Weekday" ? rank : null,
+                                cycle ? `Year ${cycle}` : null,
+                            ].filter(Boolean).join(" · ")}
+                        </p>
                     )}
+                </div>
 
-                    {/* Calendar icon pill */}
+                {/* Reading section pills + calendar */}
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                    {sections.map((section, i) => (
+                        <button
+                            key={section.id}
+                            type="button"
+                            onClick={() => { hapticLight(); setCurrentIndex(i) }}
+                            className={cn(
+                                "inline-flex items-center rounded-full border px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)] transition-[box-shadow,border-color,color] duration-200 cursor-pointer select-none [touch-action:manipulation]",
+                                i === currentIndex
+                                    ? "border-white/[0.2] dark:border-white/[0.12] glass-subtle text-foreground shadow-[var(--shadow-card)]"
+                                    : "border-white/[0.12] dark:border-white/[0.06] glass-subtle text-muted-foreground/50 hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] dark:hover:border-white/[0.12] hover:text-muted-foreground"
+                            )}
+                        >
+                            {section.label}
+                        </button>
+                    ))}
+
+                    {/* Calendar icon */}
                     <Link href="/calendar">
                         <span className="inline-flex items-center rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3 py-1.5 shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] dark:hover:border-white/[0.12] transition-[box-shadow,border-color] duration-200 cursor-pointer">
                             <Calendar className="h-3.5 w-3.5 text-muted-foreground/50" />
                         </span>
                     </Link>
-
                 </div>
+
             </div>
 
             {/* ── Content ───────────────────────────────────────────── */}
@@ -132,7 +136,7 @@ export function DailyClient({ dailyReadings, liturgicalDay }: DailyClientProps) 
 
                     {/* Readings */}
                     {dailyReadings ? (
-                        <DailyReadings data={dailyReadings} />
+                        <DailyReadings data={dailyReadings} currentIndex={currentIndex} onIndexChange={setCurrentIndex} />
                     ) : (
                         <div className="flex flex-col items-center gap-5 py-20 text-center">
                             <div className="h-12 w-12 rounded-2xl glass-subtle border border-white/[0.12] dark:border-white/[0.06] flex items-center justify-center shadow-[var(--shadow-card)]">

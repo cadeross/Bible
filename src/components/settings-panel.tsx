@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef, useCallback } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { Monitor, Moon, Sun, LogOut, User, ChevronRight, ChevronLeft, Globe, ChevronDown, Check } from "lucide-react"
@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import HeatMap from "@uiw/react-heat-map"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 
-const SPRING_RESIZE = { type: "spring" as const, stiffness: 350, damping: 30, mass: 0.8 }
 
 function SlidingHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {
     const [rect, setRect] = useState<{ top: number; height: number } | null>(null)
@@ -180,10 +179,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
     const clerk = useClerk()
 
     const [view, setView] = useState<PanelView>("settings")
-    const [contentHeight, setContentHeight] = useState<number | undefined>(undefined)
     const [heatmapData, setHeatmapData] = useState<HeatMapValue[]>([])
-    const settingsRef = useRef<HTMLDivElement>(null)
-    const signinRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         import("@/lib/persistence").then(({ getHistory }) => {
@@ -198,29 +194,41 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
         })
     }, [])
 
-    const measureHeight = useCallback(() => {
-        const ref = view === "settings" ? settingsRef : signinRef
-        if (ref.current) {
-            setContentHeight(ref.current.scrollHeight)
+    const streak = useMemo(() => {
+        if (heatmapData.length === 0) return 0
+        const dateSet = new Set(heatmapData.map(d => d.date))
+        const fmt = (d: Date) => {
+            const y = d.getFullYear()
+            const m = String(d.getMonth() + 1).padStart(2, "0")
+            const day = String(d.getDate()).padStart(2, "0")
+            return `${y}/${m}/${day}`
         }
-    }, [view])
+        const check = new Date()
+        check.setHours(0, 0, 0, 0)
+        if (!dateSet.has(fmt(check))) {
+            check.setDate(check.getDate() - 1)
+            if (!dateSet.has(fmt(check))) return 0
+        }
+        let count = 0
+        while (dateSet.has(fmt(check))) {
+            count++
+            check.setDate(check.getDate() - 1)
+        }
+        return count
+    }, [heatmapData])
 
-    useEffect(() => {
-        measureHeight()
-        const timer = setTimeout(measureHeight, 150)
-        return () => clearTimeout(timer)
-    }, [view, measureHeight, isSignedIn])
-
-    // Re-measure whenever the active content div resizes (e.g. accordion open/close)
-    useEffect(() => {
-        const ref = view === "settings" ? settingsRef : signinRef
-        if (!ref.current) return
-        const observer = new ResizeObserver(() => {
-            if (ref.current) setContentHeight(ref.current.scrollHeight)
-        })
-        observer.observe(ref.current)
-        return () => observer.disconnect()
-    }, [view])
+    const longestStreak = useMemo(() => {
+        if (heatmapData.length === 0) return 0
+        const dates = heatmapData.map(d => d.date.replace(/\//g, "-")).sort()
+        let longest = 1
+        let current = 1
+        for (let i = 1; i < dates.length; i++) {
+            const diff = (new Date(dates[i]).getTime() - new Date(dates[i - 1]).getTime()) / 86400000
+            current = diff === 1 ? current + 1 : 1
+            if (current > longest) longest = current
+        }
+        return longest
+    }, [heatmapData])
 
     const isDark = resolvedTheme === "dark"
 
@@ -236,17 +244,11 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
     const activeThemeIndex = themeOptions.findIndex(t => t.id === theme)
 
     return (
-        <motion.div
-            className="w-[340px] overflow-hidden"
-            animate={{ height: contentHeight }}
-            transition={SPRING_RESIZE}
-            style={{ height: contentHeight }}
-        >
+        <div className="w-[340px] overflow-hidden">
             <AnimatePresence mode="wait" initial={false}>
                 {view === "signin" ? (
                     <motion.div
                         key="signin"
-                        ref={signinRef}
                         initial={{ opacity: 0, x: 40 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 40 }}
@@ -261,7 +263,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                                 Back
                             </button>
                         </div>
-                        <div className="flex justify-center overflow-hidden [&_.cl-card]:!shadow-none [&_.cl-card]:!border-0 [&_.cl-card]:!bg-transparent [&_.cl-internal-b3fm6y]:!bg-transparent [&_.cl-rootBox]:!w-full [&_.cl-card]:!w-full [&_.cl-cardBox]:!shadow-none [&_.cl-cardBox]:!w-full [&_.cl-footer]:!bg-transparent [&_.cl-formButtonPrimary]:!rounded-xl [&_.cl-formFieldInput]:!rounded-xl">
+                        <div className="flex justify-center">
                             <SignIn
                                 routing="hash"
                                 forceRedirectUrl="/"
@@ -269,12 +271,10 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                                 appearance={{
                                     elements: {
                                         rootBox: "w-full max-w-[320px]",
-                                        card: "shadow-none border-0 bg-transparent w-full p-3",
-                                        cardBox: "shadow-none w-full",
-                                        footer: "bg-transparent",
-                                        formButtonPrimary: "rounded-xl",
-                                        formFieldInput: "rounded-xl",
-                                    }
+                                        card: { boxShadow: "none", border: "none", background: "transparent", width: "100%", padding: "0.75rem" },
+                                        cardBox: { boxShadow: "none", width: "100%" },
+                                        footer: { background: "transparent" },
+                                    },
                                 }}
                             />
                         </div>
@@ -282,7 +282,6 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                 ) : (
                     <motion.div
                         key="settings"
-                        ref={settingsRef}
                         initial={{ opacity: 0, x: -40 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -40 }}
@@ -381,9 +380,21 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                         {/* Versions */}
                         <VersionsSection />
 
-                        {/* Reading Heatmap */}
+                        {/* Reading Activity */}
                         <div className="px-4 py-3">
                             <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/40">Reading Activity</p>
+
+                            {/* Streak */}
+                            <div className="mb-3 flex items-baseline justify-between">
+                                <p className="text-[13px] font-medium text-foreground">
+                                    {streak > 0 ? `${streak} day streak` : "No streak yet"}
+                                </p>
+                                {streak > 0 && (
+                                    <p className="text-[11px] text-muted-foreground/40">
+                                        Best: {longestStreak} day{longestStreak !== 1 ? "s" : ""}
+                                    </p>
+                                )}
+                            </div>
                             <div className="overflow-x-auto -mx-1">
                                 <HeatMap
                                     value={heatmapData}
@@ -422,6 +433,6 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </motion.div>
+        </div>
     )
 }

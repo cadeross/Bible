@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { hapticLight } from "@/lib/haptics"
-import { cn } from "@/lib/utils"
 import type { DailyReadingsData } from "@/lib/daily-readings"
-import { BookOpen, ExternalLink, AlertTriangle } from "lucide-react"
+import { BookOpen, ExternalLink, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react"
+import { hapticMedium } from "@/lib/haptics"
 import Link from "next/link"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { ReadingContent } from "@/components/reading/reading-content"
@@ -14,9 +13,11 @@ import { parseReadingReference } from "@/lib/reading-reference-parser"
 
 interface DailyReadingsProps {
     data: DailyReadingsData
+    currentIndex: number
+    onIndexChange: (i: number) => void
 }
 
-export function DailyReadings({ data }: DailyReadingsProps) {
+export function DailyReadings({ data, currentIndex, onIndexChange }: DailyReadingsProps) {
     const { bibleVersion } = useReadingPreferences()
 
     const sections = [
@@ -26,8 +27,7 @@ export function DailyReadings({ data }: DailyReadingsProps) {
         { id: "gospel",   label: "Gospel",      data: data.readings.gospel   },
     ].filter(s => s.data)
 
-    const [currentIndex, setCurrentIndex] = useState(0)
-    const activeSection = sections[currentIndex]
+    const activeSection = sections[Math.min(currentIndex, sections.length - 1)]
 
     const [chapterCache, setChapterCache] = useState<Record<string, BibleChapter>>({})
     const [loading, setLoading] = useState(false)
@@ -111,34 +111,6 @@ export function DailyReadings({ data }: DailyReadingsProps) {
     return (
         <div className="w-full flex flex-col gap-3">
 
-            {/* ── Segmented Tab Control ── */}
-            <div className="relative flex rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle p-1 shadow-[var(--shadow-sm)]">
-                {/* Spring sliding indicator */}
-                <motion.div
-                    className="absolute top-1 bottom-1 rounded-xl bg-foreground/[0.07] dark:bg-white/[0.07] pointer-events-none"
-                    animate={{
-                        width: `calc(${100 / sections.length}% - 4px)`,
-                        left: `calc(${currentIndex * (100 / sections.length)}% + 2px)`,
-                    }}
-                    transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
-                />
-                {sections.map((section, i) => (
-                    <button
-                        key={section.id}
-                        type="button"
-                        onClick={() => { hapticLight(); setCurrentIndex(i) }}
-                        className={cn(
-                            "relative z-10 flex-1 py-2 text-[12px] font-medium rounded-xl transition-colors duration-200 select-none [touch-action:manipulation]",
-                            i === currentIndex
-                                ? "text-foreground"
-                                : "text-muted-foreground/40 hover:text-muted-foreground/70"
-                        )}
-                    >
-                        {section.label}
-                    </button>
-                ))}
-            </div>
-
             {/* ── Content Card ── */}
             <div className="rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle shadow-[var(--shadow-card)] overflow-hidden min-h-[280px] flex flex-col">
 
@@ -218,6 +190,37 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                         </motion.div>
                     )}
                 </AnimatePresence>
+            </div>
+
+            {/* ── Prev / Next section navigation ── */}
+            <div className="flex items-center justify-center gap-3 pt-1">
+                {currentIndex > 0 ? (
+                    <motion.button
+                        type="button"
+                        onClick={() => { hapticMedium(); onIndexChange(currentIndex - 1) }}
+                        whileTap={{ scale: 0.96 }}
+                        whileHover={{ scale: 1.02 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        className="flex items-center gap-2 px-3.5 py-2 rounded-full border border-border/20 bg-foreground/[0.03] hover:bg-foreground/[0.06] hover:border-border/40 transition-colors duration-200 cursor-pointer"
+                    >
+                        <ChevronLeft className="h-3 w-3 shrink-0 text-muted-foreground/40" />
+                        <span className="text-[12px] font-medium text-muted-foreground/55">{sections[currentIndex - 1]?.label}</span>
+                    </motion.button>
+                ) : <div />}
+
+                {currentIndex < sections.length - 1 ? (
+                    <motion.button
+                        type="button"
+                        onClick={() => { hapticMedium(); onIndexChange(currentIndex + 1) }}
+                        whileTap={{ scale: 0.96 }}
+                        whileHover={{ scale: 1.02 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        className="flex items-center gap-2 px-3.5 py-2 rounded-full border border-border/20 bg-foreground/[0.03] hover:bg-foreground/[0.06] hover:border-border/40 transition-colors duration-200 cursor-pointer"
+                    >
+                        <span className="text-[12px] font-medium text-muted-foreground/55">{sections[currentIndex + 1]?.label}</span>
+                        <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/40" />
+                    </motion.button>
+                ) : <div />}
             </div>
         </div>
     )
