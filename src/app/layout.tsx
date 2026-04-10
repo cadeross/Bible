@@ -12,7 +12,7 @@ import { MainLayout } from "@/components/main-layout";
 import { FocusProvider } from "@/contexts/focus-mode";
 import { NavModeProvider } from "@/contexts/nav-mode";
 import { NavModeGate } from "@/components/nav-mode-gate";
-// import { Agentation } from "agentation";
+import { Agentation } from "agentation";
 import { Suspense, type CSSProperties } from "react";
 import Loading from "./loading";
 import { PageGradients } from "@/components/ui/page-gradients";
@@ -193,7 +193,7 @@ export default function RootLayout({
                 />
                 <Analytics />
                 <SpeedInsights />
-                {/* process.env.NODE_ENV === "development" && <Agentation /> */}
+                {process.env.NODE_ENV === "development" && <Agentation />}
               </FocusProvider>
             </NavModeProvider>
           </ReadingPreferencesProvider>
