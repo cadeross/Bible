@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { AnimatePresence, motion } from "framer-motion"
+import { hapticLight } from "@/lib/haptics"
 import { cn } from "@/lib/utils"
 import type { DailyReadingsData } from "@/lib/daily-readings"
 import { BookOpen, ExternalLink, AlertTriangle } from "lucide-react"
@@ -111,10 +112,10 @@ export function DailyReadings({ data }: DailyReadingsProps) {
         <div className="w-full flex flex-col gap-3">
 
             {/* ── Segmented Tab Control ── */}
-            <div className="relative flex rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] p-1">
+            <div className="relative flex rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle p-1 shadow-[var(--shadow-sm)]">
                 {/* Spring sliding indicator */}
                 <motion.div
-                    className="absolute top-1 bottom-1 rounded-[9px] bg-foreground/[0.09] pointer-events-none"
+                    className="absolute top-1 bottom-1 rounded-xl bg-foreground/[0.07] dark:bg-white/[0.07] pointer-events-none"
                     animate={{
                         width: `calc(${100 / sections.length}% - 4px)`,
                         left: `calc(${currentIndex * (100 / sections.length)}% + 2px)`,
@@ -125,9 +126,9 @@ export function DailyReadings({ data }: DailyReadingsProps) {
                     <button
                         key={section.id}
                         type="button"
-                        onClick={() => setCurrentIndex(i)}
+                        onClick={() => { hapticLight(); setCurrentIndex(i) }}
                         className={cn(
-                            "relative z-10 flex-1 py-2 text-[12px] font-medium rounded-[9px] transition-colors duration-200 select-none",
+                            "relative z-10 flex-1 py-2 text-[12px] font-medium rounded-xl transition-colors duration-200 select-none [touch-action:manipulation]",
                             i === currentIndex
                                 ? "text-foreground"
                                 : "text-muted-foreground/40 hover:text-muted-foreground/70"
@@ -139,7 +140,7 @@ export function DailyReadings({ data }: DailyReadingsProps) {
             </div>
 
             {/* ── Content Card ── */}
-            <div className="rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] overflow-hidden min-h-[280px] flex flex-col">
+            <div className="rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle shadow-[var(--shadow-card)] overflow-hidden min-h-[280px] flex flex-col">
 
                 {/* Loading */}
                 {loading && !activeChapter && (

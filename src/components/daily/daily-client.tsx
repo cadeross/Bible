@@ -35,117 +35,128 @@ export function DailyClient({ dailyReadings, liturgicalDay }: DailyClientProps) 
 
     // Liturgical data — prefer romcal (server), fallback to Convex
     const feastName = dailyReadings?.title || dailyContent.feast_name || liturgicalDay?.name
-    const season = liturgicalDay?.season || dailyContent.liturgical_season || ""
-    const rank = liturgicalDay?.rank || dailyContent.rank || ""
-    const cycle = liturgicalDay?.cycle || ""
-    const week = liturgicalDay?.week || 0
-    const colorKey = liturgicalDay?.colorKey || (dailyContent.liturgical_color?.toUpperCase() ?? "GREEN")
-    const colorDotClass = getLiturgicalColorBg(colorKey)
+    const season    = liturgicalDay?.season    || dailyContent.liturgical_season || ""
+    const rank      = liturgicalDay?.rank      || dailyContent.rank || ""
+    const cycle     = liturgicalDay?.cycle     || ""
+    const week      = liturgicalDay?.week      || 0
+    const colorKey  = liturgicalDay?.colorKey  || (dailyContent.liturgical_color?.toUpperCase() ?? "GREEN")
+    const colorDotClass  = getLiturgicalColorBg(colorKey)
     const hasLiturgyStrip = !!(season || (rank && rank !== "Weekday") || cycle || week > 0)
 
     if (!mounted) {
         return (
-            <div className="w-full max-w-[720px] mx-auto px-6 py-16 flex flex-col items-center gap-3">
-                <div className="h-3 w-36 animate-pulse rounded-full bg-muted/20" />
-                <div className="h-8 w-56 animate-pulse rounded-full bg-muted/15" />
-                <div className="h-3 w-48 animate-pulse rounded-full bg-muted/10 mt-1" />
+            <div className="min-h-screen bg-background flex flex-col items-center py-8">
+                <div className="w-full max-w-3xl mx-auto mb-8">
+                    <div className="flex items-center justify-center gap-2">
+                        <div className="h-8 w-16 animate-pulse rounded-full bg-muted/20" />
+                        <div className="h-8 w-48 animate-pulse rounded-full bg-muted/15" />
+                    </div>
+                </div>
             </div>
         )
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-            className="w-full max-w-[720px] mx-auto px-6 py-12 flex flex-col gap-8"
-        >
-            {/* ── Hero ── */}
-            <div className="flex flex-col items-center text-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.07] px-3 py-1 text-[11px] font-medium text-primary/80 select-none">
-                    Daily Scripture
-                </span>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/35 select-none mt-0.5">
-                    {todayLabel}
-                </p>
-                <h1 className="text-[30px] font-semibold tracking-tight text-foreground leading-tight">
-                    Today&apos;s Readings
-                </h1>
-                {feastName && (
-                    <p className="text-[13px] text-muted-foreground/55 max-w-[420px] leading-snug mt-0.5">
-                        {feastName}
-                    </p>
-                )}
-            </div>
+        <div className="min-h-screen bg-background flex flex-col items-center py-8">
 
-            {/* ── Liturgical Strip ── */}
-            {hasLiturgyStrip && (
-                <div className="flex justify-center">
-                    <Link href="/calendar" className="group">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-subtle border border-white/[0.08] dark:border-white/[0.05] hover:border-white/[0.16] dark:hover:border-white/[0.10] transition-all duration-200 cursor-pointer">
-                            <div className={cn("h-1.5 w-1.5 rounded-full shrink-0 opacity-80", colorDotClass)} />
-                            {season && (
-                                <span className="text-[12px] font-medium text-foreground/60">{season}</span>
-                            )}
-                            {week > 0 && (
-                                <>
-                                    <span className="text-muted-foreground/20 select-none">·</span>
-                                    <span className="text-[12px] text-muted-foreground/40">Week {week}</span>
-                                </>
-                            )}
-                            {rank && rank !== "Weekday" && (
-                                <>
-                                    <span className="text-muted-foreground/20 select-none">·</span>
-                                    <span className="text-[12px] text-muted-foreground/40">{rank}</span>
-                                </>
-                            )}
-                            {cycle && (
-                                <>
-                                    <span className="text-muted-foreground/20 select-none">·</span>
-                                    <span className="text-[12px] text-muted-foreground/40">Year {cycle}</span>
-                                </>
-                            )}
-                            <Calendar className="h-3 w-3 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-colors ml-0.5" />
-                        </div>
+            {/* ── Gradient fades — same as reading page ─────────────── */}
+            <div className="fixed top-[calc(3.5rem+var(--maintenance-banner-height,0px))] left-0 right-0 h-16 bg-gradient-to-b from-background/75 to-transparent z-30 pointer-events-none hidden max-[1500px]:block" />
+            <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent z-30 pointer-events-none hidden max-[1500px]:block" />
+
+            {/* ── Toolbar ───────────────────────────────────────────── */}
+            <div className="w-full max-w-3xl mx-auto mb-8">
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+
+                    {/* Title pill */}
+                    <span className="inline-flex items-center rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-semibold text-foreground shadow-[var(--shadow-sm)] select-none">
+                        Daily
+                    </span>
+
+                    {/* Date pill */}
+                    <span className="inline-flex items-center rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-medium text-muted-foreground shadow-[var(--shadow-sm)] select-none">
+                        {todayLabel}
+                    </span>
+
+                    {/* Liturgical context — links to calendar */}
+                    {hasLiturgyStrip && (
+                        <Link href="/calendar">
+                            <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-medium text-muted-foreground shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] dark:hover:border-white/[0.12] transition-[box-shadow,border-color] duration-200 cursor-pointer select-none">
+                                <span className={cn("h-1.5 w-1.5 rounded-full shrink-0 opacity-80", colorDotClass)} />
+                                {season && <span>{season}</span>}
+                                {week > 0 && (
+                                    <>
+                                        <span className="text-foreground/15 select-none">·</span>
+                                        <span>Week {week}</span>
+                                    </>
+                                )}
+                                {rank && rank !== "Weekday" && (
+                                    <>
+                                        <span className="text-foreground/15 select-none">·</span>
+                                        <span>{rank}</span>
+                                    </>
+                                )}
+                                {cycle && (
+                                    <>
+                                        <span className="text-foreground/15 select-none">·</span>
+                                        <span>Year {cycle}</span>
+                                    </>
+                                )}
+                            </span>
+                        </Link>
+                    )}
+
+                    {/* Calendar icon pill */}
+                    <Link href="/calendar">
+                        <span className="inline-flex items-center rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3 py-1.5 shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] dark:hover:border-white/[0.12] transition-[box-shadow,border-color] duration-200 cursor-pointer">
+                            <Calendar className="h-3.5 w-3.5 text-muted-foreground/50" />
+                        </span>
                     </Link>
-                </div>
-            )}
 
-            {/* ── Readings ── */}
-            {dailyReadings ? (
-                <DailyReadings data={dailyReadings} />
-            ) : (
-                <div className="flex flex-col items-center gap-5 py-20 text-center">
-                    <div className="h-12 w-12 rounded-2xl glass-subtle border border-white/[0.08] flex items-center justify-center">
-                        <BookOpen className="h-5 w-5 text-muted-foreground/40" />
-                    </div>
-                    <div className="space-y-1.5">
-                        <p className="text-[13px] font-medium text-foreground/80">Readings unavailable</p>
-                        <p className="text-[12px] text-muted-foreground/50 max-w-[280px]">
-                            Today&apos;s readings could not be loaded.
-                        </p>
-                    </div>
-                    <a
-                        href="https://bible.usccb.org/daily-bible-reading"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[12px] font-medium text-primary/70 hover:text-primary transition-colors"
-                    >
-                        Read on usccb.org →
-                    </a>
                 </div>
-            )}
-
-            {/* ── Footer ── */}
-            <div className="flex justify-center pb-4">
-                <Link
-                    href="/calendar"
-                    className="flex items-center gap-1.5 text-[11px] text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors duration-200"
-                >
-                    <Calendar className="h-3 w-3" />
-                    View liturgical calendar
-                </Link>
             </div>
-        </motion.div>
+
+            {/* ── Content ───────────────────────────────────────────── */}
+            <main className="flex-1 w-full max-w-4xl relative flex items-start justify-center">
+                <motion.div
+                    initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
+                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                    transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+                    className="w-full max-w-[720px] mx-auto px-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-20"
+                >
+                    {/* Feast name subtitle */}
+                    {feastName && (
+                        <p className="text-center text-[13px] text-muted-foreground/50 mb-6 leading-snug">
+                            {feastName}
+                        </p>
+                    )}
+
+                    {/* Readings */}
+                    {dailyReadings ? (
+                        <DailyReadings data={dailyReadings} />
+                    ) : (
+                        <div className="flex flex-col items-center gap-5 py-20 text-center">
+                            <div className="h-12 w-12 rounded-2xl glass-subtle border border-white/[0.12] dark:border-white/[0.06] flex items-center justify-center shadow-[var(--shadow-card)]">
+                                <BookOpen className="h-5 w-5 text-muted-foreground/40" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <p className="text-[13px] font-medium text-foreground/80">Readings unavailable</p>
+                                <p className="text-[12px] text-muted-foreground/50 max-w-[280px]">
+                                    Today&apos;s readings could not be loaded.
+                                </p>
+                            </div>
+                            <a
+                                href="https://bible.usccb.org/daily-bible-reading"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[12px] font-medium text-primary/70 hover:text-primary transition-colors"
+                            >
+                                Read on usccb.org →
+                            </a>
+                        </div>
+                    )}
+                </motion.div>
+            </main>
+
+        </div>
     )
 }
