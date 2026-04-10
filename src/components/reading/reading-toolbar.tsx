@@ -528,7 +528,7 @@ export function ReadingToolbar({
                 <div className="flex items-center gap-0 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-1 py-0.5 shadow-[var(--shadow-sm)]">
                     <button
                         type="button"
-                        onClick={() => { if (prevNav) nav(prevNav.book, prevNav.chapter) }}
+                        onClick={() => { if (prevNav) { hapticLight(); nav(prevNav.book, prevNav.chapter) } }}
                         disabled={!prevOk}
                         className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:bg-muted/50 hover:text-foreground disabled:opacity-20 disabled:pointer-events-none disabled:cursor-default"
                     >
@@ -540,7 +540,7 @@ export function ReadingToolbar({
                     </div>
                     <button
                         type="button"
-                        onClick={() => { if (nextNav) nav(nextNav.book, nextNav.chapter) }}
+                        onClick={() => { if (nextNav) { hapticLight(); nav(nextNav.book, nextNav.chapter) } }}
                         disabled={!nextOk}
                         className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:bg-muted/50 hover:text-foreground disabled:opacity-20 disabled:pointer-events-none disabled:cursor-default"
                     >
