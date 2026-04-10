@@ -8,6 +8,7 @@ import { openCommandMenu } from "@/lib/open-command-menu"
 import { useFocusMode } from "@/contexts/focus-mode"
 import { hapticLight } from "@/lib/haptics"
 import { motion } from "framer-motion"
+import { useLastReadUrl } from "@/lib/use-last-read-url"
 
 const tabs = [
     { kind: "link" as const, name: "Read", href: "/read", icon: BookOpen },
@@ -20,6 +21,7 @@ const tabs = [
 export function MobileNav() {
     const { isFocusMode } = useFocusMode()
     const pathname = usePathname()
+    const lastReadUrl = useLastReadUrl()
 
     return (
         <motion.nav
@@ -65,7 +67,7 @@ export function MobileNav() {
                     return (
                         <Link
                             key={tab.name}
-                            href={tab.href}
+                            href={tab.name === "Read" ? lastReadUrl : tab.href}
                             onClick={() => hapticLight()}
                             style={{ touchAction: "manipulation" }}
                             className="relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 min-h-[44px]"

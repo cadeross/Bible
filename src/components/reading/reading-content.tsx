@@ -100,7 +100,10 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
         startTimeRef.current = Date.now();
 
-        // Save last read position
+        // Save last read position (localStorage for instant nav, cloud for sync)
+        if (typeof window !== "undefined") {
+            localStorage.setItem("last-read", JSON.stringify({ book: bookName, chapter: chapterNum }))
+        }
         import("@/lib/persistence").then(({ updateLastRead }) => {
             updateLastRead(bookName, chapterNum);
         });

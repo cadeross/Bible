@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useLastReadUrl } from "@/lib/use-last-read-url"
 import { cn } from "@/lib/utils"
 import { useFocusMode } from "@/contexts/focus-mode"
 import { Search, Settings } from "lucide-react"
@@ -48,6 +49,7 @@ export function InlineNav() {
     const isReadPage = pathname.startsWith("/read")
     const [settingsOpen, setSettingsOpen] = useState(false)
     const [searchOpen, setSearchOpen] = useState(false)
+    const lastReadUrl = useLastReadUrl()
 
     return (
         <nav
@@ -59,7 +61,7 @@ export function InlineNav() {
         >
             <div className="flex items-center justify-between">
                 <Link
-                    href="/read"
+                    href={lastReadUrl}
                     className="group isolate relative flex items-center gap-1.5 px-2.5 py-1.5 transition-all duration-200"
                 >
                     <OpenWritLogo className="rounded-[3px] text-muted-foreground/30 transition-colors duration-200 group-hover:text-primary" />
@@ -70,7 +72,7 @@ export function InlineNav() {
                 </Link>
 
                 <div className="flex items-center gap-0.5">
-                    <NavLink href="/read">Read</NavLink>
+                    <NavLink href={lastReadUrl}>Read</NavLink>
                     <NavLink href="/daily">Daily</NavLink>
                     <NavLink href="/library">Library</NavLink>
 
