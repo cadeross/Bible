@@ -9,7 +9,7 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import HeatMap from "@uiw/react-heat-map"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
-import { TINT_COLORS, type TintId, applyTint, getStoredTint } from "@/lib/tint-colors"
+import { TINT_COLORS, type TintId, applyTint, applyCustomTint, getStoredTint, getStoredCustomColor } from "@/lib/tint-colors"
 
 
 function SlidingHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {
@@ -169,16 +169,28 @@ function VersionsSection() {
 function TintSection() {
     const { resolvedTheme } = useTheme()
     const isDark = resolvedTheme === "dark"
-    const [activeTint, setActiveTint] = useState<TintId>(DEFAULT_TINT_PLACEHOLDER)
+    const [activeTint, setActiveTint] = useState<TintId>("blue")
+    const [customColor, setCustomColor] = useState("#2488f2")
+    const colorInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         setActiveTint(getStoredTint())
+        setCustomColor(getStoredCustomColor())
     }, [])
 
     const handleSelect = (id: TintId) => {
         setActiveTint(id)
         applyTint(id, isDark)
     }
+
+    const handleCustomChange = (hex: string) => {
+        setCustomColor(hex)
+        setActiveTint("custom")
+        applyCustomTint(hex)
+    }
+
+    const isCustomActive = activeTint === "custom"
+    const customDisplayColor = isCustomActive ? customColor : (isDark ? "#8e8e93" : "#6b7280")
 
     return (
         <div className="border-b border-foreground/[0.06] px-4 py-3">
@@ -212,13 +224,43 @@ function TintSection() {
                             </button>
                         )
                     })}
+
+                    {/* Custom color picker */}
+                    <input
+                        ref={colorInputRef}
+                        type="color"
+                        value={customColor}
+                        onChange={(e) => handleCustomChange(e.target.value)}
+                        className="sr-only"
+                        aria-label="Custom tint color"
+                    />
+                    <button
+                        type="button"
+                        aria-label="Custom color"
+                        onClick={() => colorInputRef.current?.click()}
+                        className="relative flex items-center justify-center rounded-full transition-transform duration-150 hover:scale-110 active:scale-95"
+                        style={{ width: 18, height: 18 }}
+                    >
+                        <span
+                            className="rounded-full"
+                            style={{
+                                width: isCustomActive ? 14 : 16,
+                                height: isCustomActive ? 14 : 16,
+                                background: isCustomActive
+                                    ? customColor
+                                    : "conic-gradient(#ff453a, #ff9f0a, #ffd60a, #30d158, #5ac8fa, #0a84ff, #bf5af2, #ff375f, #ff453a)",
+                                boxShadow: isCustomActive
+                                    ? `0 0 0 2px ${customColor}, 0 0 0 3.5px ${isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.18)"}`
+                                    : "none",
+                                transition: "box-shadow 0.15s, width 0.15s, height 0.15s",
+                            }}
+                        />
+                    </button>
                 </div>
             </div>
         </div>
     )
 }
-
-const DEFAULT_TINT_PLACEHOLDER = "blue" as TintId
 
 type PanelView = "settings" | "signin"
 
