@@ -551,13 +551,13 @@ html[data-theme="dark"] {
   --shadow-dialog: 0 24px 60px rgba(0, 0, 0, 0.5), 0 12px 28px rgba(0, 0, 0, 0.3);
 }
 
-/* Verse row hover: Things-like soft blue highlight (Tailwind hover:bg-primary/5 on verses) */
+/* Verse row hover: tint-aware soft highlight */
 html[data-theme="light"] .hover\:bg-primary\/5:hover {
-  background-color: rgba(225, 239, 255, 0.9) !important;
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent) !important;
 }
 
 html[data-theme="dark"] .hover\:bg-primary\/5:hover {
-  background-color: rgba(10, 132, 255, 0.15) !important;
+  background-color: color-mix(in srgb, var(--primary) 15%, transparent) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
