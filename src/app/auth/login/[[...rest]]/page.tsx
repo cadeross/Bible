@@ -78,13 +78,26 @@ export default function AuthPage() {
       </motion.div>
 
       <motion.div variants={itemVariants} className="w-full flex justify-center">
-        <SignIn
-          routing="path"
-          path="/auth/login"
-          signUpUrl="/auth/sign-up"
-          forceRedirectUrl="/"
-          fallbackRedirectUrl="/"
-        />
+        <div className="glass border rounded-2xl overflow-hidden w-full max-w-[400px]">
+          <p className="pt-5 text-center text-[13px] font-medium tracking-wide text-muted-foreground/60">
+            Welcome back
+          </p>
+          <SignIn
+            routing="path"
+            path="/auth/login"
+            signUpUrl="/auth/sign-up"
+            forceRedirectUrl="/"
+            fallbackRedirectUrl="/"
+            appearance={{
+              elements: {
+                rootBox: "w-full",
+                card: { boxShadow: "none", border: "none", background: "transparent", width: "100%" },
+                cardBox: { boxShadow: "none", width: "100%" },
+                footer: { background: "transparent" },
+              },
+            }}
+          />
+        </div>
       </motion.div>
 
       <motion.div variants={itemVariants} className="mt-10">

@@ -10,7 +10,14 @@ import { motion, AnimatePresence } from "framer-motion"
 import HeatMap from "@uiw/react-heat-map"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { TINT_COLORS, type TintId, applyTint, applyCustomTint, getStoredTint, getStoredCustomColor } from "@/lib/tint-colors"
+import { CustomColorPicker } from "@/components/custom-color-picker"
 
+function hexToRgba(hex: string, alpha: number): string {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `rgba(${r},${g},${b},${alpha})`
+}
 
 function SlidingHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {
     const [rect, setRect] = useState<{ top: number; height: number } | null>(null)
@@ -166,98 +173,111 @@ function VersionsSection() {
     )
 }
 
-function TintSection() {
+interface TintSectionProps {
+    activeTint: TintId
+    customColor: string
+    onActiveTintChange: (id: TintId) => void
+    onCustomColorChange: (hex: string) => void
+}
+
+function TintSection({ activeTint, customColor, onActiveTintChange, onCustomColorChange }: TintSectionProps) {
     const { resolvedTheme } = useTheme()
     const isDark = resolvedTheme === "dark"
-    const [activeTint, setActiveTint] = useState<TintId>("blue")
-    const [customColor, setCustomColor] = useState("#2488f2")
-    const colorInputRef = useRef<HTMLInputElement>(null)
-
-    useEffect(() => {
-        setActiveTint(getStoredTint())
-        setCustomColor(getStoredCustomColor())
-    }, [])
+    const [pickerOpen, setPickerOpen] = useState(false)
 
     const handleSelect = (id: TintId) => {
-        setActiveTint(id)
-        applyTint(id, isDark)
+        setPickerOpen(false)
+        onActiveTintChange(id)
     }
 
-    const handleCustomChange = (hex: string) => {
-        setCustomColor(hex)
-        setActiveTint("custom")
-        applyCustomTint(hex)
+    const handleRainbowClick = () => {
+        if (activeTint !== "custom") {
+            onCustomColorChange(customColor)
+            setPickerOpen(true)
+        } else {
+            setPickerOpen(o => !o)
+        }
     }
 
     const isCustomActive = activeTint === "custom"
-    const customDisplayColor = isCustomActive ? customColor : (isDark ? "#8e8e93" : "#6b7280")
 
     return (
-        <div className="border-b border-foreground/[0.06] px-4 py-3">
-            <div className="flex items-center justify-between">
-                <p className="text-[13px] font-medium text-foreground">Tint</p>
-                <div className="flex items-center gap-1.5">
-                    {TINT_COLORS.map((tint) => {
-                        const color = isDark ? tint.dark : tint.light
-                        const isActive = activeTint === tint.id
-                        return (
-                            <button
-                                key={tint.id}
-                                type="button"
-                                aria-label={tint.label}
-                                onClick={() => handleSelect(tint.id)}
-                                className="relative flex items-center justify-center rounded-full transition-transform duration-150 hover:scale-110 active:scale-95"
-                                style={{ width: 18, height: 18 }}
-                            >
-                                <span
-                                    className="rounded-full"
-                                    style={{
-                                        width: isActive ? 14 : 16,
-                                        height: isActive ? 14 : 16,
-                                        background: color,
-                                        boxShadow: isActive
-                                            ? `0 0 0 2px ${color}, 0 0 0 3.5px ${isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.18)"}`
-                                            : "none",
-                                        transition: "box-shadow 0.15s, width 0.15s, height 0.15s",
-                                    }}
-                                />
-                            </button>
-                        )
-                    })}
+        <div className="border-b border-foreground/[0.06]">
+            <div className="px-4 py-3">
+                <div className="flex items-center justify-between">
+                    <p className="text-[13px] font-medium text-foreground">Tint</p>
+                    <div className="flex items-center gap-1.5">
+                        {TINT_COLORS.map((tint) => {
+                            const color = isDark ? tint.dark : tint.light
+                            const isActive = activeTint === tint.id
+                            return (
+                                <button
+                                    key={tint.id}
+                                    type="button"
+                                    aria-label={tint.label}
+                                    onClick={() => handleSelect(tint.id)}
+                                    className="relative flex items-center justify-center rounded-full transition-transform duration-150 hover:scale-110 active:scale-95"
+                                    style={{ width: 18, height: 18 }}
+                                >
+                                    <span
+                                        className="rounded-full"
+                                        style={{
+                                            width: isActive ? 14 : 16,
+                                            height: isActive ? 14 : 16,
+                                            background: color,
+                                            boxShadow: isActive
+                                                ? `0 0 0 2px ${color}, 0 0 0 3.5px ${isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.18)"}`
+                                                : "none",
+                                            transition: "box-shadow 0.15s, width 0.15s, height 0.15s",
+                                        }}
+                                    />
+                                </button>
+                            )
+                        })}
 
-                    {/* Custom color picker */}
-                    <input
-                        ref={colorInputRef}
-                        type="color"
-                        value={customColor}
-                        onChange={(e) => handleCustomChange(e.target.value)}
-                        className="sr-only"
-                        aria-label="Custom tint color"
-                    />
-                    <button
-                        type="button"
-                        aria-label="Custom color"
-                        onClick={() => colorInputRef.current?.click()}
-                        className="relative flex items-center justify-center rounded-full transition-transform duration-150 hover:scale-110 active:scale-95"
-                        style={{ width: 18, height: 18 }}
-                    >
-                        <span
-                            className="rounded-full"
-                            style={{
-                                width: isCustomActive ? 14 : 16,
-                                height: isCustomActive ? 14 : 16,
-                                background: isCustomActive
-                                    ? customColor
-                                    : "conic-gradient(#ff453a, #ff9f0a, #ffd60a, #30d158, #5ac8fa, #0a84ff, #bf5af2, #ff375f, #ff453a)",
-                                boxShadow: isCustomActive
-                                    ? `0 0 0 2px ${customColor}, 0 0 0 3.5px ${isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.18)"}`
-                                    : "none",
-                                transition: "box-shadow 0.15s, width 0.15s, height 0.15s",
-                            }}
-                        />
-                    </button>
+                        {/* Custom color swatch — toggles inline picker */}
+                        <button
+                            type="button"
+                            aria-label="Custom color"
+                            onClick={handleRainbowClick}
+                            className="relative flex items-center justify-center rounded-full transition-transform duration-150 hover:scale-110 active:scale-95"
+                            style={{ width: 18, height: 18 }}
+                        >
+                            <span
+                                className="rounded-full"
+                                style={{
+                                    width: isCustomActive ? 14 : 16,
+                                    height: isCustomActive ? 14 : 16,
+                                    background: isCustomActive
+                                        ? customColor
+                                        : "conic-gradient(#ff453a, #ff9f0a, #ffd60a, #30d158, #5ac8fa, #0a84ff, #bf5af2, #ff375f, #ff453a)",
+                                    boxShadow: isCustomActive
+                                        ? `0 0 0 2px ${customColor}, 0 0 0 3.5px ${isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.18)"}`
+                                        : "none",
+                                    transition: "box-shadow 0.15s, width 0.15s, height 0.15s",
+                                }}
+                            />
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            {/* Inline custom color picker */}
+            <AnimatePresence initial={false}>
+                {pickerOpen && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 32, mass: 0.8 }}
+                        className="overflow-hidden"
+                    >
+                        <div className="px-4 pb-3">
+                            <CustomColorPicker value={customColor} onChange={onCustomColorChange} />
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
@@ -277,6 +297,30 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
 
     const [view, setView] = useState<PanelView>("settings")
     const [heatmapData, setHeatmapData] = useState<HeatMapValue[]>([])
+    const [activeTint, setActiveTint] = useState<TintId>("blue")
+    const [customColor, setCustomColor] = useState("#2488f2")
+
+    const isDark = resolvedTheme === "dark"
+
+    useEffect(() => {
+        setActiveTint(getStoredTint())
+        setCustomColor(getStoredCustomColor())
+    }, [])
+
+    const handleTintSelect = (id: TintId) => {
+        setActiveTint(id)
+        applyTint(id, isDark)
+    }
+
+    const handleCustomColorChange = (hex: string) => {
+        setCustomColor(hex)
+        setActiveTint("custom")
+        applyCustomTint(hex)
+    }
+
+    const primaryColor = activeTint === "custom"
+        ? customColor
+        : (TINT_COLORS.find(t => t.id === activeTint)?.[isDark ? "dark" : "light"] ?? "#2488f2")
 
     useEffect(() => {
         import("@/lib/persistence").then(({ getHistory }) => {
@@ -326,8 +370,6 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
         }
         return longest
     }, [heatmapData])
-
-    const isDark = resolvedTheme === "dark"
 
     const startDate = new Date()
     startDate.setMonth(startDate.getMonth() - 4)
@@ -475,7 +517,12 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                         </div>
 
                         {/* Tint */}
-                        <TintSection />
+                        <TintSection
+                            activeTint={activeTint}
+                            customColor={customColor}
+                            onActiveTintChange={handleTintSelect}
+                            onCustomColorChange={handleCustomColorChange}
+                        />
 
                         {/* Versions */}
                         <VersionsSection />
@@ -507,8 +554,8 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                                     style={{ color: isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.25)" }}
                                     panelColors={
                                         isDark
-                                            ? { 0: "rgba(255,255,255,0.04)", 1: "rgba(10,132,255,0.2)", 2: "rgba(10,132,255,0.35)", 3: "rgba(10,132,255,0.55)", 4: "rgba(10,132,255,0.8)" }
-                                            : { 0: "rgba(0,0,0,0.04)", 1: "rgba(36,136,242,0.15)", 2: "rgba(36,136,242,0.3)", 3: "rgba(36,136,242,0.5)", 4: "rgba(36,136,242,0.75)" }
+                                            ? { 0: "rgba(255,255,255,0.04)", 1: hexToRgba(primaryColor, 0.2), 2: hexToRgba(primaryColor, 0.35), 3: hexToRgba(primaryColor, 0.55), 4: hexToRgba(primaryColor, 0.8) }
+                                            : { 0: "rgba(0,0,0,0.04)", 1: hexToRgba(primaryColor, 0.15), 2: hexToRgba(primaryColor, 0.3), 3: hexToRgba(primaryColor, 0.5), 4: hexToRgba(primaryColor, 0.75) }
                                     }
                                     rectRender={(props, data) => {
                                         const count = (data as any).count || 0

@@ -70,7 +70,41 @@ function ConvexClerkTree({ children }: { children: ReactNode }) {
 
 export function AppConvexProvider({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        layout: { logoPlacement: "none" },
+        variables: {
+          fontFamily: "var(--font-geist-sans)",
+          fontFamilyButtons: "var(--font-geist-sans)",
+          spacingUnit: "0.875rem",
+          borderRadius: "0.75rem",
+        },
+        elements: {
+          formFieldInput: {
+            backgroundColor: "var(--muted)",
+            borderColor: "color-mix(in srgb, var(--border) 60%, transparent)",
+            color: "var(--foreground)",
+            fontSize: "0.875rem",
+          },
+          formButtonPrimary: {
+            backgroundColor: "var(--primary)",
+            color: "var(--primary-foreground)",
+          },
+          socialButtonsBlockButton: {
+            borderColor: "color-mix(in srgb, var(--border) 50%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--muted) 60%, transparent)",
+            color: "var(--foreground)",
+          },
+          logoBox: { display: "none" },
+          headerTitle: { display: "none" },
+          headerSubtitle: { display: "none" },
+          footerActionLink: { color: "var(--primary)" },
+          formFieldLabel: { color: "var(--foreground)" },
+          dividerText: { color: "var(--muted-foreground)" },
+          dividerLine: { backgroundColor: "color-mix(in srgb, var(--border) 50%, transparent)" },
+        },
+      }}
+    >
       <ConvexClerkTree>{children}</ConvexClerkTree>
     </ClerkProvider>
   );
