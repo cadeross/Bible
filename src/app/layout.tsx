@@ -21,6 +21,7 @@ import { SiteStructuredData } from "@/components/seo/site-structured-data";
 import { BRAND_NAME, SITE_DESCRIPTION, getSiteUrl } from "@/lib/seo";
 import { AppConvexProvider } from "@/components/convex-client-provider";
 import { DatabaseMaintenanceBanner } from "@/components/database-maintenance-banner";
+import { TintColorApplier } from "@/components/tint-color-applier";
 import { DATABASE_MAINTENANCE_BANNER_ENABLED } from "@/lib/database-maintenance";
 
 const geistSans = Geist({
@@ -131,6 +132,10 @@ export default function RootLayout({
           : undefined
       }
     >
+      <head>
+        {/* Apply tint color before first paint to prevent flash */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t={"blue":{"l":"#2488f2","d":"#0a84ff"},"indigo":{"l":"#5856d6","d":"#5e5ce6"},"purple":{"l":"#9333ea","d":"#bf5af2"},"pink":{"l":"#db2777","d":"#ff375f"},"red":{"l":"#dc2626","d":"#ff453a"},"orange":{"l":"#ea580c","d":"#ff9f0a"},"green":{"l":"#16a34a","d":"#30d158"},"teal":{"l":"#0891b2","d":"#5ac8fa"},"graphite":{"l":"#6b7280","d":"#8e8e93"}};var id=localStorage.getItem("tint-color");if(id&&t[id]){var dk=window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.style.setProperty("--primary",dk?t[id].d:t[id].l);}}catch(e){}})();` }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${merriweather.variable} ${nunito.variable} antialiased min-h-screen flex flex-col`}
       >
@@ -141,6 +146,7 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
         >
+          <TintColorApplier />
           <DatabaseMaintenanceBanner />
           <ReadingPreferencesProvider>
             <NavModeProvider>

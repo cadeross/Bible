@@ -9,6 +9,7 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import HeatMap from "@uiw/react-heat-map"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
+import { TINT_COLORS, type TintId, applyTint, getStoredTint } from "@/lib/tint-colors"
 
 
 function SlidingHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {
@@ -164,6 +165,60 @@ function VersionsSection() {
         </div>
     )
 }
+
+function TintSection() {
+    const { resolvedTheme } = useTheme()
+    const isDark = resolvedTheme === "dark"
+    const [activeTint, setActiveTint] = useState<TintId>(DEFAULT_TINT_PLACEHOLDER)
+
+    useEffect(() => {
+        setActiveTint(getStoredTint())
+    }, [])
+
+    const handleSelect = (id: TintId) => {
+        setActiveTint(id)
+        applyTint(id, isDark)
+    }
+
+    return (
+        <div className="border-b border-foreground/[0.06] px-4 py-3">
+            <div className="flex items-center justify-between">
+                <p className="text-[13px] font-medium text-foreground">Tint</p>
+                <div className="flex items-center gap-1.5">
+                    {TINT_COLORS.map((tint) => {
+                        const color = isDark ? tint.dark : tint.light
+                        const isActive = activeTint === tint.id
+                        return (
+                            <button
+                                key={tint.id}
+                                type="button"
+                                aria-label={tint.label}
+                                onClick={() => handleSelect(tint.id)}
+                                className="relative flex items-center justify-center rounded-full transition-transform duration-150 hover:scale-110 active:scale-95"
+                                style={{ width: 18, height: 18 }}
+                            >
+                                <span
+                                    className="rounded-full"
+                                    style={{
+                                        width: isActive ? 14 : 16,
+                                        height: isActive ? 14 : 16,
+                                        background: color,
+                                        boxShadow: isActive
+                                            ? `0 0 0 2px ${color}, 0 0 0 3.5px ${isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.18)"}`
+                                            : "none",
+                                        transition: "box-shadow 0.15s, width 0.15s, height 0.15s",
+                                    }}
+                                />
+                            </button>
+                        )
+                    })}
+                </div>
+            </div>
+        </div>
+    )
+}
+
+const DEFAULT_TINT_PLACEHOLDER = "blue" as TintId
 
 type PanelView = "settings" | "signin"
 
@@ -376,6 +431,9 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Tint */}
+                        <TintSection />
 
                         {/* Versions */}
                         <VersionsSection />
