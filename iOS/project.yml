@@ -1,0 +1,73 @@
+name: BibleApp
+options:
+  bundleIdPrefix: com.openwritbible
+  deploymentTarget:
+    iOS: "26.1"
+  defaultConfig: Debug
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: ""
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    INFOPLIST_KEY_NSFaceIDUsageDescription: "Used for secure sign-in"
+
+packages:
+  clerk-ios:
+    url: https://github.com/clerk/clerk-ios
+    from: "1.0.0"
+
+schemes:
+  BibleApp:
+    build:
+      targets:
+        BibleApp: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+
+targets:
+  BibleApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.1"
+    sources:
+      - BibleApp
+    resources:
+      - BibleApp/Resources
+    info:
+      path: BibleApp/Resources/Info.plist
+      properties:
+        CFBundleName: OpenWrit
+        CFBundleDisplayName: OpenWrit
+        CFBundleIdentifier: com.openwritbible.app
+        CFBundleVersion: "1"
+        CFBundleShortVersionString: "1.0.0"
+        LSRequiresIPhoneOS: true
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UILaunchScreen: {}
+        UIRequiredDeviceCapabilities:
+          - arm64
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    dependencies:
+      - package: clerk-ios
+        product: ClerkKit
+      - package: clerk-ios
+        product: ClerkKitUI
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.openwritbible.app
