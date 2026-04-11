@@ -2,7 +2,7 @@ export const TINT_COLORS = [
     { id: "blue",     label: "Blue",     light: "#2488f2", dark: "#0a84ff" },
     { id: "indigo",   label: "Indigo",   light: "#5856d6", dark: "#5e5ce6" },
     { id: "purple",   label: "Purple",   light: "#9333ea", dark: "#bf5af2" },
-    { id: "pink",     label: "Pink",     light: "#e91e8c", dark: "#ff2d9a" },
+    { id: "pink",     label: "Pink",     light: "#ff85bb", dark: "#ff85bb" },
     { id: "red",      label: "Red",      light: "#dc2626", dark: "#ff453a" },
     { id: "orange",   label: "Orange",   light: "#ea580c", dark: "#ff9f0a" },
     { id: "green",    label: "Green",    light: "#16a34a", dark: "#30d158" },
