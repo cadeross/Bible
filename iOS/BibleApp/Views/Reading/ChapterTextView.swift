@@ -6,13 +6,17 @@ import UIKit
 // Renders all verses as a single flowing paragraph using UITextView (TextKit 1).
 // Verse numbers appear as inline superscripts; highlights are background colors.
 // Tap detection maps touch location → character index → verse ID via stored NSRanges.
+// Long-press uses native UIContextMenuInteraction anchored at the verse.
 
 struct ChapterTextView: View {
     let chapter: BibleChapter
     let highlights: [Highlight]
     let preferences: ReadingPreferences
     var onVerseTap: (Int) -> Void
-    var onVerseLongPress: (Int, CGPoint) -> Void
+    var onHighlightColor: (Int, HighlightColor) -> Void
+    var onRemoveHighlight: (Int) -> Void
+    var onAddNote: (Int) -> Void
+    var onCopyVerse: (Int) -> Void
     var onDragSelection: (Set<Int>) -> Void
 
     var body: some View {
@@ -21,7 +25,10 @@ struct ChapterTextView: View {
             highlights: highlights,
             preferences: preferences,
             onVerseTap: onVerseTap,
-            onVerseLongPress: onVerseLongPress
+            onHighlightColor: onHighlightColor,
+            onRemoveHighlight: onRemoveHighlight,
+            onAddNote: onAddNote,
+            onCopyVerse: onCopyVerse
         )
     }
 }
@@ -33,12 +40,14 @@ struct VerseTextView: UIViewRepresentable {
     let highlights: [Highlight]
     let preferences: ReadingPreferences
     var onVerseTap: (Int) -> Void
-    var onVerseLongPress: (Int, CGPoint) -> Void
+    var onHighlightColor: (Int, HighlightColor) -> Void
+    var onRemoveHighlight: (Int) -> Void
+    var onAddNote: (Int) -> Void
+    var onCopyVerse: (Int) -> Void
 
     // MARK: makeUIView
 
     func makeUIView(context: Context) -> UITextView {
-        // Explicitly construct TextKit 1 stack for reliable sizeThatFits
         let textContainer = NSTextContainer(size: CGSize(width: CGFloat.greatestFiniteMagnitude,
                                                          height: CGFloat.greatestFiniteMagnitude))
         textContainer.widthTracksTextView = true
@@ -63,11 +72,9 @@ struct VerseTextView: UIViewRepresentable {
                                          action: #selector(Coordinator.handleTap(_:)))
         textView.addGestureRecognizer(tap)
 
-        // Long press gesture
-        let longPress = UILongPressGestureRecognizer(target: context.coordinator,
-                                                      action: #selector(Coordinator.handleLongPress(_:)))
-        longPress.minimumPressDuration = 0.5
-        textView.addGestureRecognizer(longPress)
+        // Native context menu interaction (replaces long press gesture)
+        let contextMenu = UIContextMenuInteraction(delegate: context.coordinator)
+        textView.addInteraction(contextMenu)
 
         context.coordinator.textView = textView
         return textView
@@ -80,6 +87,7 @@ struct VerseTextView: UIViewRepresentable {
         let attrString = buildAttributedString(verseRanges: &ranges)
         textView.textStorage.setAttributedString(attrString)
         context.coordinator.verseRanges = ranges
+        context.coordinator.parent = self
     }
 
     // MARK: sizeThatFits
@@ -136,7 +144,6 @@ struct VerseTextView: UIViewRepresentable {
                 result.append(NSAttributedString(string: heading, attributes: headingAttrs))
                 result.append(NSAttributedString(string: "\n"))
             } else if index > 0 {
-                // Space between verses in paragraph flow
                 result.append(NSAttributedString(string: " "))
             }
 
@@ -180,14 +187,17 @@ struct VerseTextView: UIViewRepresentable {
 
     // MARK: - Coordinator
 
-    class Coordinator: NSObject {
+    @MainActor
+    class Coordinator: NSObject, UIContextMenuInteractionDelegate {
         weak var textView: UITextView?
-        let parent: VerseTextView
+        var parent: VerseTextView
         var verseRanges: [Int: NSRange] = [:]
 
         init(parent: VerseTextView) {
             self.parent = parent
         }
+
+        // MARK: Tap
 
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {
             guard let textView else { return }
@@ -197,14 +207,115 @@ struct VerseTextView: UIViewRepresentable {
             }
         }
 
-        @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
-            guard gesture.state == .began, let textView else { return }
-            let pt = gesture.location(in: textView)
-            if let verseId = verse(at: pt, in: textView) {
-                let globalPt = gesture.location(in: nil)
-                parent.onVerseLongPress(verseId, globalPt)
+        // MARK: Context Menu Delegate
+
+        nonisolated func contextMenuInteraction(
+            _ interaction: UIContextMenuInteraction,
+            configurationForMenuAtLocation location: CGPoint
+        ) -> UIContextMenuConfiguration? {
+            MainActor.assumeIsolated {
+                guard let textView else { return nil }
+                guard let verseId = verse(at: location, in: textView) else { return nil }
+
+                let currentHighlight = parent.highlights.first { $0.verse == verseId }
+
+                return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [self] _ in
+                    self.buildMenu(for: verseId, currentHighlight: currentHighlight)
+                }
             }
         }
+
+        nonisolated func contextMenuInteraction(
+            _ interaction: UIContextMenuInteraction,
+            configuration: UIContextMenuConfiguration,
+            highlightPreviewForItemWithIdentifier identifier: any NSCopying
+        ) -> UITargetedPreview? {
+            // Return nil to use the default highlight behavior at the interaction point
+            nil
+        }
+
+        // MARK: Build Menu
+
+        private func buildMenu(for verseId: Int, currentHighlight: Highlight?) -> UIMenu {
+            // Color actions
+            let colorActions = HighlightColor.allCases.map { color in
+                let isActive = currentHighlight?.color == color
+                let image = UIImage(systemName: isActive ? "checkmark.circle.fill" : "circle.fill")?
+                    .withTintColor(color.dotUIColor, renderingMode: .alwaysOriginal)
+
+                return UIAction(
+                    title: color.displayName,
+                    image: image,
+                    state: isActive ? .on : .off
+                ) { [weak self] _ in
+                    guard let self else { return }
+                    MainActor.assumeIsolated {
+                        if isActive {
+                            self.parent.onRemoveHighlight(verseId)
+                        } else {
+                            self.parent.onHighlightColor(verseId, color)
+                        }
+                    }
+                }
+            }
+
+            let colorsMenu = UIMenu(title: "", options: .displayInline, children: colorActions)
+
+            // Remove highlight (if one exists)
+            var actionItems: [UIMenuElement] = [colorsMenu]
+
+            if currentHighlight != nil {
+                let remove = UIAction(
+                    title: "Remove Highlight",
+                    image: UIImage(systemName: "xmark.circle"),
+                    attributes: .destructive
+                ) { [weak self] _ in
+                    guard let self else { return }
+                    MainActor.assumeIsolated {
+                        self.parent.onRemoveHighlight(verseId)
+                    }
+                }
+                actionItems.append(UIMenu(title: "", options: .displayInline, children: [remove]))
+            }
+
+            // Note, Copy, Share
+            let note = UIAction(
+                title: "Add Note",
+                image: UIImage(systemName: "note.text")
+            ) { [weak self] _ in
+                guard let self else { return }
+                MainActor.assumeIsolated {
+                    self.parent.onAddNote(verseId)
+                }
+            }
+
+            let copy = UIAction(
+                title: "Copy",
+                image: UIImage(systemName: "doc.on.doc")
+            ) { [weak self] _ in
+                guard let self else { return }
+                MainActor.assumeIsolated {
+                    self.parent.onCopyVerse(verseId)
+                }
+            }
+
+            let share = UIAction(
+                title: "Share",
+                image: UIImage(systemName: "square.and.arrow.up")
+            ) { [weak self] _ in
+                guard let self else { return }
+                MainActor.assumeIsolated {
+                    self.parent.onCopyVerse(verseId) // copy as share fallback
+                }
+            }
+
+            let actionsMenu = UIMenu(title: "", options: .displayInline, children: [note, copy, share])
+            actionItems.append(actionsMenu)
+
+            return UIMenu(title: "", children: actionItems)
+        }
+
+        // MARK: Verse Hit Test
 
         private func verse(at point: CGPoint, in textView: UITextView) -> Int? {
             let lm = textView.layoutManager

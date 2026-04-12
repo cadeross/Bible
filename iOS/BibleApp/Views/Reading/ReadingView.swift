@@ -37,6 +37,7 @@ struct ReadingView: View {
             HighlightColorPicker(vm: vm)
                 .presentationCompactAdaptation(.popover)
         }
+        .sensoryFeedback(.impact(weight: .heavy), trigger: vm.showColorPicker)
         .task {
             await vm.loadChapter(book: "Genesis", chapter: 1)
         }
@@ -52,11 +53,20 @@ struct ReadingView: View {
             onVerseTap: { verse in
                 vm.toggleHighlight(verse: verse, color: prefs.defaultHighlightColor)
             },
-            onVerseLongPress: { verse, _ in
-                HapticManager.heavy()
-                vm.selectedVerses = [verse]
-                vm.colorPickerAnchorVerse = verse
-                vm.showColorPicker = true
+            onHighlightColor: { verse, color in
+                HapticManager.light()
+                vm.toggleHighlight(verse: verse, color: color)
+            },
+            onRemoveHighlight: { verse in
+                HapticManager.light()
+                vm.removeHighlight(verse: verse)
+            },
+            onAddNote: { verse in
+                vm.noteTargetVerses = [verse]
+                vm.showNoteSheet = true
+            },
+            onCopyVerse: { verse in
+                copyVerse(verse, from: chapter)
             },
             onDragSelection: { verses in
                 let wasEmpty = vm.dragVerses.isEmpty
@@ -76,6 +86,15 @@ struct ReadingView: View {
         .padding(.bottom, 32)
         .id("\(chapter.book)-\(chapter.chapter)")
         .transition(chapterTransition)
+    }
+
+    // MARK: - Copy Verse
+
+    private func copyVerse(_ verseNum: Int, from chapter: BibleChapter) {
+        guard let verse = chapter.verses.first(where: { $0.id == verseNum }) else { return }
+        let ref = "\(vm.book) \(vm.chapter):\(verseNum)"
+        UIPasteboard.general.string = "\"\(verse.text)\" — \(ref)"
+        HapticManager.success()
     }
 
     // MARK: - Chapter Transition

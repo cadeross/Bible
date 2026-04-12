@@ -69,6 +69,18 @@ enum HighlightColor: String, CaseIterable, Codable, Sendable {
         }
     }
 
+    /// Solid dot color for UIKit context menus
+    var dotUIColor: UIColor {
+        switch self {
+        case .yellow: return UIColor(red: 1.00, green: 0.80, blue: 0.00, alpha: 1)
+        case .green:  return UIColor(red: 0.20, green: 0.78, blue: 0.35, alpha: 1)
+        case .blue:   return UIColor(red: 0.00, green: 0.48, blue: 1.00, alpha: 1)
+        case .pink:   return UIColor(red: 1.00, green: 0.18, blue: 0.33, alpha: 1)
+        case .purple: return UIColor(red: 0.69, green: 0.32, blue: 0.87, alpha: 1)
+        case .orange: return UIColor(red: 1.00, green: 0.58, blue: 0.00, alpha: 1)
+        }
+    }
+
     var displayName: String { rawValue.capitalized }
 }
 
