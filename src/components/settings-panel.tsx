@@ -477,18 +477,13 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
                                 )}
                             >
                                 <span>Match system theme</span>
-                                <motion.span
-                                    initial={false}
-                                    animate={{
-                                        opacity: isFollowSystem ? 1 : 0,
-                                        scale: isFollowSystem ? 1 : 0.6,
-                                    }}
-                                    transition={{ duration: 0.18 }}
-                                    className="flex items-center"
+                                <Check
                                     aria-hidden
-                                >
-                                    <Check className="h-3.5 w-3.5" />
-                                </motion.span>
+                                    className={cn(
+                                        "h-3.5 w-3.5 transition-opacity duration-200",
+                                        isFollowSystem ? "opacity-100" : "opacity-40"
+                                    )}
+                                />
                             </button>
                         </div>
 
