@@ -670,7 +670,8 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
     // bump so it still reads as a heading (not flush with body text).
     const isScript = (isLoaded ? fontFamily : "serif") === "script"
     const fontSizeScale = isScript ? 1.3 : 1
-    const headerSizeScale = isScript ? 1.9 : 1
+    const headerSizeScale = isScript ? 1.6 : 1
+    const sectionTitleScale = isScript ? 1.4 : 1
 
     // Imperatively apply styles after preferences load — React's suppressHydrationWarning
     // can cause the initial server-rendered style to persist through reconciliation
@@ -828,7 +829,13 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                 animate={{ opacity: 1 }}
                                                 className="w-full mt-10 mb-4 flex justify-center"
                                             >
-                                                <h3 className="max-w-[90%] text-center font-sans text-base font-semibold leading-snug tracking-wide text-foreground/85 md:text-lg">
+                                                <h3
+                                                    className={cn(
+                                                        "max-w-[90%] text-center font-sans font-semibold leading-snug tracking-wide text-foreground/85",
+                                                        !isScript && "text-base md:text-lg"
+                                                    )}
+                                                    style={isScript ? { fontSize: `${16 * sectionTitleScale}px` } : undefined}
+                                                >
                                                     {verse.heading}
                                                 </h3>
                                             </motion.div>
@@ -862,7 +869,13 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                     isLoaded && !showTitles && "hidden"
                                                 )}
                                             >
-                                                <h3 className="max-w-[90%] text-center font-sans text-base font-semibold leading-snug tracking-wide text-foreground/85 md:text-lg">
+                                                <h3
+                                                    className={cn(
+                                                        "max-w-[90%] text-center font-sans font-semibold leading-snug tracking-wide text-foreground/85",
+                                                        !isScript && "text-base md:text-lg"
+                                                    )}
+                                                    style={isScript ? { fontSize: `${16 * sectionTitleScale}px` } : undefined}
+                                                >
                                                     {verse.heading}
                                                 </h3>
                                             </motion.div>
