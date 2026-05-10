@@ -1,13 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { useReadingPreferences, FontType } from "@/contexts/reading-preferences"
+import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { BOOK_LIST, TRANSLATIONS } from "@/lib/bible-api"
 import { BIBLE_BOOKS } from "@/lib/bible-data"
-import { ChevronLeft, ChevronRight, ChevronDown, SlidersHorizontal, Hash, Palette, Heading } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
+import { motion } from "framer-motion"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { canGoNextChapter, canGoPrevChapter, getAdjacentChapter } from "@/lib/chapter-navigation"
 import { hapticLight } from "@/lib/haptics"
@@ -33,33 +33,6 @@ function SlidingHighlight({ containerRef, hoveredIndex }: { containerRef: React.
             className="pointer-events-none absolute left-1 right-1 z-0 rounded-[12px] bg-foreground/[0.05] dark:bg-white/[0.07]"
             initial={false}
             animate={rect ? { opacity: 1, top: rect.top, height: rect.height } : { opacity: 0 }}
-            transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
-            style={{ position: "absolute" }}
-        />
-    )
-}
-
-// ─── Sliding highlight for 2D grids (typeface selector) ─────────────────────
-
-function GridHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {
-    const [rect, setRect] = React.useState<{ top: number; left: number; width: number; height: number } | null>(null)
-
-    React.useEffect(() => {
-        if (hoveredIndex === null || !containerRef.current) { setRect(null); return }
-        const buttons = containerRef.current.querySelectorAll<HTMLElement>("[data-slide-item]")
-        const el = buttons[hoveredIndex]
-        if (!el) { setRect(null); return }
-        const parentRect = containerRef.current.getBoundingClientRect()
-        const elRect = el.getBoundingClientRect()
-        setRect({ top: elRect.top - parentRect.top, left: elRect.left - parentRect.left, width: elRect.width, height: elRect.height })
-    }, [hoveredIndex, containerRef])
-
-    return (
-        <motion.div
-            aria-hidden
-            className="pointer-events-none absolute z-0 rounded-xl bg-foreground/[0.05] dark:bg-white/[0.07]"
-            initial={false}
-            animate={rect ? { opacity: 1, top: rect.top, left: rect.left, width: rect.width, height: rect.height } : { opacity: 0 }}
             transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
             style={{ position: "absolute" }}
         />
@@ -269,133 +242,12 @@ function AnimatedPill({ text, icon, className: extraClassName }: { text: string;
     )
 }
 
-function ToolbarPill({ children, onClick, className: extraClassName }: { children: React.ReactNode; onClick?: () => void; className?: string }) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={cn(
-                "flex cursor-pointer items-center gap-1.5 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-3.5 py-1.5 text-[13px] font-medium shadow-[var(--shadow-sm)] transition-[box-shadow,border-color] duration-200 hover:shadow-[var(--shadow-card)] hover:border-white/[0.2] active:scale-[0.97] [touch-action:manipulation]",
-                extraClassName
-            )}
-        >
-            {children}
-        </button>
-    )
-}
-
-// ─── Appearance panel components ────────────────────────────────────────────
-
-const FONT_OPTIONS: { id: FontType; label: string; family: string }[] = [
-    { id: "sans",   label: "Sans",   family: "var(--font-geist-sans), system-ui, sans-serif" },
-    { id: "serif",  label: "Serif",  family: "Merriweather, Georgia, serif" },
-    { id: "mono",   label: "Mono",   family: "var(--font-geist-mono), monospace" },
-    { id: "pixel",  label: "Round",  family: "var(--font-nunito), system-ui, sans-serif" },
-    { id: "script", label: "Script", family: 'var(--font-moon-dance), "Brush Script MT", "Lucida Handwriting", cursive' },
-]
-
-/** A standalone glass-surface toggle row. Used inside the Appearance panel. */
-function ToggleRow({
-    active,
-    onClick,
-    icon,
-    label,
-    accent = "primary",
-}: {
-    active: boolean
-    onClick: () => void
-    icon: React.ReactNode
-    label: string
-    accent?: "primary" | "red"
-}) {
-    const trackOn = accent === "red"
-        ? "bg-red-500/75 dark:bg-red-500/65"
-        : "bg-foreground/[0.5] dark:bg-white/[0.5]"
-    const iconColor = accent === "red"
-        ? (active ? "text-red-500" : "text-muted-foreground/50")
-        : (active ? "text-foreground" : "text-muted-foreground/50")
-
-    return (
-        <motion.button
-            type="button"
-            suppressHydrationWarning
-            onClick={onClick}
-            whileTap={{ scale: 0.97 }}
-            className="relative w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer
-                       border border-black/[0.06] dark:border-white/[0.09]
-                       transition-all duration-150"
-            style={{
-                background: "color-mix(in srgb, var(--popover) 60%, transparent)",
-                backdropFilter: "blur(16px)",
-                WebkitBackdropFilter: "blur(16px)",
-                boxShadow: "inset 0 0.5px 0 rgba(255,255,255,0.1), inset 0 -0.5px 0 rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.05)",
-            }}
-        >
-            {/* Bare icon — no badge container */}
-            <span className={cn("shrink-0 transition-colors duration-150", iconColor)}>
-                {icon}
-            </span>
-
-            {/* Label */}
-            <span className={cn(
-                "flex-1 text-left text-[13px] font-medium transition-colors duration-150",
-                active ? "text-foreground" : "text-foreground/55"
-            )}>
-                {label}
-            </span>
-
-            {/* Glass toggle switch */}
-            <div
-                className={cn(
-                    "relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors duration-200",
-                    active ? trackOn : "bg-foreground/[0.08] dark:bg-white/[0.07]"
-                )}
-                style={{ boxShadow: "inset 0 1.5px 3px rgba(0,0,0,0.2), inset 0 0 0 0.5px rgba(0,0,0,0.06)" }}
-            >
-                <motion.div
-                    className="absolute top-[3px] h-4 w-4 rounded-full bg-white"
-                    style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.3), inset 0 0.5px 0 rgba(255,255,255,0.95)" }}
-                    animate={{ x: active ? 17 : 3 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                />
-            </div>
-        </motion.button>
-    )
-}
-
-/** Thin divider between panel sections. */
-function PanelDivider() {
-    return <div className="h-px bg-foreground/[0.06]" />
-}
-
-// ─── Animated stepper value ─────────────────────────────────────────────────
-
-function StepperValue({ value }: { value: string }) {
-    return (
-        <div className="relative w-11 overflow-hidden flex items-center justify-center" style={{ height: "1.125rem" }}>
-            <AnimatePresence mode="popLayout" initial={false}>
-                <motion.span
-                    key={value}
-                    initial={{ opacity: 0, y: 6, filter: "blur(3px)" }}
-                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, y: -6, filter: "blur(3px)" }}
-                    transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
-                    className="absolute text-[12px] font-semibold tabular-nums text-foreground select-none"
-                >
-                    {value}
-                </motion.span>
-            </AnimatePresence>
-        </div>
-    )
-}
-
 // ─── Main toolbar ───────────────────────────────────────────────────────────
 
 interface ReadingToolbarProps {
     currentBook?: string
     currentChapter?: number
     currentTranslation?: string
-    hasSectionTitles?: boolean
     onNavigate?: (book: string, chapter: number, translation?: string) => void
 }
 
@@ -403,16 +255,10 @@ export function ReadingToolbar({
     currentBook = "Genesis",
     currentChapter = 1,
     currentTranslation = "dra",
-    hasSectionTitles = false,
     onNavigate,
 }: ReadingToolbarProps) {
     const router = useRouter()
-    const {
-        isLoaded, fontFamily, setFontFamily, fontSize, setFontSize,
-        lineHeight, setLineHeight,
-        showVerseNumbers, setShowVerseNumbers, redLetters, setRedLetters,
-        showTitles, setShowTitles, setBibleVersion, enabledTranslations,
-    } = useReadingPreferences()
+    const { setBibleVersion, enabledTranslations } = useReadingPreferences()
 
     const [allTranslations, setAllTranslations] = React.useState(TRANSLATIONS)
     const [translationsLoaded, setTranslationsLoaded] = React.useState(false)
@@ -484,12 +330,6 @@ export function ReadingToolbar({
         const t = availableTranslations.find(t => t.id === currentTranslation)
         return t ? ((t as any).abbreviation || t.id).toUpperCase() : currentTranslation.toUpperCase()
     }, [availableTranslations, currentTranslation])
-
-    const activeFontSize = isLoaded ? fontSize : 18
-    const activeLineHeight = isLoaded ? lineHeight : 1.6
-
-    const gridRef = React.useRef<HTMLDivElement>(null)
-    const [hoveredFont, setHoveredFont] = React.useState<number | null>(null)
 
     return (
         <div className="w-full max-w-3xl mx-auto mb-8">
@@ -576,162 +416,6 @@ export function ReadingToolbar({
                             setSearch={setTranslationSearch}
                             inputRef={translationInputRef}
                         />
-                    </PopoverContent>
-                </Popover>
-
-                {/* ── Appearance ── */}
-                <Popover onOpenChange={(o) => { if (o) hapticLight() }}>
-                    <PopoverTrigger asChild>
-                        <div>
-                            <ToolbarPill className="text-muted-foreground">
-                                <SlidersHorizontal className="h-3.5 w-3.5" />
-                            </ToolbarPill>
-                        </div>
-                    </PopoverTrigger>
-
-                    <PopoverContent align="center" className="w-[min(100vw-2rem,17rem)] p-0 overflow-hidden">
-
-                        {/* ── Typeface ── */}
-                        <div className="p-3">
-                            <div
-                                ref={gridRef}
-                                className="relative grid grid-cols-5 gap-1.5"
-                                onPointerLeave={() => setHoveredFont(null)}
-                            >
-                                <GridHighlight containerRef={gridRef} hoveredIndex={hoveredFont} />
-                                {FONT_OPTIONS.map((f, i) => {
-                                    const selected = isLoaded ? fontFamily === f.id : f.id === "serif"
-                                    return (
-                                        <motion.button
-                                            key={f.id}
-                                            type="button"
-                                            suppressHydrationWarning
-                                            data-slide-item
-                                            onClick={() => setFontFamily(f.id)}
-                                            onPointerEnter={() => setHoveredFont(i)}
-                                            whileTap={{ scale: 0.93 }}
-                                            className={cn(
-                                                "relative z-10 flex flex-col items-center gap-1 rounded-xl py-2.5 cursor-pointer",
-                                                "transition-colors duration-150",
-                                                selected ? "bg-foreground/[0.07] dark:bg-white/[0.09]" : ""
-                                            )}
-                                        >
-                                            {selected && (
-                                                <motion.div
-                                                    layoutId="typeface-ring"
-                                                    className="absolute inset-0 rounded-xl ring-1 ring-foreground/[0.14] dark:ring-white/[0.18]"
-                                                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                                                />
-                                            )}
-                                            <span
-                                                className={cn(
-                                                    "relative z-10 text-[17px] leading-none transition-colors duration-150",
-                                                    selected ? "text-foreground" : "text-foreground/40"
-                                                )}
-                                                style={{ fontFamily: f.family }}
-                                            >
-                                                Aa
-                                            </span>
-                                            <span className={cn(
-                                                "relative z-10 text-[10px] font-medium transition-colors duration-150",
-                                                selected ? "text-foreground/70" : "text-muted-foreground/35"
-                                            )}>
-                                                {f.label}
-                                            </span>
-                                        </motion.button>
-                                    )
-                                })}
-                            </div>
-                        </div>
-
-                        <PanelDivider />
-
-                        {/* ── Font size + Line height ── */}
-                        <div className="flex items-center justify-around gap-2 px-3 py-2.5">
-
-                            {/* Font size */}
-                            <div className="flex flex-col items-center gap-1.5">
-                                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">Size</span>
-                                <div className="flex items-center gap-0 rounded-full bg-foreground/[0.05] dark:bg-white/[0.05] p-0.5">
-                                    <motion.button
-                                        type="button"
-                                        whileTap={{ scale: 0.82 }}
-                                        onClick={() => setFontSize(Math.max(12, fontSize - 2))}
-                                        disabled={activeFontSize <= 12}
-                                        className="h-7 w-7 flex items-center justify-center rounded-full text-foreground/55 hover:bg-foreground/[0.08] dark:hover:bg-white/[0.09] hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:pointer-events-none"
-                                    >
-                                        <span className="text-[16px] leading-none select-none font-light">−</span>
-                                    </motion.button>
-                                    <StepperValue value={`${activeFontSize}px`} />
-                                    <motion.button
-                                        type="button"
-                                        whileTap={{ scale: 0.82 }}
-                                        onClick={() => setFontSize(Math.min(32, fontSize + 2))}
-                                        disabled={activeFontSize >= 32}
-                                        className="h-7 w-7 flex items-center justify-center rounded-full text-foreground/55 hover:bg-foreground/[0.08] dark:hover:bg-white/[0.09] hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:pointer-events-none"
-                                    >
-                                        <span className="text-[16px] leading-none select-none font-light">+</span>
-                                    </motion.button>
-                                </div>
-                            </div>
-
-                            <div className="w-px self-stretch bg-foreground/[0.06]" />
-
-                            {/* Line height */}
-                            <div className="flex flex-col items-center gap-1.5">
-                                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">Spacing</span>
-                                <div className="flex items-center gap-0 rounded-full bg-foreground/[0.05] dark:bg-white/[0.05] p-0.5">
-                                    <motion.button
-                                        type="button"
-                                        whileTap={{ scale: 0.82 }}
-                                        onClick={() => setLineHeight(Math.max(1.2, parseFloat((lineHeight - 0.1).toFixed(1))))}
-                                        disabled={activeLineHeight <= 1.2}
-                                        className="h-7 w-7 flex items-center justify-center rounded-full text-foreground/55 hover:bg-foreground/[0.08] dark:hover:bg-white/[0.09] hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:pointer-events-none"
-                                    >
-                                        <span className="text-[16px] leading-none select-none font-light">−</span>
-                                    </motion.button>
-                                    <StepperValue value={activeLineHeight.toFixed(1)} />
-                                    <motion.button
-                                        type="button"
-                                        whileTap={{ scale: 0.82 }}
-                                        onClick={() => setLineHeight(Math.min(2.4, parseFloat((lineHeight + 0.1).toFixed(1))))}
-                                        disabled={activeLineHeight >= 2.4}
-                                        className="h-7 w-7 flex items-center justify-center rounded-full text-foreground/55 hover:bg-foreground/[0.08] dark:hover:bg-white/[0.09] hover:text-foreground transition-colors duration-150 disabled:opacity-25 disabled:pointer-events-none"
-                                    >
-                                        <span className="text-[16px] leading-none select-none font-light">+</span>
-                                    </motion.button>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <PanelDivider />
-
-                        {/* ── Display toggles — each is its own glass surface ── */}
-                        <div className="flex flex-col gap-1.5 p-3">
-                            <ToggleRow
-                                active={!isLoaded || showVerseNumbers}
-                                onClick={() => setShowVerseNumbers(!showVerseNumbers)}
-                                icon={<Hash className="h-3.5 w-3.5" />}
-                                label="Verse Numbers"
-                            />
-                            <ToggleRow
-                                active={!isLoaded || redLetters}
-                                onClick={() => setRedLetters(!redLetters)}
-                                icon={<Palette className="h-3.5 w-3.5" />}
-                                label="Red Letters"
-                                accent="red"
-                            />
-                            {hasSectionTitles && (
-                                <ToggleRow
-                                    active={isLoaded && showTitles}
-                                    onClick={() => setShowTitles(!showTitles)}
-                                    icon={<Heading className="h-3.5 w-3.5" />}
-                                    label="Headings"
-                                />
-                            )}
-                        </div>
-
                     </PopoverContent>
                 </Popover>
 

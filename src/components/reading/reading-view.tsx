@@ -41,7 +41,6 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
     const swipeStartRef = useRef<{ x: number; y: number; t: number } | null>(null)
     const SWIPE_MIN_X = 55
 
-    const hasSectionTitles = chapter.verses.some(v => v.heading)
     const prevOk = canGoPrevChapter(currentBook, currentChapterNum)
     const nextOk = canGoNextChapter(currentBook, currentChapterNum)
     const prevChapter = React.useMemo(() => getAdjacentChapter(currentBook, currentChapterNum, -1), [currentBook, currentChapterNum])
@@ -162,7 +161,6 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
                     currentBook={currentBook}
                     currentChapter={currentChapterNum}
                     currentTranslation={currentTranslation}
-                    hasSectionTitles={hasSectionTitles}
                     onNavigate={navigateTo}
                 />
             </motion.div>
