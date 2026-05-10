@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useNavMode } from "@/contexts/nav-mode"
 import { InlineNav } from "@/components/inline-nav"
-import { ContentFooter } from "@/components/content-footer"
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
@@ -29,11 +28,6 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 </div>
             )}
             {children}
-            {isInline && (
-                <div className="mx-auto w-full max-w-4xl px-6 pb-10">
-                    <ContentFooter />
-                </div>
-            )}
         </main>
     )
 }

@@ -104,7 +104,7 @@ export function InlineNav() {
                             </button>
                         </PopoverTrigger>
                         <PopoverContent align="end" sideOffset={8} className="w-auto p-0 overflow-hidden">
-                            <SettingsPanel onClose={() => setSettingsOpen(false)} />
+                            <SettingsPanel />
                         </PopoverContent>
                     </Popover>
                 </div>

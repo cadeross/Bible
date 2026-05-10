@@ -801,7 +801,7 @@ export function SettingsPanel() {
                                     rel="noreferrer"
                                     className="transition-colors duration-200 hover:text-foreground"
                                 >
-                                    Created by Cade Ross
+                                    Crafted by Cade Ross
                                 </a>
                                 <Popover open={versionOpen} onOpenChange={setVersionOpen}>
                                     <PopoverTrigger asChild>
