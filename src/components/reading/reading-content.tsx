@@ -666,8 +666,11 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
 
     // Beau Rivage has a small x-height — at the same px size it reads noticeably
     // smaller than the other fonts. Scale up so the user's chosen size lands
-    // visually consistent across faces.
-    const fontSizeScale = (isLoaded ? fontFamily : "serif") === "script" ? 1.3 : 1
+    // visually consistent across faces. The chapter-title header gets an extra
+    // bump so it still reads as a heading (not flush with body text).
+    const isScript = (isLoaded ? fontFamily : "serif") === "script"
+    const fontSizeScale = isScript ? 1.3 : 1
+    const headerSizeScale = isScript ? 1.9 : 1
 
     // Imperatively apply styles after preferences load — React's suppressHydrationWarning
     // can cause the initial server-rendered style to persist through reconciliation
@@ -787,13 +790,13 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 <div className="text-center mb-14">
                     <h1
                         className="font-semibold tracking-tight text-foreground"
-                        style={{ fontSize: `${18 * fontSizeScale}px` }}
+                        style={{ fontSize: `${18 * headerSizeScale}px` }}
                     >
                         {chapter.reference}
                     </h1>
                     <p
                         className="text-muted-foreground mt-1.5"
-                        style={{ fontSize: `${12 * fontSizeScale}px` }}
+                        style={{ fontSize: `${12 * headerSizeScale}px` }}
                     >
                         {chapter.translation_name}
                     </p>
