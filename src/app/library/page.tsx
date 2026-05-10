@@ -146,7 +146,7 @@ export default function LibraryPage() {
 
     const fontClass = useMemo(() => {
         if (!prefsLoaded) return "font-serif"
-        return { sans: "font-sans", serif: "font-serif", mono: "font-mono", pixel: "font-pixel" }[fontFamily] ?? "font-serif"
+        return { sans: "font-sans", serif: "font-serif", mono: "font-mono", pixel: "font-pixel", script: "font-script" }[fontFamily] ?? "font-serif"
     }, [prefsLoaded, fontFamily])
 
     // Group consecutive same-color verses in the same chapter

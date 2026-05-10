@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react"
 
-export type FontType = "sans" | "serif" | "mono" | "pixel"
+export type FontType = "sans" | "serif" | "mono" | "pixel" | "script"
 
 export interface ReadingPreferences {
     fontSize: number

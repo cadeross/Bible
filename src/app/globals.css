@@ -28,6 +28,7 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-serif), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-pixel: var(--font-nunito), system-ui, sans-serif;
+  --font-script: var(--font-ephesis), "Brush Script MT", "Lucida Handwriting", cursive;
 }
 
 /* Base utilities */
@@ -103,6 +104,11 @@
 /* Explicit font-pixel utility class (now using Nunito) */
 .font-pixel {
   font-family: var(--font-nunito), system-ui, sans-serif !important;
+}
+
+/* Explicit font-script utility class (Ephesis — calligraphic). */
+.font-script {
+  font-family: var(--font-ephesis), "Brush Script MT", "Lucida Handwriting", cursive !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

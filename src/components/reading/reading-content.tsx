@@ -646,6 +646,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
             case "sans": return "font-sans"
             case "mono": return "font-mono"
             case "pixel": return "font-pixel"
+            case "script": return "font-script"
             case "serif":
             default: return "font-serif"
         }
@@ -657,6 +658,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
             case "sans": return "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif"
             case "mono": return "var(--font-geist-mono), ui-monospace, monospace"
             case "pixel": return "var(--font-nunito), ui-rounded, sans-serif"
+            case "script": return 'var(--font-ephesis), "Brush Script MT", "Lucida Handwriting", cursive'
             case "serif":
             default: return "Merriweather, Georgia, ui-serif, serif"
         }

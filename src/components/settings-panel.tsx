@@ -2,12 +2,11 @@
 
 import { useEffect, useState, useRef, useLayoutEffect } from "react"
 import { useTheme } from "next-themes"
-import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Globe, ChevronDown, Check } from "lucide-react"
+import { ChevronDown, Check } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import HeatMap from "@uiw/react-heat-map"
-import { useReadingPreferences } from "@/contexts/reading-preferences"
+import { useReadingPreferences, type FontType } from "@/contexts/reading-preferences"
 import { TINT_COLORS, type TintId, applyTint, applyCustomTint, getStoredTint, getStoredCustomColor } from "@/lib/tint-colors"
 import { CustomColorPicker } from "@/components/custom-color-picker"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -174,6 +173,259 @@ function VersionsSection() {
     )
 }
 
+// ─── Reading section helpers (mirrors reading-toolbar's appearance popover) ──
+
+const FONT_OPTIONS: { id: FontType; label: string; family: string }[] = [
+    { id: "sans",   label: "Sans",   family: "var(--font-geist-sans), system-ui, sans-serif" },
+    { id: "serif",  label: "Serif",  family: "Merriweather, Georgia, serif" },
+    { id: "mono",   label: "Mono",   family: "var(--font-geist-mono), monospace" },
+    { id: "pixel",  label: "Round",  family: "var(--font-nunito), system-ui, sans-serif" },
+    { id: "script", label: "Script", family: 'var(--font-ephesis), "Brush Script MT", "Lucida Handwriting", cursive' },
+]
+
+function GridHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {
+    const [rect, setRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
+
+    /* eslint-disable react-hooks/set-state-in-effect -- intentional: measure DOM rect for hover overlay */
+    useEffect(() => {
+        if (hoveredIndex === null || !containerRef.current) { setRect(null); return }
+        const buttons = containerRef.current.querySelectorAll<HTMLElement>("[data-slide-item]")
+        const el = buttons[hoveredIndex]
+        if (!el) { setRect(null); return }
+        const parentRect = containerRef.current.getBoundingClientRect()
+        const elRect = el.getBoundingClientRect()
+        setRect({ top: elRect.top - parentRect.top, left: elRect.left - parentRect.left, width: elRect.width, height: elRect.height })
+    }, [hoveredIndex, containerRef])
+    /* eslint-enable react-hooks/set-state-in-effect */
+
+    return (
+        <motion.div
+            aria-hidden
+            className="pointer-events-none absolute z-0 rounded-xl bg-foreground/[0.05] dark:bg-white/[0.07]"
+            initial={false}
+            animate={rect ? { opacity: 1, top: rect.top, left: rect.left, width: rect.width, height: rect.height } : { opacity: 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
+            style={{ position: "absolute" }}
+        />
+    )
+}
+
+function ToggleRow({
+    active,
+    onClick,
+    label,
+    accent = "primary",
+}: {
+    active: boolean
+    onClick: () => void
+    label: string
+    accent?: "primary" | "red"
+}) {
+    const checkColor = accent === "red" ? "text-red-500" : "text-primary"
+
+    return (
+        <button
+            type="button"
+            suppressHydrationWarning
+            onClick={onClick}
+            aria-pressed={active}
+            className={cn(
+                "flex w-full items-center justify-between rounded-md py-1 text-[12px] font-medium transition-colors",
+                active ? "text-foreground" : "text-muted-foreground/70 hover:text-foreground"
+            )}
+        >
+            <span>{label}</span>
+            <Check
+                aria-hidden
+                className={cn(
+                    "h-3.5 w-3.5 transition-opacity duration-200",
+                    active ? cn("opacity-100", checkColor) : "opacity-40"
+                )}
+            />
+        </button>
+    )
+}
+
+function StepperRow({
+    label,
+    value,
+    onDecrement,
+    onIncrement,
+    canDecrement,
+    canIncrement,
+}: {
+    label: string
+    value: string
+    onDecrement: () => void
+    onIncrement: () => void
+    canDecrement: boolean
+    canIncrement: boolean
+}) {
+    const btn = "h-5 w-5 flex items-center justify-center text-foreground/55 hover:text-foreground transition-colors disabled:opacity-25 disabled:pointer-events-none"
+    return (
+        <div className="flex w-full items-center justify-between py-1 text-[12px] font-medium text-muted-foreground/70">
+            <span>{label}</span>
+            <div className="flex items-center gap-1.5">
+                <button type="button" onClick={onDecrement} disabled={!canDecrement} className={btn} aria-label={`Decrease ${label.toLowerCase()}`}>
+                    <span className="text-[14px] leading-none select-none font-light">−</span>
+                </button>
+                <span className="w-9 text-center text-[12px] tabular-nums text-foreground select-none" suppressHydrationWarning>{value}</span>
+                <button type="button" onClick={onIncrement} disabled={!canIncrement} className={btn} aria-label={`Increase ${label.toLowerCase()}`}>
+                    <span className="text-[14px] leading-none select-none font-light">+</span>
+                </button>
+            </div>
+        </div>
+    )
+}
+
+function ReadingSection() {
+    const {
+        isLoaded,
+        fontFamily, setFontFamily,
+        fontSize, setFontSize,
+        lineHeight, setLineHeight,
+        showVerseNumbers, setShowVerseNumbers,
+        redLetters, setRedLetters,
+        showTitles, setShowTitles,
+    } = useReadingPreferences()
+
+    const [open, setOpen] = useState(true)
+    const gridRef = useRef<HTMLDivElement>(null)
+    const [hoveredFont, setHoveredFont] = useState<number | null>(null)
+
+    const activeFontSize = isLoaded ? fontSize : 18
+    const activeLineHeight = isLoaded ? lineHeight : 1.6
+    const currentFontLabel = (FONT_OPTIONS.find(f => f.id === (isLoaded ? fontFamily : "serif"))?.label) ?? "Serif"
+
+    return (
+        <div className="border-b border-foreground/[0.06]">
+            <button
+                type="button"
+                onClick={() => setOpen(o => !o)}
+                className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-foreground/[0.02]"
+            >
+                <p className="text-[13px] font-medium text-foreground">Reading</p>
+                <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-muted-foreground/50 tabular-nums" suppressHydrationWarning>
+                        {currentFontLabel} · {activeFontSize}px
+                    </span>
+                    <motion.div
+                        animate={{ rotate: open ? 180 : 0 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    >
+                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/40" />
+                    </motion.div>
+                </div>
+            </button>
+
+            <AnimatePresence initial={false}>
+                {open && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 32, mass: 0.8 }}
+                        className="overflow-hidden"
+                    >
+                        <div className="px-4 pb-3 pt-1">
+
+                            {/* Typeface grid */}
+                            <div
+                                ref={gridRef}
+                                className="relative grid grid-cols-5 gap-1.5"
+                                onPointerLeave={() => setHoveredFont(null)}
+                            >
+                                <GridHighlight containerRef={gridRef} hoveredIndex={hoveredFont} />
+                                {FONT_OPTIONS.map((f, i) => {
+                                    const selected = isLoaded ? fontFamily === f.id : f.id === "serif"
+                                    return (
+                                        <motion.button
+                                            key={f.id}
+                                            type="button"
+                                            suppressHydrationWarning
+                                            data-slide-item
+                                            onClick={() => setFontFamily(f.id)}
+                                            onPointerEnter={() => setHoveredFont(i)}
+                                            whileTap={{ scale: 0.93 }}
+                                            className={cn(
+                                                "relative z-10 flex flex-col items-center gap-0.5 rounded-lg py-1.5 cursor-pointer",
+                                                "transition-colors duration-150",
+                                                selected ? "bg-foreground/[0.07] dark:bg-white/[0.09]" : ""
+                                            )}
+                                        >
+                                            {selected && (
+                                                <motion.div
+                                                    layoutId="settings-typeface-ring"
+                                                    className="absolute inset-0 rounded-lg ring-1 ring-foreground/[0.14] dark:ring-white/[0.18]"
+                                                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                                                />
+                                            )}
+                                            <span
+                                                className={cn(
+                                                    "relative z-10 text-[13px] leading-none transition-colors duration-150",
+                                                    selected ? "text-foreground" : "text-foreground/40"
+                                                )}
+                                                style={{ fontFamily: f.family }}
+                                            >
+                                                Aa
+                                            </span>
+                                            <span className={cn(
+                                                "relative z-10 text-[9px] font-medium transition-colors duration-150",
+                                                selected ? "text-foreground/70" : "text-muted-foreground/35"
+                                            )}>
+                                                {f.label}
+                                            </span>
+                                        </motion.button>
+                                    )
+                                })}
+                            </div>
+
+                            <div className="h-px bg-foreground/[0.06] my-3" />
+
+                            {/* Size + Spacing + Display toggles */}
+                            <div className="flex flex-col">
+                                <StepperRow
+                                    label="Size"
+                                    value={`${activeFontSize}px`}
+                                    onDecrement={() => setFontSize(Math.max(12, fontSize - 2))}
+                                    onIncrement={() => setFontSize(Math.min(32, fontSize + 2))}
+                                    canDecrement={activeFontSize > 12}
+                                    canIncrement={activeFontSize < 32}
+                                />
+                                <StepperRow
+                                    label="Spacing"
+                                    value={activeLineHeight.toFixed(1)}
+                                    onDecrement={() => setLineHeight(Math.max(1.2, parseFloat((lineHeight - 0.1).toFixed(1))))}
+                                    onIncrement={() => setLineHeight(Math.min(2.4, parseFloat((lineHeight + 0.1).toFixed(1))))}
+                                    canDecrement={activeLineHeight > 1.2}
+                                    canIncrement={activeLineHeight < 2.4}
+                                />
+                                <ToggleRow
+                                    active={!isLoaded || showVerseNumbers}
+                                    onClick={() => setShowVerseNumbers(!showVerseNumbers)}
+                                    label="Verse Numbers"
+                                />
+                                <ToggleRow
+                                    active={!isLoaded || redLetters}
+                                    onClick={() => setRedLetters(!redLetters)}
+                                    label="Red Letters"
+                                    accent="red"
+                                />
+                                <ToggleRow
+                                    active={isLoaded && showTitles}
+                                    onClick={() => setShowTitles(!showTitles)}
+                                    label="Headings"
+                                />
+                            </div>
+
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    )
+}
+
 interface TintSectionProps {
     activeTint: TintId
     customColor: string
@@ -288,7 +540,7 @@ interface HeatMapValue {
     count: number
 }
 
-export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
+export function SettingsPanel() {
     const { theme, setTheme, resolvedTheme } = useTheme()
 
     const [heatmapData, setHeatmapData] = useState<HeatMapValue[]>([])
@@ -487,21 +739,6 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
                             </button>
                         </div>
 
-                        {/* Language */}
-                        <div className="border-b border-foreground/[0.06] px-4 py-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <p className="text-[13px] font-medium text-foreground">Language</p>
-                                    <span className="text-[9px] font-semibold uppercase tracking-wider bg-primary/10 text-primary/60 px-1.5 py-0.5 rounded-full select-none">Coming soon</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 bg-foreground/[0.04] border border-foreground/[0.07] opacity-50 cursor-not-allowed select-none">
-                                    <Globe className="h-3 w-3 text-muted-foreground/50" />
-                                    <span className="text-[12px] text-muted-foreground/60">English</span>
-                                    <ChevronDown className="h-3 w-3 text-muted-foreground/30" />
-                                </div>
-                            </div>
-                        </div>
-
                         {/* Tint */}
                         <TintSection
                             activeTint={activeTint}
@@ -509,6 +746,9 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
                             onActiveTintChange={handleTintSelect}
                             onCustomColorChange={handleCustomColorChange}
                         />
+
+                        {/* Reading */}
+                        <ReadingSection />
 
                         {/* Versions */}
                         <VersionsSection />
@@ -596,13 +836,6 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
                                                 </li>
                                             ))}
                                         </ul>
-                                        <Link
-                                            href="/updates"
-                                            onClick={() => onClose?.()}
-                                            className="mt-3 block text-[11px] text-primary hover:text-primary/80 transition-colors"
-                                        >
-                                            See all updates →
-                                        </Link>
                                     </PopoverContent>
                                 </Popover>
                             </div>

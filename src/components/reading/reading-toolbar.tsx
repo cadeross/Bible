@@ -287,10 +287,11 @@ function ToolbarPill({ children, onClick, className: extraClassName }: { childre
 // ─── Appearance panel components ────────────────────────────────────────────
 
 const FONT_OPTIONS: { id: FontType; label: string; family: string }[] = [
-    { id: "sans",  label: "Sans",  family: "var(--font-geist-sans), system-ui, sans-serif" },
-    { id: "serif", label: "Serif", family: "Merriweather, Georgia, serif" },
-    { id: "mono",  label: "Mono",  family: "var(--font-geist-mono), monospace" },
-    { id: "pixel", label: "Round", family: "var(--font-nunito), system-ui, sans-serif" },
+    { id: "sans",   label: "Sans",   family: "var(--font-geist-sans), system-ui, sans-serif" },
+    { id: "serif",  label: "Serif",  family: "Merriweather, Georgia, serif" },
+    { id: "mono",   label: "Mono",   family: "var(--font-geist-mono), monospace" },
+    { id: "pixel",  label: "Round",  family: "var(--font-nunito), system-ui, sans-serif" },
+    { id: "script", label: "Script", family: 'var(--font-ephesis), "Brush Script MT", "Lucida Handwriting", cursive' },
 ]
 
 /** A standalone glass-surface toggle row. Used inside the Appearance panel. */
@@ -594,7 +595,7 @@ export function ReadingToolbar({
                         <div className="p-3">
                             <div
                                 ref={gridRef}
-                                className="relative grid grid-cols-4 gap-1.5"
+                                className="relative grid grid-cols-5 gap-1.5"
                                 onPointerLeave={() => setHoveredFont(null)}
                             >
                                 <GridHighlight containerRef={gridRef} hoveredIndex={hoveredFont} />
