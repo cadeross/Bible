@@ -421,7 +421,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
         <div className="w-[340px] overflow-hidden">
             <div>
                         {/* Appearance — three preview cards + match-system row */}
-                        <div className="border-b border-foreground/[0.06] px-4 py-3 space-y-3">
+                        <div className="border-b border-foreground/[0.06] px-4 pt-4 pb-3 space-y-3">
                             <div className="flex gap-1.5">
                                 {themePreviews.map(({ id, label, bg, fg }) => {
                                     const isActive = displayTheme === id
