@@ -38,9 +38,9 @@ Verses render in **paragraph form** — inline `<span>` elements, NOT block-leve
 
 ## Highlight System
 - 5 colors: yellow, green, blue, pink, purple
-- Stored in Supabase `highlights` table (authenticated) or localStorage (anonymous)
+- Stored in localStorage (the account system is currently disabled)
 - Selection → color picker → optional note via `note-dialog.tsx`
-- Highlight state managed locally; synced to Supabase on change
+- Highlight state managed locally; persisted to localStorage via `lib/persistence.ts`
 
 ## Reading Preferences
 Managed via `src/contexts/reading-preferences.tsx`:

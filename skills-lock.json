@@ -46,11 +46,6 @@
       "sourceType": "github",
       "computedHash": "d0137ba04049bf8926bc80f6a5e2b82d94b5633b6445a85dbfb26ab4f1b104c6"
     },
-    "nextjs-supabase-auth": {
-      "source": "sickn33/antigravity-awesome-skills",
-      "sourceType": "github",
-      "computedHash": "a2f83880ed005c12233512b885e0daee510bf7607e997fba9c78a6ad92860d6c"
-    },
     "playwright-e2e-testing": {
       "source": "bobmatnyc/claude-mpm-skills",
       "sourceType": "github",
@@ -80,11 +75,6 @@
       "source": "sickn33/antigravity-awesome-skills",
       "sourceType": "github",
       "computedHash": "a81a92d779f4ad30a9198c3c77d1914d57a2fd99f460227d67a7cc36b72fafb7"
-    },
-    "supabase-postgres-best-practices": {
-      "source": "supabase/agent-skills",
-      "sourceType": "github",
-      "computedHash": "9c87c315aed143ee3b34bec8117100f5035e0df09e6b23e1ecc772cff434c9ad"
     },
     "vercel-react-best-practices": {
       "source": "vercel-labs/agent-skills",
