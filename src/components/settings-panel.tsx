@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useLayoutEffect } from "react"
 import { useTheme } from "next-themes"
+import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Globe, ChevronDown, Check } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -9,6 +10,9 @@ import HeatMap from "@uiw/react-heat-map"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { TINT_COLORS, type TintId, applyTint, applyCustomTint, getStoredTint, getStoredCustomColor } from "@/lib/tint-colors"
 import { CustomColorPicker } from "@/components/custom-color-picker"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { APP_VERSION, APP_VERSION_DATE, LATEST_UPDATE_HIGHLIGHTS } from "@/lib/version"
+import { Switch } from "@/components/ui/switch"
 
 function hexToRgba(hex: string, alpha: number): string {
     const r = parseInt(hex.slice(1, 3), 16)
@@ -285,7 +289,6 @@ interface HeatMapValue {
     count: number
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
     const { theme, setTheme, resolvedTheme } = useTheme()
 
@@ -294,6 +297,20 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
     const [customColor, setCustomColor] = useState("#2488f2")
     const heatmapContainerRef = useRef<HTMLDivElement | null>(null)
     const [heatmapWidth, setHeatmapWidth] = useState(320)
+    const [versionOpen, setVersionOpen] = useState(false)
+    const versionCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    const cancelVersionClose = () => {
+        if (versionCloseTimer.current) {
+            clearTimeout(versionCloseTimer.current)
+            versionCloseTimer.current = null
+        }
+    }
+    const scheduleVersionClose = () => {
+        cancelVersionClose()
+        versionCloseTimer.current = setTimeout(() => setVersionOpen(false), 120)
+    }
+    useEffect(() => () => cancelVersionClose(), [])
 
     const isDark = resolvedTheme === "dark" || resolvedTheme === "oled"
 
@@ -379,24 +396,37 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
         { id: "light" as const, label: "Light" },
         { id: "dark" as const, label: "Dark" },
         { id: "oled" as const, label: "OLED" },
-        { id: "system" as const, label: "Auto" },
     ]
 
     const isOled = resolvedTheme === "oled"
+    const isFollowSystem = theme === "system"
+    // What segment to highlight: when following system, show the resolved theme.
+    // Fallback to "light" only during the brief SSR/first-paint where resolvedTheme is undefined.
+    const displayTheme = isFollowSystem ? (resolvedTheme ?? "light") : theme
+
+    const handleFollowSystemToggle = (checked: boolean) => {
+        if (checked) {
+            handleThemeChange("system")
+        } else {
+            // Switching off "follow system" means "lock to whatever's currently showing".
+            handleThemeChange(resolvedTheme ?? "light")
+        }
+    }
 
     return (
         <div className="w-[340px] overflow-hidden">
             <div>
-                        {/* Theme - elegant toggle */}
-                        <div className="border-b border-foreground/[0.06] px-4 py-3">
+                        {/* Appearance — Light/Dark/OLED segment + Follow-system toggle */}
+                        <div className="border-b border-foreground/[0.06] px-4 py-3 space-y-3">
                             <div className={cn(
-                                "relative flex gap-0.5 rounded-xl border p-1",
+                                "relative flex gap-0.5 rounded-xl border p-1 transition-opacity duration-200",
                                 isOled
                                     ? "bg-foreground/[0.08] border-foreground/[0.12]"
-                                    : "bg-foreground/[0.04] border-foreground/[0.06]"
+                                    : "bg-foreground/[0.04] border-foreground/[0.06]",
+                                isFollowSystem && "opacity-60"
                             )}>
                                 {themeOptions.map(({ id, label }) => {
-                                    const isActive = theme === id
+                                    const isActive = displayTheme === id
                                     return (
                                         <button
                                             key={id}
@@ -419,6 +449,14 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
                                         </button>
                                     )
                                 })}
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-[13px] font-medium text-foreground">Follow system</p>
+                                <Switch
+                                    checked={isFollowSystem}
+                                    onCheckedChange={handleFollowSystemToggle}
+                                    aria-label="Follow system appearance"
+                                />
                             </div>
                         </div>
 
@@ -484,6 +522,66 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
                             {heatmapData.length === 0 && (
                                 <p className="text-center text-[11px] text-muted-foreground/40 py-2">Start reading to see your activity</p>
                             )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="border-t border-foreground/[0.06] px-4 py-3 space-y-1 text-[11px] text-muted-foreground/50">
+                            <div className="flex items-center justify-between">
+                                <p>OpenWrit · © {new Date().getFullYear()}</p>
+                                <Popover open={versionOpen} onOpenChange={setVersionOpen}>
+                                    <PopoverTrigger asChild>
+                                        <button
+                                            type="button"
+                                            onMouseEnter={() => { cancelVersionClose(); setVersionOpen(true) }}
+                                            onMouseLeave={scheduleVersionClose}
+                                            onFocus={() => { cancelVersionClose(); setVersionOpen(true) }}
+                                            onBlur={scheduleVersionClose}
+                                            className="transition-colors duration-200 hover:text-foreground"
+                                        >
+                                            v{APP_VERSION}
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        side="top"
+                                        align="end"
+                                        sideOffset={8}
+                                        onOpenAutoFocus={(e) => e.preventDefault()}
+                                        onMouseEnter={cancelVersionClose}
+                                        onMouseLeave={scheduleVersionClose}
+                                        className="w-[260px] p-3"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[13px] font-semibold text-foreground">v{APP_VERSION}</span>
+                                            <span className="text-[11px] text-muted-foreground/60">{APP_VERSION_DATE}</span>
+                                        </div>
+                                        <ul className="mt-2.5 space-y-1.5">
+                                            {LATEST_UPDATE_HIGHLIGHTS.map((item, i) => (
+                                                <li key={i} className="flex items-start gap-2 text-[12px] text-foreground/80 leading-relaxed">
+                                                    <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-muted-foreground/40" />
+                                                    {item}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <Link
+                                            href="/updates"
+                                            onClick={() => onClose?.()}
+                                            className="mt-3 block text-[11px] text-primary hover:text-primary/80 transition-colors"
+                                        >
+                                            See all updates →
+                                        </Link>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            <p>
+                                <a
+                                    href="https://cadeross.com"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="transition-colors duration-200 hover:text-foreground"
+                                >
+                                    Created by Cade Ross
+                                </a>
+                            </p>
                         </div>
             </div>
         </div>
