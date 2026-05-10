@@ -419,7 +419,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
             <div>
                         {/* Appearance — three preview cards + match-system row */}
                         <div className="border-b border-foreground/[0.06] px-4 py-3 space-y-3">
-                            <div className="flex gap-2">
+                            <div className="flex justify-center gap-4">
                                 {themePreviews.map(({ id, label, bg, fg }) => {
                                     const isActive = displayTheme === id
                                     return (
@@ -427,31 +427,30 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
                                             key={id}
                                             type="button"
                                             onClick={() => handleThemeChange(id)}
-                                            whileTap={{ scale: 0.97 }}
+                                            whileTap={{ scale: 0.94 }}
                                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                            className="group flex flex-1 flex-col items-center gap-1.5"
+                                            className="group flex flex-col items-center gap-1"
                                             aria-pressed={isActive}
                                             aria-label={`${label} theme`}
                                         >
                                             <div
                                                 className={cn(
-                                                    "relative w-full overflow-hidden rounded-xl border transition-[box-shadow,border-color] duration-200",
+                                                    "relative h-9 w-12 overflow-hidden rounded-lg border transition-[box-shadow,border-color] duration-200",
                                                     isActive
-                                                        ? "border-primary/60 ring-2 ring-primary/30 shadow-[var(--shadow-card)]"
-                                                        : "border-foreground/[0.08] shadow-[var(--shadow-sm)] group-hover:border-foreground/[0.18] group-hover:shadow-[var(--shadow-card)]"
+                                                        ? "border-primary/60 ring-2 ring-primary/30 shadow-[var(--shadow-sm)]"
+                                                        : "border-foreground/[0.08] group-hover:border-foreground/[0.18]"
                                                 )}
                                                 style={{
                                                     backgroundColor: bg,
                                                     color: fg,
-                                                    aspectRatio: "4 / 3",
                                                 }}
                                             >
-                                                <div className="absolute inset-0 flex items-center justify-center font-serif text-[20px] font-semibold tracking-tight">
+                                                <div className="absolute inset-0 flex items-center justify-center font-serif text-[13px] font-semibold tracking-tight">
                                                     Aa
                                                 </div>
                                             </div>
                                             <span className={cn(
-                                                "text-[11.5px] font-medium transition-colors",
+                                                "text-[11px] font-medium transition-colors",
                                                 isActive
                                                     ? "text-primary"
                                                     : "text-muted-foreground/70 group-hover:text-foreground"
