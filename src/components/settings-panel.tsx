@@ -180,7 +180,7 @@ const FONT_OPTIONS: { id: FontType; label: string; family: string }[] = [
     { id: "serif",  label: "Serif",  family: "Merriweather, Georgia, serif" },
     { id: "mono",   label: "Mono",   family: "var(--font-geist-mono), monospace" },
     { id: "pixel",  label: "Round",  family: "var(--font-nunito), system-ui, sans-serif" },
-    { id: "script", label: "Script", family: 'var(--font-ephesis), "Brush Script MT", "Lucida Handwriting", cursive' },
+    { id: "script", label: "Script", family: 'var(--font-beau-rivage), "Brush Script MT", "Lucida Handwriting", cursive' },
 ]
 
 function GridHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {

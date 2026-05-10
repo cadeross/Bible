@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Merriweather, Nunito, Ephesis } from "next/font/google";
+import { Geist, Geist_Mono, Merriweather, Nunito, Beau_Rivage } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MobileNav } from "@/components/mobile-nav";
@@ -47,8 +47,8 @@ const nunito = Nunito({
   display: "swap",
 });
 
-const ephesis = Ephesis({
-  variable: "--font-ephesis",
+const beauRivage = Beau_Rivage({
+  variable: "--font-beau-rivage",
   weight: "400",
   subsets: ["latin"],
   display: "swap",
@@ -143,7 +143,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var id=localStorage.getItem("tint-color");if(!id)return;if(id==="custom"){var c=localStorage.getItem("tint-color-custom");if(c)document.documentElement.style.setProperty("--primary",c);return;}var t={"blue":{"l":"#2488f2","d":"#0a84ff"},"indigo":{"l":"#5856d6","d":"#5e5ce6"},"purple":{"l":"#9333ea","d":"#bf5af2"},"pink":{"l":"#ff85bb","d":"#ff85bb"},"red":{"l":"#dc2626","d":"#ff453a"},"orange":{"l":"#ea580c","d":"#ff9f0a"},"green":{"l":"#16a34a","d":"#30d158"},"teal":{"l":"#0891b2","d":"#5ac8fa"},"graphite":{"l":"#6b7280","d":"#8e8e93"}};if(t[id]){var dk=window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.style.setProperty("--primary",dk?t[id].d:t[id].l);}}catch(e){}})();` }} />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${merriweather.variable} ${nunito.variable} ${ephesis.variable} antialiased min-h-screen flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} ${merriweather.variable} ${nunito.variable} ${beauRivage.variable} antialiased min-h-screen flex flex-col`}
       >
         <AppConvexProvider>
         <SiteStructuredData />
