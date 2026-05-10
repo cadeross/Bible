@@ -397,7 +397,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
     const themePreviews = [
         { id: "light" as const,     label: "Light",  bg: "#fafafa", fg: "#1d1d1f" },
         { id: "sepia" as const,     label: "Sepia",  bg: "#f5e8d0", fg: "#5b4a32" },
-        { id: "mocha" as const,     label: "Mocha",  bg: "#2b1f12", fg: "#d8c5a0" },
+        { id: "mocha" as const,     label: "Mocha",  bg: "#1c130a", fg: "#d8c5a0" },
         { id: "dark" as const,      label: "Dark",   bg: "#1c1c1e", fg: "#f5f5f7" },
         { id: "solarized" as const, label: "Solar",  bg: "#00131f", fg: "#a3b3b3" },
         { id: "oled" as const,      label: "OLED",   bg: "#000000", fg: "#f5f5f7" },

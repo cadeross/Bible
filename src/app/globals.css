@@ -654,34 +654,34 @@ html[data-theme="sepia"] {
 /* Mocha — warm dark sepia. The "night reading" companion to the light
    sepia theme: deep coffee-brown surfaces with warm cream text. */
 html[data-theme="mocha"] {
-  --background: #2b1f12;
+  --background: #1c130a;
   --foreground: #d8c5a0;
   --primary: #2488f2;
   --primary-foreground: #ffffff;
-  --muted: #352718;
+  --muted: #251a0e;
   --muted-foreground: #9a8868;
-  --accent: #3d2d1d;
+  --accent: #2e2114;
   --accent-foreground: #d8c5a0;
-  --card: #352718;
+  --card: #251a0e;
   --card-foreground: #d8c5a0;
-  --border: #4d3a26;
-  --nav: #2b1f12;
+  --border: #3a2b18;
+  --nav: #1c130a;
   --nav-active: color-mix(in srgb, var(--primary) 20%, transparent);
   --selection: color-mix(in srgb, var(--primary) 28%, transparent);
   --heart: #e07a5f;
   --bookmark: #d4a82c;
-  --popover: #352718;
+  --popover: #251a0e;
   --popover-foreground: #d8c5a0;
-  --secondary: #3d2d1d;
+  --secondary: #2e2114;
   --secondary-foreground: #d8c5a0;
   --destructive: #c84e4e;
   --destructive-foreground: #ffffff;
   --ring: color-mix(in srgb, var(--primary) 40%, transparent);
   /* Warm-tinted dark shadows so elevation stays in the brown family. */
-  --shadow-sm: 0 1px 2px rgba(20, 12, 6, 0.4);
-  --shadow-card: 0 2px 8px rgba(20, 12, 6, 0.5), 0 1px 3px rgba(20, 12, 6, 0.3);
-  --shadow-elevated: 0 12px 40px rgba(20, 12, 6, 0.6), 0 4px 12px rgba(20, 12, 6, 0.4);
-  --shadow-dialog: 0 24px 60px rgba(20, 12, 6, 0.7), 0 12px 28px rgba(20, 12, 6, 0.5);
+  --shadow-sm: 0 1px 2px rgba(10, 6, 2, 0.5);
+  --shadow-card: 0 2px 8px rgba(10, 6, 2, 0.55), 0 1px 3px rgba(10, 6, 2, 0.35);
+  --shadow-elevated: 0 12px 40px rgba(10, 6, 2, 0.65), 0 4px 12px rgba(10, 6, 2, 0.45);
+  --shadow-dialog: 0 24px 60px rgba(10, 6, 2, 0.75), 0 12px 28px rgba(10, 6, 2, 0.55);
 }
 
 /* Solarized — deeper navy variant. Darker than canonical base03 with a
