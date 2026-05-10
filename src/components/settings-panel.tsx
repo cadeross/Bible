@@ -12,7 +12,6 @@ import { TINT_COLORS, type TintId, applyTint, applyCustomTint, getStoredTint, ge
 import { CustomColorPicker } from "@/components/custom-color-picker"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { APP_VERSION, APP_VERSION_DATE, LATEST_UPDATE_HIGHLIGHTS } from "@/lib/version"
-import { Switch } from "@/components/ui/switch"
 
 function hexToRgba(hex: string, alpha: number): string {
     const r = parseInt(hex.slice(1, 3), 16)
@@ -392,72 +391,102 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
     const rectSize = cols > 0 ? Math.max(4, (usableWidth - 0.5) / cols - space) : 12
     const heatmapHeight = HEATMAP_TOP_PAD + rows * rectSize + (rows - 1) * space
 
-    const themeOptions = [
-        { id: "light" as const, label: "Light" },
-        { id: "dark" as const, label: "Dark" },
-        { id: "oled" as const, label: "OLED" },
+    // Hardcoded theme bg/fg pairs — each card must render its own theme's
+    // colors regardless of which theme is currently active. Values mirror the
+    // tokens in globals.css for [data-theme="light" | "dark" | "oled"].
+    const themePreviews = [
+        { id: "light" as const, label: "Light", bg: "#fafafa", fg: "#1d1d1f" },
+        { id: "dark" as const, label: "Dark", bg: "#1c1c1e", fg: "#f5f5f7" },
+        { id: "oled" as const, label: "OLED", bg: "#000000", fg: "#f5f5f7" },
     ]
 
-    const isOled = resolvedTheme === "oled"
     const isFollowSystem = theme === "system"
-    // What segment to highlight: when following system, show the resolved theme.
+    // Active card: when following system, highlight whatever the OS resolved to.
     // Fallback to "light" only during the brief SSR/first-paint where resolvedTheme is undefined.
     const displayTheme = isFollowSystem ? (resolvedTheme ?? "light") : theme
 
-    const handleFollowSystemToggle = (checked: boolean) => {
-        if (checked) {
-            handleThemeChange("system")
-        } else {
-            // Switching off "follow system" means "lock to whatever's currently showing".
+    const handleFollowSystemToggle = () => {
+        if (isFollowSystem) {
+            // Lock to whatever the system was just resolving to.
             handleThemeChange(resolvedTheme ?? "light")
+        } else {
+            handleThemeChange("system")
         }
     }
 
     return (
         <div className="w-[340px] overflow-hidden">
             <div>
-                        {/* Appearance — Light/Dark/OLED segment + Follow-system toggle */}
+                        {/* Appearance — three preview cards + match-system row */}
                         <div className="border-b border-foreground/[0.06] px-4 py-3 space-y-3">
-                            <div className={cn(
-                                "relative flex gap-0.5 rounded-xl border p-1 transition-opacity duration-200",
-                                isOled
-                                    ? "bg-foreground/[0.08] border-foreground/[0.12]"
-                                    : "bg-foreground/[0.04] border-foreground/[0.06]",
-                                isFollowSystem && "opacity-60"
-                            )}>
-                                {themeOptions.map(({ id, label }) => {
+                            <div className="flex gap-2">
+                                {themePreviews.map(({ id, label, bg, fg }) => {
                                     const isActive = displayTheme === id
                                     return (
-                                        <button
+                                        <motion.button
                                             key={id}
+                                            type="button"
                                             onClick={() => handleThemeChange(id)}
-                                            className={cn(
-                                                "relative flex flex-1 items-center justify-center rounded-[10px] py-2 text-[12px] font-medium transition-colors duration-200",
-                                                isActive ? "text-primary" : "text-muted-foreground/60 hover:text-foreground"
-                                            )}
+                                            whileTap={{ scale: 0.97 }}
+                                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                            className="group flex flex-1 flex-col items-center gap-1.5"
+                                            aria-pressed={isActive}
+                                            aria-label={`${label} theme`}
                                         >
-                                            {isActive && (
-                                                <motion.div
-                                                    layoutId="theme-pill"
-                                                    className="absolute inset-0 rounded-[10px] bg-primary/[0.1] ring-1 ring-primary/25 dark:bg-primary/[0.18]"
-                                                    transition={{ type: "spring", stiffness: 500, damping: 32 }}
-                                                />
-                                            )}
-                                            <span className="relative z-10">
+                                            <div
+                                                className={cn(
+                                                    "relative w-full overflow-hidden rounded-xl border transition-[box-shadow,border-color] duration-200",
+                                                    isActive
+                                                        ? "border-primary/60 ring-2 ring-primary/30 shadow-[var(--shadow-card)]"
+                                                        : "border-foreground/[0.08] shadow-[var(--shadow-sm)] group-hover:border-foreground/[0.18] group-hover:shadow-[var(--shadow-card)]"
+                                                )}
+                                                style={{
+                                                    backgroundColor: bg,
+                                                    color: fg,
+                                                    aspectRatio: "4 / 3",
+                                                }}
+                                            >
+                                                <div className="absolute inset-0 flex items-center justify-center font-serif text-[20px] font-semibold tracking-tight">
+                                                    Aa
+                                                </div>
+                                            </div>
+                                            <span className={cn(
+                                                "text-[11.5px] font-medium transition-colors",
+                                                isActive
+                                                    ? "text-primary"
+                                                    : "text-muted-foreground/70 group-hover:text-foreground"
+                                            )}>
                                                 {label}
                                             </span>
-                                        </button>
+                                        </motion.button>
                                     )
                                 })}
                             </div>
-                            <div className="flex items-center justify-between gap-3">
-                                <p className="text-[13px] font-medium text-foreground">Follow system</p>
-                                <Switch
-                                    checked={isFollowSystem}
-                                    onCheckedChange={handleFollowSystemToggle}
-                                    aria-label="Follow system appearance"
-                                />
-                            </div>
+                            <button
+                                type="button"
+                                onClick={handleFollowSystemToggle}
+                                aria-pressed={isFollowSystem}
+                                className={cn(
+                                    "flex w-full items-center justify-between rounded-md py-1 text-[12px] font-medium transition-colors",
+                                    isFollowSystem
+                                        ? "text-primary"
+                                        : "text-muted-foreground/70 hover:text-foreground"
+                                )}
+                            >
+                                <span>Match system theme</span>
+                                <motion.span
+                                    initial={false}
+                                    animate={{
+                                        opacity: isFollowSystem ? 1 : 0,
+                                        scale: isFollowSystem ? 1 : 0.6,
+                                    }}
+                                    transition={{ duration: 0.18 }}
+                                    className="flex items-center"
+                                    aria-hidden
+                                >
+                                    <Check className="h-3.5 w-3.5" />
+                                </motion.span>
+                            </button>
                         </div>
 
                         {/* Language */}
@@ -525,9 +554,16 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
                         </div>
 
                         {/* Footer */}
-                        <div className="border-t border-foreground/[0.06] px-4 py-3 space-y-1 text-[11px] text-muted-foreground/50">
+                        <div className="border-t border-foreground/[0.06] px-4 py-3 text-[11px] text-muted-foreground/50">
                             <div className="flex items-center justify-between">
-                                <p>OpenWrit · © {new Date().getFullYear()}</p>
+                                <a
+                                    href="https://cadeross.com"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="transition-colors duration-200 hover:text-foreground"
+                                >
+                                    Created by Cade Ross
+                                </a>
                                 <Popover open={versionOpen} onOpenChange={setVersionOpen}>
                                     <PopoverTrigger asChild>
                                         <button
@@ -572,16 +608,6 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
                                     </PopoverContent>
                                 </Popover>
                             </div>
-                            <p>
-                                <a
-                                    href="https://cadeross.com"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="transition-colors duration-200 hover:text-foreground"
-                                >
-                                    Created by Cade Ross
-                                </a>
-                            </p>
                         </div>
             </div>
         </div>
