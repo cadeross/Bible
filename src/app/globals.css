@@ -654,34 +654,34 @@ html[data-theme="sepia"] {
 /* Mocha — warm dark sepia. The "night reading" companion to the light
    sepia theme: deep coffee-brown surfaces with warm cream text. */
 html[data-theme="mocha"] {
-  --background: #1c130a;
-  --foreground: #d8c5a0;
+  --background: #14110d;
+  --foreground: #d0c4ac;
   --primary: #2488f2;
   --primary-foreground: #ffffff;
-  --muted: #251a0e;
-  --muted-foreground: #9a8868;
-  --accent: #2e2114;
-  --accent-foreground: #d8c5a0;
-  --card: #251a0e;
-  --card-foreground: #d8c5a0;
-  --border: #3a2b18;
-  --nav: #1c130a;
+  --muted: #1d1813;
+  --muted-foreground: #928574;
+  --accent: #261f17;
+  --accent-foreground: #d0c4ac;
+  --card: #1d1813;
+  --card-foreground: #d0c4ac;
+  --border: #322a20;
+  --nav: #14110d;
   --nav-active: color-mix(in srgb, var(--primary) 20%, transparent);
   --selection: color-mix(in srgb, var(--primary) 28%, transparent);
   --heart: #e07a5f;
   --bookmark: #d4a82c;
-  --popover: #251a0e;
-  --popover-foreground: #d8c5a0;
-  --secondary: #2e2114;
-  --secondary-foreground: #d8c5a0;
+  --popover: #1d1813;
+  --popover-foreground: #d0c4ac;
+  --secondary: #261f17;
+  --secondary-foreground: #d0c4ac;
   --destructive: #c84e4e;
   --destructive-foreground: #ffffff;
   --ring: color-mix(in srgb, var(--primary) 40%, transparent);
-  /* Warm-tinted dark shadows so elevation stays in the brown family. */
-  --shadow-sm: 0 1px 2px rgba(10, 6, 2, 0.5);
-  --shadow-card: 0 2px 8px rgba(10, 6, 2, 0.55), 0 1px 3px rgba(10, 6, 2, 0.35);
-  --shadow-elevated: 0 12px 40px rgba(10, 6, 2, 0.65), 0 4px 12px rgba(10, 6, 2, 0.45);
-  --shadow-dialog: 0 24px 60px rgba(10, 6, 2, 0.75), 0 12px 28px rgba(10, 6, 2, 0.55);
+  /* Cool-leaning dark shadows so elevation stays in the cooler-brown family. */
+  --shadow-sm: 0 1px 2px rgba(4, 3, 2, 0.55);
+  --shadow-card: 0 2px 8px rgba(4, 3, 2, 0.6), 0 1px 3px rgba(4, 3, 2, 0.4);
+  --shadow-elevated: 0 12px 40px rgba(4, 3, 2, 0.7), 0 4px 12px rgba(4, 3, 2, 0.5);
+  --shadow-dialog: 0 24px 60px rgba(4, 3, 2, 0.8), 0 12px 28px rgba(4, 3, 2, 0.6);
 }
 
 /* Solarized — deeper navy variant. Darker than canonical base03 with a
