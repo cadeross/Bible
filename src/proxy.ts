@@ -1,6 +1,12 @@
-import { convexAuthNextjsMiddleware } from "@convex-dev/auth/nextjs/server";
+import { NextResponse } from "next/server";
 
-export const proxy = convexAuthNextjsMiddleware();
+// Account system temporarily disabled. The previous `convexAuthNextjsMiddleware()`
+// throws on missing NEXT_PUBLIC_CONVEX_URL at request time, which breaks deploys.
+// Pass-through middleware until auth is restored — `next.config.ts` redirects
+// continue to handle the account-only routes (/auth/*, /profile, /groups, etc.).
+export function proxy() {
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [

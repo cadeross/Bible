@@ -1,17 +1,17 @@
 "use client";
 
 import { ReactNode, useEffect, useMemo } from "react";
-import { ConvexAuthNextjsProvider } from "@convex-dev/auth/nextjs";
-import { ConvexReactClient } from "convex/react";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
 
 const configuredConvexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 /** Allows layouts to call `useQuery` during build/SSG when env is not set. */
 const convexUrl = configuredConvexUrl || "https://placeholder.convex.cloud";
 
-// Account system is temporarily disabled. The Convex provider stays mounted so
-// non-auth queries (e.g. daily content) continue to work, but the auth-token
-// sync and ensureProfile bridges are intentionally pass-through. Persistence
-// stays on localStorage because `persistenceCloud.ready` is locked to false.
+// Account system is temporarily disabled. We use the plain Convex provider
+// (not ConvexAuthNextjsProvider) so the app boots even without
+// NEXT_PUBLIC_CONVEX_URL — the auth providers throw on missing env. Only
+// non-auth queries (e.g. daily content) need the client today; those will
+// no-op against the placeholder URL until the env var is configured.
 
 export function ConvexAuthClientProvider({ children }: { children: ReactNode }) {
   const client = useMemo(() => new ConvexReactClient(convexUrl), []);
@@ -24,9 +24,5 @@ export function ConvexAuthClientProvider({ children }: { children: ReactNode }) 
     }
   }, []);
 
-  return (
-    <ConvexAuthNextjsProvider client={client}>
-      {children}
-    </ConvexAuthNextjsProvider>
-  );
+  return <ConvexProvider client={client}>{children}</ConvexProvider>;
 }
