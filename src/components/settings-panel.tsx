@@ -183,7 +183,7 @@ interface TintSectionProps {
 
 function TintSection({ activeTint, customColor, onActiveTintChange, onCustomColorChange }: TintSectionProps) {
     const { resolvedTheme } = useTheme()
-    const isDark = resolvedTheme === "dark" || resolvedTheme === "oled" || resolvedTheme === "solarized"
+    const isDark = resolvedTheme === "dark" || resolvedTheme === "oled" || resolvedTheme === "solarized" || resolvedTheme === "mocha"
     const [pickerOpen, setPickerOpen] = useState(false)
 
     const handleSelect = (id: TintId) => {
@@ -311,7 +311,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
     }
     useEffect(() => () => cancelVersionClose(), [])
 
-    const isDark = resolvedTheme === "dark" || resolvedTheme === "oled" || resolvedTheme === "solarized"
+    const isDark = resolvedTheme === "dark" || resolvedTheme === "oled" || resolvedTheme === "solarized" || resolvedTheme === "mocha"
 
     useEffect(() => {
         setActiveTint(getStoredTint())
@@ -397,6 +397,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
     const themePreviews = [
         { id: "light" as const,     label: "Light",  bg: "#fafafa", fg: "#1d1d1f" },
         { id: "sepia" as const,     label: "Sepia",  bg: "#f5e8d0", fg: "#5b4a32" },
+        { id: "mocha" as const,     label: "Mocha",  bg: "#2b1f12", fg: "#d8c5a0" },
         { id: "dark" as const,      label: "Dark",   bg: "#1c1c1e", fg: "#f5f5f7" },
         { id: "solarized" as const, label: "Solar",  bg: "#002b36", fg: "#93a1a1" },
         { id: "oled" as const,      label: "OLED",   bg: "#000000", fg: "#f5f5f7" },
@@ -421,7 +422,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
             <div>
                         {/* Appearance — three preview cards + match-system row */}
                         <div className="border-b border-foreground/[0.06] px-4 py-3 space-y-3">
-                            <div className="flex justify-center gap-2.5">
+                            <div className="flex justify-center gap-2">
                                 {themePreviews.map(({ id, label, bg, fg }) => {
                                     const isActive = displayTheme === id
                                     return (
@@ -437,7 +438,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
                                         >
                                             <div
                                                 className={cn(
-                                                    "relative h-9 w-12 overflow-hidden rounded-lg border transition-[box-shadow,border-color] duration-200",
+                                                    "relative h-7 w-10 overflow-hidden rounded-md border transition-[box-shadow,border-color] duration-200",
                                                     isActive
                                                         ? "border-primary/60 ring-2 ring-primary/30 shadow-[var(--shadow-sm)]"
                                                         : "border-foreground/[0.08] group-hover:border-foreground/[0.18]"
@@ -447,12 +448,12 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
                                                     color: fg,
                                                 }}
                                             >
-                                                <div className="absolute inset-0 flex items-center justify-center font-serif text-[13px] font-semibold tracking-tight">
+                                                <div className="absolute inset-0 flex items-center justify-center font-serif text-[10px] font-semibold tracking-tight">
                                                     Aa
                                                 </div>
                                             </div>
                                             <span className={cn(
-                                                "text-[11px] font-medium transition-colors",
+                                                "text-[10.5px] font-medium transition-colors",
                                                 isActive
                                                     ? "text-primary"
                                                     : "text-muted-foreground/70 group-hover:text-foreground"

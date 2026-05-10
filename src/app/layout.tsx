@@ -144,7 +144,7 @@ export default function RootLayout({
           attribute="data-theme"
           defaultTheme="system"
           enableSystem
-          themes={["light", "sepia", "dark", "solarized", "oled", "system"]}
+          themes={["light", "sepia", "mocha", "dark", "solarized", "oled", "system"]}
         >
           <TintColorApplier />
           <DatabaseMaintenanceBanner />

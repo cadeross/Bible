@@ -123,7 +123,8 @@
 
 html[data-theme="dark"] .glass,
 html[data-theme="oled"] .glass,
-html[data-theme="solarized"] .glass {
+html[data-theme="solarized"] .glass,
+html[data-theme="mocha"] .glass {
   box-shadow:
     inset 0 0.5px 0 rgba(255, 255, 255, 0.1),
     inset 0 -0.5px 0 rgba(255, 255, 255, 0.03),
@@ -164,7 +165,8 @@ html[data-theme="sepia"] .glass-subtle {
 
 html[data-theme="dark"] .glass-subtle,
 html[data-theme="oled"] .glass-subtle,
-html[data-theme="solarized"] .glass-subtle {
+html[data-theme="solarized"] .glass-subtle,
+html[data-theme="mocha"] .glass-subtle {
   box-shadow:
     inset 0 0.5px 0 rgba(255, 255, 255, 0.08),
     inset 0 -0.5px 0 rgba(255, 255, 255, 0.03),
@@ -649,6 +651,39 @@ html[data-theme="sepia"] {
   --shadow-dialog: 0 24px 60px rgba(60, 40, 20, 0.15), 0 8px 20px rgba(60, 40, 20, 0.08);
 }
 
+/* Mocha — warm dark sepia. The "night reading" companion to the light
+   sepia theme: deep coffee-brown surfaces with warm cream text. */
+html[data-theme="mocha"] {
+  --background: #2b1f12;
+  --foreground: #d8c5a0;
+  --primary: #2488f2;
+  --primary-foreground: #ffffff;
+  --muted: #352718;
+  --muted-foreground: #9a8868;
+  --accent: #3d2d1d;
+  --accent-foreground: #d8c5a0;
+  --card: #352718;
+  --card-foreground: #d8c5a0;
+  --border: #4d3a26;
+  --nav: #2b1f12;
+  --nav-active: color-mix(in srgb, var(--primary) 20%, transparent);
+  --selection: color-mix(in srgb, var(--primary) 28%, transparent);
+  --heart: #e07a5f;
+  --bookmark: #d4a82c;
+  --popover: #352718;
+  --popover-foreground: #d8c5a0;
+  --secondary: #3d2d1d;
+  --secondary-foreground: #d8c5a0;
+  --destructive: #c84e4e;
+  --destructive-foreground: #ffffff;
+  --ring: color-mix(in srgb, var(--primary) 40%, transparent);
+  /* Warm-tinted dark shadows so elevation stays in the brown family. */
+  --shadow-sm: 0 1px 2px rgba(20, 12, 6, 0.4);
+  --shadow-card: 0 2px 8px rgba(20, 12, 6, 0.5), 0 1px 3px rgba(20, 12, 6, 0.3);
+  --shadow-elevated: 0 12px 40px rgba(20, 12, 6, 0.6), 0 4px 12px rgba(20, 12, 6, 0.4);
+  --shadow-dialog: 0 24px 60px rgba(20, 12, 6, 0.7), 0 12px 28px rgba(20, 12, 6, 0.5);
+}
+
 /* Solarized Dark — Ethan Schoonover's deep navy palette. base03 page bg,
    base02 surfaces, base01 borders, base1 default text. */
 html[data-theme="solarized"] {
@@ -689,7 +724,8 @@ html[data-theme="sepia"] .hover\:bg-primary\/5:hover {
 
 html[data-theme="dark"] .hover\:bg-primary\/5:hover,
 html[data-theme="oled"] .hover\:bg-primary\/5:hover,
-html[data-theme="solarized"] .hover\:bg-primary\/5:hover {
+html[data-theme="solarized"] .hover\:bg-primary\/5:hover,
+html[data-theme="mocha"] .hover\:bg-primary\/5:hover {
   background-color: color-mix(in srgb, var(--primary) 15%, transparent) !important;
 }
 
