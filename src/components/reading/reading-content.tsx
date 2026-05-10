@@ -664,6 +664,11 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
         }
     })()
 
+    // Beau Rivage has a small x-height — at the same px size it reads noticeably
+    // smaller than the other fonts. Scale up so the user's chosen size lands
+    // visually consistent across faces.
+    const fontSizeScale = (isLoaded ? fontFamily : "serif") === "script" ? 1.3 : 1
+
     // Imperatively apply styles after preferences load — React's suppressHydrationWarning
     // can cause the initial server-rendered style to persist through reconciliation
     // Only override fontFamily imperatively — fontSize and lineHeight are owned by the style
@@ -683,7 +688,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 mode === 'default' ? "max-w-[720px] mx-auto px-6 py-8" : "px-0 py-2",
             )}
             style={{
-                fontSize: `${isLoaded ? fontSize : 18}px`,
+                fontSize: `${(isLoaded ? fontSize : 18) * fontSizeScale}px`,
                 lineHeight: isLoaded ? lineHeight : 1.6,
                 fontFamily: fontFamilyStyle,
                 userSelect: 'none',
