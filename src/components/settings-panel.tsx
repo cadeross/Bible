@@ -183,7 +183,7 @@ interface TintSectionProps {
 
 function TintSection({ activeTint, customColor, onActiveTintChange, onCustomColorChange }: TintSectionProps) {
     const { resolvedTheme } = useTheme()
-    const isDark = resolvedTheme === "dark"
+    const isDark = resolvedTheme === "dark" || resolvedTheme === "oled" || resolvedTheme === "solarized"
     const [pickerOpen, setPickerOpen] = useState(false)
 
     const handleSelect = (id: TintId) => {
@@ -311,7 +311,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
     }
     useEffect(() => () => cancelVersionClose(), [])
 
-    const isDark = resolvedTheme === "dark" || resolvedTheme === "oled"
+    const isDark = resolvedTheme === "dark" || resolvedTheme === "oled" || resolvedTheme === "solarized"
 
     useEffect(() => {
         setActiveTint(getStoredTint())
@@ -393,11 +393,13 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
 
     // Hardcoded theme bg/fg pairs — each card must render its own theme's
     // colors regardless of which theme is currently active. Values mirror the
-    // tokens in globals.css for [data-theme="light" | "dark" | "oled"].
+    // tokens in globals.css. Order is light → dark.
     const themePreviews = [
-        { id: "light" as const, label: "Light", bg: "#fafafa", fg: "#1d1d1f" },
-        { id: "dark" as const, label: "Dark", bg: "#1c1c1e", fg: "#f5f5f7" },
-        { id: "oled" as const, label: "OLED", bg: "#000000", fg: "#f5f5f7" },
+        { id: "light" as const,     label: "Light",  bg: "#fafafa", fg: "#1d1d1f" },
+        { id: "sepia" as const,     label: "Sepia",  bg: "#f5e8d0", fg: "#5b4a32" },
+        { id: "dark" as const,      label: "Dark",   bg: "#1c1c1e", fg: "#f5f5f7" },
+        { id: "solarized" as const, label: "Solar",  bg: "#002b36", fg: "#93a1a1" },
+        { id: "oled" as const,      label: "OLED",   bg: "#000000", fg: "#f5f5f7" },
     ]
 
     const isFollowSystem = theme === "system"
@@ -419,7 +421,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
             <div>
                         {/* Appearance — three preview cards + match-system row */}
                         <div className="border-b border-foreground/[0.06] px-4 py-3 space-y-3">
-                            <div className="flex justify-center gap-4">
+                            <div className="flex justify-center gap-2.5">
                                 {themePreviews.map(({ id, label, bg, fg }) => {
                                     const isActive = displayTheme === id
                                     return (

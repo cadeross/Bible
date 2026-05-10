@@ -6,7 +6,6 @@ import { MobileNav } from "@/components/mobile-nav";
 import { ReadingPreferencesProvider } from "@/contexts/reading-preferences";
 import { Header } from "@/components/header";
 
-import { Footer } from "@/components/footer";
 import { Toaster } from "sonner";
 import { MainLayout } from "@/components/main-layout";
 import { FocusProvider } from "@/contexts/focus-mode";
@@ -145,7 +144,7 @@ export default function RootLayout({
           attribute="data-theme"
           defaultTheme="system"
           enableSystem
-          themes={["light", "dark", "oled", "system"]}
+          themes={["light", "sepia", "dark", "solarized", "oled", "system"]}
         >
           <TintColorApplier />
           <DatabaseMaintenanceBanner />
@@ -162,9 +161,6 @@ export default function RootLayout({
                   </Suspense>
                 </MainLayout>
 
-                <NavModeGate mode="classic">
-                  <Footer />
-                </NavModeGate>
                 <PageGradients />
                 <NavModeGate mode="classic">
                   <MobileNav />

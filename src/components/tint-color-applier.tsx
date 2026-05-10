@@ -9,7 +9,7 @@ export function TintColorApplier() {
 
     useEffect(() => {
         const id = getStoredTint()
-        applyTint(id, resolvedTheme === "dark" || resolvedTheme === "oled")
+        applyTint(id, resolvedTheme === "dark" || resolvedTheme === "oled" || resolvedTheme === "solarized")
     }, [resolvedTheme])
 
     return null

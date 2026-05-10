@@ -122,14 +122,16 @@
 }
 
 html[data-theme="dark"] .glass,
-html[data-theme="oled"] .glass {
+html[data-theme="oled"] .glass,
+html[data-theme="solarized"] .glass {
   box-shadow:
     inset 0 0.5px 0 rgba(255, 255, 255, 0.1),
     inset 0 -0.5px 0 rgba(255, 255, 255, 0.03),
     var(--shadow-elevated);
 }
 
-html[data-theme="light"] .glass {
+html[data-theme="light"] .glass,
+html[data-theme="sepia"] .glass {
   --glass-bg: color-mix(in srgb, var(--popover) 88%, transparent);
   border-color: rgba(0, 0, 0, 0.08) !important;
   box-shadow:
@@ -150,7 +152,8 @@ html[data-theme="light"] .glass {
     var(--shadow-sm);
 }
 
-html[data-theme="light"] .glass-subtle {
+html[data-theme="light"] .glass-subtle,
+html[data-theme="sepia"] .glass-subtle {
   --glass-bg: color-mix(in srgb, var(--muted) 80%, transparent);
   border-color: rgba(0, 0, 0, 0.07) !important;
   box-shadow:
@@ -160,7 +163,8 @@ html[data-theme="light"] .glass-subtle {
 }
 
 html[data-theme="dark"] .glass-subtle,
-html[data-theme="oled"] .glass-subtle {
+html[data-theme="oled"] .glass-subtle,
+html[data-theme="solarized"] .glass-subtle {
   box-shadow:
     inset 0 0.5px 0 rgba(255, 255, 255, 0.08),
     inset 0 -0.5px 0 rgba(255, 255, 255, 0.03),
@@ -613,13 +617,79 @@ html[data-theme="oled"] {
   --shadow-dialog: 0 0 0 1px rgba(255, 255, 255, 0.10), 0 24px 60px rgba(0, 0, 0, 0.8), 0 12px 28px rgba(0, 0, 0, 0.5);
 }
 
+/* Sepia — warm, paper-like reading theme (Apple Books / Kindle vibe). */
+html[data-theme="sepia"] {
+  --background: #f5e8d0;
+  --foreground: #5b4a32;
+  --primary: #2488f2;
+  --primary-foreground: #ffffff;
+  --muted: #ebdbb8;
+  --muted-foreground: #8a7858;
+  --accent: #e8d4a8;
+  --accent-foreground: #5b4a32;
+  --card: #fbf3df;
+  --card-foreground: #5b4a32;
+  --border: #d6c7a3;
+  --nav: #f0e3c5;
+  --nav-active: color-mix(in srgb, var(--primary) 14%, transparent);
+  --selection: color-mix(in srgb, var(--primary) 18%, transparent);
+  --heart: #d6493a;
+  --bookmark: #b58900;
+  --popover: #fbf3df;
+  --popover-foreground: #5b4a32;
+  --secondary: #ebdbb8;
+  --secondary-foreground: #5b4a32;
+  --destructive: #c62828;
+  --destructive-foreground: #ffffff;
+  --ring: color-mix(in srgb, var(--primary) 35%, transparent);
+  /* Warm-tinted brown shadows so elevation stays in the sepia color family. */
+  --shadow-sm: 0 1px 2px rgba(60, 40, 20, 0.05);
+  --shadow-card: 0 1px 3px rgba(60, 40, 20, 0.06), 0 1px 2px rgba(60, 40, 20, 0.04);
+  --shadow-elevated: 0 8px 30px rgba(60, 40, 20, 0.10), 0 2px 8px rgba(60, 40, 20, 0.05);
+  --shadow-dialog: 0 24px 60px rgba(60, 40, 20, 0.15), 0 8px 20px rgba(60, 40, 20, 0.08);
+}
+
+/* Solarized Dark — Ethan Schoonover's deep navy palette. base03 page bg,
+   base02 surfaces, base01 borders, base1 default text. */
+html[data-theme="solarized"] {
+  --background: #002b36;
+  --foreground: #93a1a1;
+  --primary: #268bd2;
+  --primary-foreground: #ffffff;
+  --muted: #073642;
+  --muted-foreground: #657b83;
+  --accent: #0a4858;
+  --accent-foreground: #93a1a1;
+  --card: #073642;
+  --card-foreground: #93a1a1;
+  --border: #586e75;
+  --nav: #002b36;
+  --nav-active: color-mix(in srgb, var(--primary) 20%, transparent);
+  --selection: color-mix(in srgb, var(--primary) 28%, transparent);
+  --heart: #dc322f;
+  --bookmark: #b58900;
+  --popover: #073642;
+  --popover-foreground: #93a1a1;
+  --secondary: #073642;
+  --secondary-foreground: #93a1a1;
+  --destructive: #dc322f;
+  --destructive-foreground: #ffffff;
+  --ring: color-mix(in srgb, var(--primary) 40%, transparent);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-dialog: 0 24px 60px rgba(0, 0, 0, 0.6), 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+
 /* Verse row hover: tint-aware soft highlight */
-html[data-theme="light"] .hover\:bg-primary\/5:hover {
+html[data-theme="light"] .hover\:bg-primary\/5:hover,
+html[data-theme="sepia"] .hover\:bg-primary\/5:hover {
   background-color: color-mix(in srgb, var(--primary) 10%, transparent) !important;
 }
 
 html[data-theme="dark"] .hover\:bg-primary\/5:hover,
-html[data-theme="oled"] .hover\:bg-primary\/5:hover {
+html[data-theme="oled"] .hover\:bg-primary\/5:hover,
+html[data-theme="solarized"] .hover\:bg-primary\/5:hover {
   background-color: color-mix(in srgb, var(--primary) 15%, transparent) !important;
 }
 
