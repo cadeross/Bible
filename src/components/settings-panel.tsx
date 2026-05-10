@@ -399,7 +399,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
         { id: "sepia" as const,     label: "Sepia",  bg: "#f5e8d0", fg: "#5b4a32" },
         { id: "mocha" as const,     label: "Mocha",  bg: "#14110d", fg: "#d0c4ac" },
         { id: "dark" as const,      label: "Dark",   bg: "#1c1c1e", fg: "#f5f5f7" },
-        { id: "solarized" as const, label: "Solar",  bg: "#00131f", fg: "#a3b3b3" },
+        { id: "solarized" as const, label: "Solar",  bg: "#000b17", fg: "#a3b3b3" },
         { id: "oled" as const,      label: "OLED",   bg: "#000000", fg: "#f5f5f7" },
     ]
 
