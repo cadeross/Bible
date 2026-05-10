@@ -790,13 +790,13 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
             {mode === 'default' && (
                 <div className="text-center mb-14">
                     <h1
-                        className="font-semibold tracking-tight text-foreground"
+                        className="font-semibold tracking-tight leading-tight text-foreground"
                         style={{ fontSize: `${18 * headerSizeScale}px` }}
                     >
                         {chapter.reference}
                     </h1>
                     <p
-                        className="text-muted-foreground mt-1.5"
+                        className="text-muted-foreground leading-snug"
                         style={{ fontSize: `${12 * headerSizeScale}px` }}
                     >
                         {chapter.translation_name}
