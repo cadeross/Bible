@@ -180,7 +180,7 @@ const FONT_OPTIONS: { id: FontType; label: string; family: string }[] = [
     { id: "serif",  label: "Serif",  family: "Merriweather, Georgia, serif" },
     { id: "mono",   label: "Mono",   family: "var(--font-geist-mono), monospace" },
     { id: "pixel",  label: "Round",  family: "var(--font-nunito), system-ui, sans-serif" },
-    { id: "script", label: "Script", family: 'var(--font-beau-rivage), "Brush Script MT", "Lucida Handwriting", cursive' },
+    { id: "script", label: "Script", family: 'var(--font-moon-dance), "Brush Script MT", "Lucida Handwriting", cursive' },
 ]
 
 function GridHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {
@@ -261,7 +261,7 @@ function StepperRow({
     canDecrement: boolean
     canIncrement: boolean
 }) {
-    const btn = "h-5 w-5 flex items-center justify-center text-foreground/55 hover:text-foreground transition-colors disabled:opacity-25 disabled:pointer-events-none"
+    const btn = "h-5 w-3.5 flex items-center justify-center text-foreground/55 hover:text-foreground transition-colors disabled:opacity-25 disabled:pointer-events-none"
     return (
         <div className="flex w-full items-center justify-between py-1 text-[12px] font-medium text-muted-foreground/70">
             <span>{label}</span>
@@ -673,7 +673,8 @@ export function SettingsPanel() {
         <div className="w-[340px] overflow-hidden">
             <div>
                         {/* Appearance — three preview cards + match-system row */}
-                        <div className="border-b border-foreground/[0.06] px-4 pt-4 pb-3 space-y-3">
+                        <div className="border-b border-foreground/[0.06] px-4 pt-3 pb-3 space-y-2.5">
+                            <p className="text-[13px] font-medium text-foreground">Theme</p>
                             <div className="flex gap-1.5">
                                 {themePreviews.map(({ id, label, bg, fg }) => {
                                     const isActive = displayTheme === id
