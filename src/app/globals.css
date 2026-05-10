@@ -684,36 +684,36 @@ html[data-theme="mocha"] {
   --shadow-dialog: 0 24px 60px rgba(20, 12, 6, 0.7), 0 12px 28px rgba(20, 12, 6, 0.5);
 }
 
-/* Solarized Dark — Ethan Schoonover's deep navy palette. base03 page bg,
-   base02 surfaces, base01 borders, base1 default text. */
+/* Solarized — deeper navy variant. Darker than canonical base03 with a
+   stronger blue lean; surfaces and borders shift proportionally. */
 html[data-theme="solarized"] {
-  --background: #002b36;
-  --foreground: #93a1a1;
+  --background: #00131f;
+  --foreground: #a3b3b3;
   --primary: #268bd2;
   --primary-foreground: #ffffff;
-  --muted: #073642;
-  --muted-foreground: #657b83;
-  --accent: #0a4858;
-  --accent-foreground: #93a1a1;
-  --card: #073642;
-  --card-foreground: #93a1a1;
-  --border: #586e75;
-  --nav: #002b36;
+  --muted: #052838;
+  --muted-foreground: #647c8a;
+  --accent: #093955;
+  --accent-foreground: #a3b3b3;
+  --card: #052838;
+  --card-foreground: #a3b3b3;
+  --border: #1f3e58;
+  --nav: #00131f;
   --nav-active: color-mix(in srgb, var(--primary) 20%, transparent);
   --selection: color-mix(in srgb, var(--primary) 28%, transparent);
   --heart: #dc322f;
   --bookmark: #b58900;
-  --popover: #073642;
-  --popover-foreground: #93a1a1;
-  --secondary: #073642;
-  --secondary-foreground: #93a1a1;
+  --popover: #052838;
+  --popover-foreground: #a3b3b3;
+  --secondary: #093955;
+  --secondary-foreground: #a3b3b3;
   --destructive: #dc322f;
   --destructive-foreground: #ffffff;
   --ring: color-mix(in srgb, var(--primary) 40%, transparent);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2);
-  --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-dialog: 0 24px 60px rgba(0, 0, 0, 0.6), 0 12px 28px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-dialog: 0 24px 60px rgba(0, 0, 0, 0.7), 0 12px 28px rgba(0, 0, 0, 0.5);
 }
 
 /* Verse row hover: tint-aware soft highlight */

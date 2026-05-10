@@ -399,7 +399,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
         { id: "sepia" as const,     label: "Sepia",  bg: "#f5e8d0", fg: "#5b4a32" },
         { id: "mocha" as const,     label: "Mocha",  bg: "#2b1f12", fg: "#d8c5a0" },
         { id: "dark" as const,      label: "Dark",   bg: "#1c1c1e", fg: "#f5f5f7" },
-        { id: "solarized" as const, label: "Solar",  bg: "#002b36", fg: "#93a1a1" },
+        { id: "solarized" as const, label: "Solar",  bg: "#00131f", fg: "#a3b3b3" },
         { id: "oled" as const,      label: "OLED",   bg: "#000000", fg: "#f5f5f7" },
     ]
 
@@ -422,7 +422,7 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
             <div>
                         {/* Appearance — three preview cards + match-system row */}
                         <div className="border-b border-foreground/[0.06] px-4 py-3 space-y-3">
-                            <div className="flex justify-center gap-2">
+                            <div className="flex gap-1.5">
                                 {themePreviews.map(({ id, label, bg, fg }) => {
                                     const isActive = displayTheme === id
                                     return (
@@ -432,13 +432,13 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
                                             onClick={() => handleThemeChange(id)}
                                             whileTap={{ scale: 0.94 }}
                                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                            className="group flex flex-col items-center gap-1"
+                                            className="group flex flex-1 flex-col items-center gap-1 min-w-0"
                                             aria-pressed={isActive}
                                             aria-label={`${label} theme`}
                                         >
                                             <div
                                                 className={cn(
-                                                    "relative h-7 w-10 overflow-hidden rounded-md border transition-[box-shadow,border-color] duration-200",
+                                                    "relative w-full overflow-hidden rounded-md border transition-[box-shadow,border-color] duration-200",
                                                     isActive
                                                         ? "border-primary/60 ring-2 ring-primary/30 shadow-[var(--shadow-sm)]"
                                                         : "border-foreground/[0.08] group-hover:border-foreground/[0.18]"
@@ -446,9 +446,10 @@ export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
                                                 style={{
                                                     backgroundColor: bg,
                                                     color: fg,
+                                                    aspectRatio: "4 / 3",
                                                 }}
                                             >
-                                                <div className="absolute inset-0 flex items-center justify-center font-serif text-[10px] font-semibold tracking-tight">
+                                                <div className="absolute inset-0 flex items-center justify-center font-serif text-[11px] font-semibold tracking-tight">
                                                     Aa
                                                 </div>
                                             </div>
