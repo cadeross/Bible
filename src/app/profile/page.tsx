@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUser, useClerk } from "@clerk/nextjs";
+import { useUser, useClerk } from "@/lib/auth";
 import { getConvexHttp } from "@/lib/convex/http";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";

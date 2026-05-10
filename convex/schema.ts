@@ -1,9 +1,13 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
+  ...authTables,
+
   profiles: defineTable({
     clerkUserId: v.string(),
+    email: v.optional(v.string()),
     username: v.optional(v.string()),
     lastReadBook: v.optional(v.string()),
     lastReadChapter: v.optional(v.number()),
@@ -12,11 +16,13 @@ export default defineSchema({
     updatedAt: v.number(),
     onboardingCompletedAt: v.optional(v.number()),
     legacySupabaseId: v.optional(v.string()),
+    legacyClerkUserId: v.optional(v.string()),
     bibleVersion: v.optional(v.string()),
     enabledTranslations: v.optional(v.union(v.array(v.string()), v.null())),
   })
     .index("by_clerk", ["clerkUserId"])
-    .index("by_username", ["username"]),
+    .index("by_username", ["username"])
+    .index("by_email", ["email"]),
 
   highlights: defineTable({
     userId: v.string(),
@@ -116,7 +122,9 @@ export default defineSchema({
     commentCount: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_group", ["groupId"]),
+  })
+    .index("by_group", ["groupId"])
+    .index("by_author", ["authorId"]),
 
   groupPostReactions: defineTable({
     postId: v.id("groupPosts"),
@@ -124,6 +132,7 @@ export default defineSchema({
     emoji: v.string(),
   })
     .index("by_post", ["postId"])
+    .index("by_user", ["userId"])
     .index("by_post_user", ["postId", "userId"]),
 
   groupPostComments: defineTable({
@@ -131,7 +140,9 @@ export default defineSchema({
     authorId: v.string(),
     content: v.string(),
     createdAt: v.number(),
-  }).index("by_post", ["postId"]),
+  })
+    .index("by_post", ["postId"])
+    .index("by_author", ["authorId"]),
 
   groupEvents: defineTable({
     groupId: v.id("groups"),
@@ -146,7 +157,9 @@ export default defineSchema({
     rsvpNoCount: v.number(),
     rsvpMaybeCount: v.number(),
     createdAt: v.number(),
-  }).index("by_group", ["groupId"]),
+  })
+    .index("by_group", ["groupId"])
+    .index("by_created", ["createdBy"]),
 
   groupEventRsvps: defineTable({
     eventId: v.id("groupEvents"),
@@ -154,5 +167,6 @@ export default defineSchema({
     status: v.union(v.literal("yes"), v.literal("no"), v.literal("maybe")),
   })
     .index("by_event", ["eventId"])
+    .index("by_user", ["userId"])
     .index("by_event_user", ["eventId", "userId"]),
 });

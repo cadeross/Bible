@@ -1,11 +1,9 @@
 "use client"
 
-import { useEffect, useState, useRef, useMemo } from "react"
+import { useEffect, useState, useRef, useLayoutEffect } from "react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
-import { Monitor, Moon, Sun, LogOut, User, ChevronRight, ChevronLeft, Globe, ChevronDown, Check } from "lucide-react"
-import { useAuth, useUser, useClerk, SignIn } from "@clerk/nextjs"
-import Link from "next/link"
+import { Globe, ChevronDown, Check } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import HeatMap from "@uiw/react-heat-map"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
@@ -282,25 +280,22 @@ function TintSection({ activeTint, customColor, onActiveTintChange, onCustomColo
     )
 }
 
-type PanelView = "settings" | "signin"
-
 interface HeatMapValue {
     date: string
     count: number
 }
 
-export function SettingsPanel({ onClose }: { onClose?: () => void }) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function SettingsPanel({ onClose }: { onClose?: () => void } = {}) {
     const { theme, setTheme, resolvedTheme } = useTheme()
-    const { isSignedIn } = useAuth()
-    const { user } = useUser()
-    const clerk = useClerk()
 
-    const [view, setView] = useState<PanelView>("settings")
     const [heatmapData, setHeatmapData] = useState<HeatMapValue[]>([])
     const [activeTint, setActiveTint] = useState<TintId>("blue")
     const [customColor, setCustomColor] = useState("#2488f2")
+    const heatmapContainerRef = useRef<HTMLDivElement | null>(null)
+    const [heatmapWidth, setHeatmapWidth] = useState(320)
 
-    const isDark = resolvedTheme === "dark"
+    const isDark = resolvedTheme === "dark" || resolvedTheme === "oled"
 
     useEffect(() => {
         setActiveTint(getStoredTint())
@@ -310,6 +305,16 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
     const handleTintSelect = (id: TintId) => {
         setActiveTint(id)
         applyTint(id, isDark)
+    }
+
+    const handleThemeChange = (id: string) => {
+        type DocWithViewTransition = Document & { startViewTransition?: (cb: () => void) => unknown }
+        const doc = document as DocWithViewTransition
+        if (typeof doc.startViewTransition === "function") {
+            doc.startViewTransition(() => setTheme(id))
+        } else {
+            setTheme(id)
+        }
     }
 
     const handleCustomColorChange = (hex: string) => {
@@ -335,169 +340,85 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
         })
     }, [])
 
-    const streak = useMemo(() => {
-        if (heatmapData.length === 0) return 0
-        const dateSet = new Set(heatmapData.map(d => d.date))
-        const fmt = (d: Date) => {
-            const y = d.getFullYear()
-            const m = String(d.getMonth() + 1).padStart(2, "0")
-            const day = String(d.getDate()).padStart(2, "0")
-            return `${y}/${m}/${day}`
-        }
-        const check = new Date()
-        check.setHours(0, 0, 0, 0)
-        if (!dateSet.has(fmt(check))) {
-            check.setDate(check.getDate() - 1)
-            if (!dateSet.has(fmt(check))) return 0
-        }
-        let count = 0
-        while (dateSet.has(fmt(check))) {
-            count++
-            check.setDate(check.getDate() - 1)
-        }
-        return count
-    }, [heatmapData])
+    useLayoutEffect(() => {
+        const el = heatmapContainerRef.current
+        if (!el) return
+        const measure = () => setHeatmapWidth(el.clientWidth)
+        measure()
+        const observer = new ResizeObserver(measure)
+        observer.observe(el)
+        return () => observer.disconnect()
+    }, [])
 
-    const longestStreak = useMemo(() => {
-        if (heatmapData.length === 0) return 0
-        const dates = heatmapData.map(d => d.date.replace(/\//g, "-")).sort()
-        let longest = 1
-        let current = 1
-        for (let i = 1; i < dates.length; i++) {
-            const diff = (new Date(dates[i]).getTime() - new Date(dates[i - 1]).getTime()) / 86400000
-            current = diff === 1 ? current + 1 : 1
-            if (current > longest) longest = current
-        }
-        return longest
-    }, [heatmapData])
-
+    const today = new Date()
     const startDate = new Date()
     startDate.setMonth(startDate.getMonth() - 4)
 
+    // The lib hardcodes 5px leftPad/topPad when labels are off. We compensate
+    // for that in the wrapper padding so the visible cells line up flush to the
+    // section's standard 16px / 12px insets.
+    const HEATMAP_LEFT_PAD = 5
+    const HEATMAP_TOP_PAD = 5
+    const space = 3
+    const rows = 7
+
+    // Number of week columns spanning the date range (Sunday-aligned start).
+    const startSunday = new Date(startDate)
+    startSunday.setDate(startSunday.getDate() - startSunday.getDay())
+    const cols = Math.max(1, Math.ceil((today.getTime() - startSunday.getTime()) / (7 * 86400000)))
+
+    // Solve cell size to fit cols columns into the available width. The lib
+    // computes column count as floor((width - leftPad) / (rectSize + space)),
+    // so each column slot must consume slightly less than usableWidth / cols
+    // to avoid floor() dropping the last column to fp imprecision.
+    const usableWidth = Math.max(0, heatmapWidth - HEATMAP_LEFT_PAD)
+    const rectSize = cols > 0 ? Math.max(4, (usableWidth - 0.5) / cols - space) : 12
+    const heatmapHeight = HEATMAP_TOP_PAD + rows * rectSize + (rows - 1) * space
+
     const themeOptions = [
-        { id: "light" as const, label: "Light", Icon: Sun },
-        { id: "dark" as const, label: "Dark", Icon: Moon },
-        { id: "system" as const, label: "Auto", Icon: Monitor },
+        { id: "light" as const, label: "Light" },
+        { id: "dark" as const, label: "Dark" },
+        { id: "oled" as const, label: "OLED" },
+        { id: "system" as const, label: "Auto" },
     ]
 
-    const activeThemeIndex = themeOptions.findIndex(t => t.id === theme)
+    const isOled = resolvedTheme === "oled"
 
     return (
         <div className="w-[340px] overflow-hidden">
-            <AnimatePresence mode="wait" initial={false}>
-                {view === "signin" ? (
-                    <motion.div
-                        key="signin"
-                        initial={{ opacity: 0, x: 40 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 40 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                    >
-                        <div className="border-b border-foreground/[0.06] px-3 py-2">
-                            <button
-                                onClick={() => setView("settings")}
-                                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-foreground/[0.04]"
-                            >
-                                <ChevronLeft className="h-3.5 w-3.5" />
-                                Back
-                            </button>
-                        </div>
-                        <div className="flex justify-center">
-                            <SignIn
-                                routing="hash"
-                                forceRedirectUrl="/"
-                                fallbackRedirectUrl="/"
-                                appearance={{
-                                    elements: {
-                                        rootBox: "w-full max-w-[320px]",
-                                        card: { boxShadow: "none", border: "none", background: "transparent", width: "100%", padding: "0.75rem" },
-                                        cardBox: { boxShadow: "none", width: "100%" },
-                                        footer: { background: "transparent" },
-                                    },
-                                }}
-                            />
-                        </div>
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        key="settings"
-                        initial={{ opacity: 0, x: -40 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -40 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                    >
-                        {/* Account */}
-                        <div className="border-b border-foreground/[0.06] px-3 py-2">
-                            {isSignedIn ? (
-                                <div className="space-y-0.5">
-                                    <Link
-                                        href="/profile"
-                                        onClick={onClose}
-                                        className="flex items-center justify-between rounded-lg px-2 py-2 transition-colors hover:bg-foreground/[0.04]"
-                                    >
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                                <User className="h-3.5 w-3.5" />
-                                            </div>
-                                            <div>
-                                                <p className="text-[13px] font-medium text-foreground">{user?.fullName || user?.username || "Profile"}</p>
-                                                <p className="text-[11px] text-muted-foreground/60">{user?.primaryEmailAddress?.emailAddress}</p>
-                                            </div>
-                                        </div>
-                                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/25" />
-                                    </Link>
-                                    <button
-                                        onClick={() => { clerk.signOut(); onClose?.() }}
-                                        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-[13px] text-destructive/80 transition-colors hover:bg-foreground/[0.04]"
-                                    >
-                                        <LogOut className="h-3.5 w-3.5" />
-                                        Sign out
-                                    </button>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => setView("signin")}
-                                    className="flex w-full items-center justify-between rounded-lg px-2 py-2 transition-colors hover:bg-foreground/[0.04]"
-                                >
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                            <User className="h-3.5 w-3.5" />
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="text-[13px] font-medium text-foreground">Sign in</p>
-                                            <p className="text-[11px] text-muted-foreground/60">Sync across devices</p>
-                                        </div>
-                                    </div>
-                                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/25" />
-                                </button>
-                            )}
-                        </div>
-
+            <div>
                         {/* Theme - elegant toggle */}
                         <div className="border-b border-foreground/[0.06] px-4 py-3">
-                            <div className="relative flex rounded-xl bg-foreground/[0.04] border border-foreground/[0.06] p-1">
-                                <motion.div
-                                    className="absolute top-1 bottom-1 rounded-[10px] bg-primary/[0.1] ring-1 ring-primary/25 dark:bg-primary/[0.18]"
-                                    layout
-                                    transition={{ type: "spring", stiffness: 500, damping: 32 }}
-                                    style={{
-                                        width: `calc(${100 / 3}% - 3px)`,
-                                        left: `calc(${(activeThemeIndex >= 0 ? activeThemeIndex : 2) * (100 / 3)}% + 1.5px)`,
-                                    }}
-                                />
-                                {themeOptions.map(({ id, label, Icon }) => (
-                                    <button
-                                        key={id}
-                                        onClick={() => setTheme(id)}
-                                        className={cn(
-                                            "relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-[10px] py-2 text-[12px] font-medium transition-colors duration-200",
-                                            theme === id ? "text-primary" : "text-muted-foreground/60 hover:text-foreground"
-                                        )}
-                                    >
-                                        <Icon className="h-3.5 w-3.5" />
-                                        {label}
-                                    </button>
-                                ))}
+                            <div className={cn(
+                                "relative flex gap-0.5 rounded-xl border p-1",
+                                isOled
+                                    ? "bg-foreground/[0.08] border-foreground/[0.12]"
+                                    : "bg-foreground/[0.04] border-foreground/[0.06]"
+                            )}>
+                                {themeOptions.map(({ id, label }) => {
+                                    const isActive = theme === id
+                                    return (
+                                        <button
+                                            key={id}
+                                            onClick={() => handleThemeChange(id)}
+                                            className={cn(
+                                                "relative flex flex-1 items-center justify-center rounded-[10px] py-2 text-[12px] font-medium transition-colors duration-200",
+                                                isActive ? "text-primary" : "text-muted-foreground/60 hover:text-foreground"
+                                            )}
+                                        >
+                                            {isActive && (
+                                                <motion.div
+                                                    layoutId="theme-pill"
+                                                    className="absolute inset-0 rounded-[10px] bg-primary/[0.1] ring-1 ring-primary/25 dark:bg-primary/[0.18]"
+                                                    transition={{ type: "spring", stiffness: 500, damping: 32 }}
+                                                />
+                                            )}
+                                            <span className="relative z-10">
+                                                {label}
+                                            </span>
+                                        </button>
+                                    )
+                                })}
                             </div>
                         </div>
 
@@ -528,30 +449,19 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                         <VersionsSection />
 
                         {/* Reading Activity */}
-                        <div className="px-4 py-3">
-                            <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/40">Reading Activity</p>
-
-                            {/* Streak */}
-                            <div className="mb-3 flex items-baseline justify-between">
-                                <p className="text-[13px] font-medium text-foreground">
-                                    {streak > 0 ? `${streak} day streak` : "No streak yet"}
-                                </p>
-                                {streak > 0 && (
-                                    <p className="text-[11px] text-muted-foreground/40">
-                                        Best: {longestStreak} day{longestStreak !== 1 ? "s" : ""}
-                                    </p>
-                                )}
-                            </div>
-                            <div className="overflow-x-auto -mx-1">
+                        <div className="pl-[calc(1rem-5px)] pr-4 pt-[calc(0.75rem-5px)] pb-3">
+                            <div ref={heatmapContainerRef} className="w-full">
                                 <HeatMap
                                     value={heatmapData}
-                                    width={312}
+                                    width={heatmapWidth}
+                                    height={heatmapHeight}
                                     startDate={startDate}
-                                    endDate={new Date()}
-                                    rectSize={10}
-                                    space={3}
+                                    endDate={today}
+                                    rectSize={rectSize}
+                                    space={space}
                                     legendCellSize={0}
-                                    style={{ color: isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.25)" }}
+                                    weekLabels={false}
+                                    monthLabels={false}
                                     panelColors={
                                         isDark
                                             ? { 0: "rgba(255,255,255,0.04)", 1: hexToRgba(primaryColor, 0.2), 2: hexToRgba(primaryColor, 0.35), 3: hexToRgba(primaryColor, 0.55), 4: hexToRgba(primaryColor, 0.8) }
@@ -569,17 +479,13 @@ export function SettingsPanel({ onClose }: { onClose?: () => void }) {
                                             </rect>
                                         )
                                     }}
-                                    weekLabels={["", "Mon", "", "Wed", "", "Fri", ""]}
-                                    monthLabels={["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]}
                                 />
                             </div>
                             {heatmapData.length === 0 && (
                                 <p className="text-center text-[11px] text-muted-foreground/40 py-2">Start reading to see your activity</p>
                             )}
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            </div>
         </div>
     )
 }

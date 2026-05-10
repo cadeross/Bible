@@ -55,7 +55,7 @@ test.describe("Reading flow", () => {
         await page.waitForSelector("[data-verse]")
         await expect(page.locator("[data-reading-chrome]")).toBeVisible()
         await expect(
-            page.locator('input.uppercase').filter({ hasValue: "KJV" })
+            page.locator('input.uppercase[value="KJV"]')
         ).toBeVisible()
     })
 

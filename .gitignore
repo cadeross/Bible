@@ -44,3 +44,10 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# claude code session state (worktrees, transcripts)
+/.claude/
+
+# xcode per-user state
+**/xcuserdata/
+**/*.xcuserstate

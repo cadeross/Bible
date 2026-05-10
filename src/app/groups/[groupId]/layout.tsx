@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { fetchGroup, fetchMyMembership, type Group, type GroupMember } from "@/lib/groups";
 import { GroupHeader } from "@/components/groups/group-header";
 import { GroupTabs } from "@/components/groups/group-tabs";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import { GroupContext } from "@/contexts/group-context";
 
 export default function GroupLayout({ children }: { children: React.ReactNode }) {

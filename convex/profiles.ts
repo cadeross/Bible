@@ -1,19 +1,53 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireUserId } from "./lib";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { getAuthEmail, getUserIdOrNull, requireUserId } from "./lib";
+import { relinkChildRows } from "./migrations";
+
+async function findProfile(ctx: QueryCtx | MutationCtx, userId: string) {
+  return await ctx.db
+    .query("profiles")
+    .withIndex("by_clerk", (q) => q.eq("clerkUserId", userId))
+    .unique();
+}
+
+async function findProfileByEmail(
+  ctx: QueryCtx | MutationCtx,
+  email: string
+) {
+  return await ctx.db
+    .query("profiles")
+    .withIndex("by_email", (q) => q.eq("email", email.toLowerCase()))
+    .unique();
+}
 
 export const ensureProfile = mutation({
   args: {},
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
-    const existing = await ctx.db
-      .query("profiles")
-      .withIndex("by_clerk", (q) => q.eq("clerkUserId", userId))
-      .unique();
+    const existing = await findProfile(ctx, userId);
     if (existing) return existing._id;
+
+    const email = await getAuthEmail(ctx);
+    if (email) {
+      const byEmail = await findProfileByEmail(ctx, email);
+      if (byEmail && byEmail.clerkUserId !== userId) {
+        const oldUserId = byEmail.clerkUserId;
+        await ctx.db.patch(byEmail._id, {
+          clerkUserId: userId,
+          legacyClerkUserId: oldUserId,
+          email,
+          updatedAt: Date.now(),
+        });
+        await relinkChildRows(ctx, oldUserId, userId);
+        return byEmail._id;
+      }
+    }
+
     const now = Date.now();
     return await ctx.db.insert("profiles", {
       clerkUserId: userId,
+      email: email ?? undefined,
       updatedAt: now,
     });
   },
@@ -22,12 +56,9 @@ export const ensureProfile = mutation({
 export const getMyProfile = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-    return await ctx.db
-      .query("profiles")
-      .withIndex("by_clerk", (q) => q.eq("clerkUserId", identity.subject))
-      .unique();
+    const userId = await getUserIdOrNull(ctx);
+    if (!userId) return null;
+    return await findProfile(ctx, userId);
   },
 });
 
@@ -50,10 +81,7 @@ export const updateLastRead = mutation({
   },
   handler: async (ctx, { book, chapter }) => {
     const userId = await requireUserId(ctx);
-    let profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_clerk", (q) => q.eq("clerkUserId", userId))
-      .unique();
+    const profile = await findProfile(ctx, userId);
     const now = Date.now();
     if (!profile) {
       await ctx.db.insert("profiles", {
@@ -84,10 +112,7 @@ export const completeOnboarding = mutation({
     if (taken && taken.clerkUserId !== userId) {
       throw new Error("Username already taken");
     }
-    let profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_clerk", (q) => q.eq("clerkUserId", userId))
-      .unique();
+    const profile = await findProfile(ctx, userId);
     const now = Date.now();
     if (!profile) {
       await ctx.db.insert("profiles", {
@@ -118,10 +143,7 @@ export const updateUsername = mutation({
     if (taken && taken.clerkUserId !== userId) {
       throw new Error("Username already taken");
     }
-    let profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_clerk", (q) => q.eq("clerkUserId", userId))
-      .unique();
+    const profile = await findProfile(ctx, userId);
     const now = Date.now();
     if (!profile) {
       await ctx.db.insert("profiles", {
@@ -145,10 +167,7 @@ export const updateReadingPrefs = mutation({
   },
   handler: async (ctx, { bibleVersion, enabledTranslations }) => {
     const userId = await requireUserId(ctx);
-    const profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_clerk", (q) => q.eq("clerkUserId", userId))
-      .unique();
+    const profile = await findProfile(ctx, userId);
     const now = Date.now();
     if (!profile) {
       await ctx.db.insert("profiles", {
@@ -181,10 +200,7 @@ export const setAvatarFromStorage = mutation({
     const userId = await requireUserId(ctx);
     const url = await ctx.storage.getUrl(storageId);
     if (!url) throw new Error("Invalid storage file");
-    let profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_clerk", (q) => q.eq("clerkUserId", userId))
-      .unique();
+    const profile = await findProfile(ctx, userId);
     const now = Date.now();
     const avatarUrl = `${url}?t=${now}`;
     if (!profile) {

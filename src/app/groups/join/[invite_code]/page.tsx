@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { fetchGroupByInviteCode, fetchMyMembership, type Group, type GroupMember } from "@/lib/groups";
 import { InviteBanner } from "@/components/groups/invite-banner";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 
 export default function JoinGroupPage() {
     const { invite_code } = useParams<{ invite_code: string }>();

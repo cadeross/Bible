@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Plus, Search } from "lucide-react";
 import { fetchPublicGroups, fetchMyGroups, type Group } from "@/lib/groups";
 import { GroupCard } from "@/components/groups/group-card";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import { SPRING_FAST } from "@/lib/animation";
 
 export default function GroupsPage() {

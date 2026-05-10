@@ -59,9 +59,34 @@
   /* Smooth light/dark mode transitions — lower specificity than class utilities,
      so Tailwind's transition-colors/transition-none classes still win on interactive elements. */
   *, *::before, *::after {
-    transition-property: background-color, color, border-color, fill, stroke, box-shadow;
-    transition-duration: 250ms;
-    transition-timing-function: ease;
+    transition-property: background-color, color, border-color, fill, stroke, box-shadow, outline-color, text-decoration-color;
+    transition-duration: 320ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Theme switching — View Transitions API.
+     The browser's default crossfade uses `mix-blend-mode: plus-lighter`, which
+     additively blends the old and new snapshots — when both are mid-fade you
+     get a flash that's brighter than either theme (the "white flash" between
+     light and dark). Instead, we stack the new snapshot fully opaque on top
+     of the old (which holds at opacity 1) and fade just the new in. No
+     additive math, no flash. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    mix-blend-mode: normal;
+  }
+  ::view-transition-old(root) {
+    animation: none;
+    opacity: 1;
+    z-index: 1;
+  }
+  ::view-transition-new(root) {
+    animation: vt-theme-fade-in 380ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    z-index: 2;
+  }
+  @keyframes vt-theme-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
 
   ::selection {
@@ -96,7 +121,8 @@
     var(--shadow-elevated);
 }
 
-html[data-theme="dark"] .glass {
+html[data-theme="dark"] .glass,
+html[data-theme="oled"] .glass {
   box-shadow:
     inset 0 0.5px 0 rgba(255, 255, 255, 0.1),
     inset 0 -0.5px 0 rgba(255, 255, 255, 0.03),
@@ -133,7 +159,8 @@ html[data-theme="light"] .glass-subtle {
     var(--shadow-card);
 }
 
-html[data-theme="dark"] .glass-subtle {
+html[data-theme="dark"] .glass-subtle,
+html[data-theme="oled"] .glass-subtle {
   box-shadow:
     inset 0 0.5px 0 rgba(255, 255, 255, 0.08),
     inset 0 -0.5px 0 rgba(255, 255, 255, 0.03),
@@ -551,12 +578,48 @@ html[data-theme="dark"] {
   --shadow-dialog: 0 24px 60px rgba(0, 0, 0, 0.5), 0 12px 28px rgba(0, 0, 0, 0.3);
 }
 
+html[data-theme="oled"] {
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --primary: #0a84ff;
+  --primary-foreground: #ffffff;
+  --muted: #0e0e0e;
+  --muted-foreground: #98989d;
+  --accent: #1a1a1a;
+  --accent-foreground: #f5f5f7;
+  --card: #0e0e0e;
+  --card-foreground: #f5f5f7;
+  --border: #303030;
+  --nav: #000000;
+  --nav-active: color-mix(in srgb, var(--primary) 20%, transparent);
+  --selection: color-mix(in srgb, var(--primary) 28%, transparent);
+  --heart: #ff453a;
+  --bookmark: #ffd60a;
+  --popover: #0e0e0e;
+  --popover-foreground: #f5f5f7;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #f5f5f7;
+  --destructive: #ff453a;
+  --destructive-foreground: #ffffff;
+  --ring: color-mix(in srgb, var(--primary) 40%, transparent);
+  /* On pure black, traditional dark drop shadows are invisible. Replace the
+     "lift" with a faint white hairline (a 0.5px expansion ring) — visually it
+     reads as "this surface is raised above the void," restoring the depth that
+     the dark-mode shadow gives via luminance falloff. The black drop layer
+     stays for contexts nested over non-black surfaces. */
+  --shadow-sm: 0 0 0 0.5px rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 0 0 0.5px rgba(255, 255, 255, 0.06), 0 2px 8px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 12px 40px rgba(0, 0, 0, 0.7), 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-dialog: 0 0 0 1px rgba(255, 255, 255, 0.10), 0 24px 60px rgba(0, 0, 0, 0.8), 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+
 /* Verse row hover: tint-aware soft highlight */
 html[data-theme="light"] .hover\:bg-primary\/5:hover {
   background-color: color-mix(in srgb, var(--primary) 10%, transparent) !important;
 }
 
-html[data-theme="dark"] .hover\:bg-primary\/5:hover {
+html[data-theme="dark"] .hover\:bg-primary\/5:hover,
+html[data-theme="oled"] .hover\:bg-primary\/5:hover {
   background-color: color-mix(in srgb, var(--primary) 15%, transparent) !important;
 }
 

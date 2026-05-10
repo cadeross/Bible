@@ -1,6 +1,6 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { convexAuthNextjsMiddleware } from "@convex-dev/auth/nextjs/server";
 
-export const proxy = clerkMiddleware();
+export const proxy = convexAuthNextjsMiddleware();
 
 export const config = {
   matcher: [

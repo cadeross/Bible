@@ -8,12 +8,16 @@
  * @module
  */
 
+import type * as auth from "../auth.js";
 import type * as dailyContent from "../dailyContent.js";
 import type * as groups from "../groups.js";
 import type * as highlights from "../highlights.js";
 import type * as history from "../history.js";
+import type * as http from "../http.js";
 import type * as lib from "../lib.js";
+import type * as migrations from "../migrations.js";
 import type * as profiles from "../profiles.js";
+import type * as users from "../users.js";
 import type * as wisdom from "../wisdom.js";
 
 import type {
@@ -23,12 +27,16 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
   dailyContent: typeof dailyContent;
   groups: typeof groups;
   highlights: typeof highlights;
   history: typeof history;
+  http: typeof http;
   lib: typeof lib;
+  migrations: typeof migrations;
   profiles: typeof profiles;
+  users: typeof users;
   wisdom: typeof wisdom;
 }>;
 

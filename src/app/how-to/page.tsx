@@ -184,20 +184,16 @@ export default function HowToPage() {
                     </p>
                 </Section>
 
-                {/* ACCOUNT & PROGRESS */}
-                <Section title="Account & Progress" icon={User}>
+                {/* PROGRESS */}
+                <Section title="Progress" icon={User}>
                     <p className="text-sm text-foreground/80 leading-relaxed">
-                        Reading progress is tracked automatically without an account. Sign in to sync your library across devices.
+                        Reading progress is tracked automatically on this device.
                     </p>
                     <ul className="space-y-2">
                         <Bullet>Your daily reading streak is shown on the home screen.</Bullet>
-                        <Bullet>An activity heatmap on your profile shows reading frequency over the past year.</Bullet>
                         <Bullet>Full reading history is logged per chapter with time-on-page tracking.</Bullet>
-                        <Bullet>Highlights and notes sync to your account and are accessible from any device.</Bullet>
+                        <Bullet>Highlights and notes are saved locally and shown in the Library.</Bullet>
                     </ul>
-                    <Link href="/profile" className="inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors hover:text-primary/80 mt-2">
-                        View profile →
-                    </Link>
                 </Section>
 
             </div>

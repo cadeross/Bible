@@ -1,9 +1,14 @@
 "use client";
 
-import { SignIn } from "@clerk/nextjs";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, Globe, Heart, Calendar, Highlighter, Sun } from "lucide-react";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -39,6 +44,27 @@ const features = [
 ];
 
 export default function AuthPage() {
+  const router = useRouter();
+  const { signIn } = useAuthActions();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      await signIn("password", { email, password, flow: "signIn" });
+      router.push("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign in failed");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <motion.div
       className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-6 py-16"
@@ -78,25 +104,58 @@ export default function AuthPage() {
       </motion.div>
 
       <motion.div variants={itemVariants} className="w-full flex justify-center">
-        <div className="glass border rounded-2xl overflow-hidden w-full max-w-[400px]">
-          <p className="pt-5 text-center text-[13px] font-medium tracking-wide text-muted-foreground/60">
+        <div className="glass border border-white/[0.12] dark:border-white/[0.06] rounded-2xl shadow-[var(--shadow-elevated)] w-full max-w-[400px] p-7">
+          <p className="text-center text-[13px] font-medium tracking-wide text-muted-foreground/70 mb-5">
             Welcome back
           </p>
-          <SignIn
-            routing="path"
-            path="/auth/login"
-            signUpUrl="/auth/sign-up"
-            forceRedirectUrl="/"
-            fallbackRedirectUrl="/"
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                card: { boxShadow: "none", border: "none", background: "transparent", width: "100%" },
-                cardBox: { boxShadow: "none", width: "100%" },
-                footer: { background: "transparent" },
-              },
-            }}
-          />
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-medium">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-xs font-medium">Password</Label>
+                <Link
+                  href="/auth/reset-password"
+                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Forgot?
+                </Link>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            {error ? (
+              <p className="text-xs text-destructive" role="alert">{error}</p>
+            ) : null}
+
+            <Button type="submit" disabled={submitting} className="w-full">
+              {submitting ? "Signing in…" : "Sign in"}
+            </Button>
+          </form>
+
+          <p className="mt-5 text-center text-xs text-muted-foreground">
+            Don&apos;t have an account?{" "}
+            <Link href="/auth/sign-up" className="text-foreground font-medium hover:underline">
+              Sign up
+            </Link>
+          </p>
         </div>
       </motion.div>
 

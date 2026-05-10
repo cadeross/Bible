@@ -11,7 +11,6 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import { BIBLE_BOOKS } from "@/lib/bible-data"
 import Loading from "../loading"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
-import { useAuth } from "@clerk/nextjs"
 import { HIGHLIGHT_MENU_COLORS } from "@/lib/highlight-menu"
 import { hapticLight, hapticMedium } from "@/lib/haptics"
 
@@ -124,13 +123,11 @@ function EmptyTab({ title, hint }: { title: string; hint: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LibraryPage() {
-    const { isLoaded: authLoaded, isSignedIn } = useAuth()
     const { fontFamily, bibleVersion, isLoaded: prefsLoaded } = useReadingPreferences()
     const reduceMotion = useReducedMotion()
 
     const [rawHighlights, setRawHighlights] = useState<Highlight[]>([])
     const [loading, setLoading] = useState(true)
-    const [isGuest, setIsGuest] = useState(false)
     const [activeTab, setActiveTab] = useState<TabId>("highlights")
 
     // Note editor state
@@ -140,14 +137,12 @@ export default function LibraryPage() {
     const noteSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     useEffect(() => {
-        if (!authLoaded) return
         void (async () => {
-            setIsGuest(!isSignedIn)
             const h = await getAllHighlights()
             setRawHighlights(h)
             setLoading(false)
         })()
-    }, [authLoaded, isSignedIn])
+    }, [])
 
     const fontClass = useMemo(() => {
         if (!prefsLoaded) return "font-serif"
@@ -318,9 +313,7 @@ export default function LibraryPage() {
                         <div className="space-y-2">
                             <h1 className="text-xl font-semibold tracking-tight">Library is empty</h1>
                             <p className="text-sm text-muted-foreground max-w-[280px] leading-relaxed mx-auto">
-                                {isGuest
-                                    ? "Items saved locally until you sign in to sync across devices."
-                                    : "Start reading to highlight verses, add notes, and save daily wisdom."}
+                                Start reading to highlight verses, add notes, and save daily wisdom.
                             </p>
                         </div>
                         <div className="flex flex-col items-center gap-3 pt-1">
@@ -330,11 +323,6 @@ export default function LibraryPage() {
                             >
                                 Start reading <ArrowRight className="h-3.5 w-3.5" />
                             </Link>
-                            {isGuest && (
-                                <Link href="/profile" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                                    Sign in to sync
-                                </Link>
-                            )}
                         </div>
                     </motion.div>
                 ) : (
@@ -350,26 +338,6 @@ export default function LibraryPage() {
                             className="w-full"
                         >
                             <div className="w-full max-w-[720px] mx-auto px-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-20">
-
-                                {/* Guest banner */}
-                                {isGuest && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -6 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.3 }}
-                                        className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-white/[0.12] dark:border-white/[0.06] glass-subtle shadow-[var(--shadow-sm)] px-4 py-3"
-                                    >
-                                        <div className="flex items-center gap-2.5">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400/80 animate-pulse shrink-0" />
-                                            <p className="text-xs text-muted-foreground leading-snug">
-                                                <span className="font-medium text-foreground/80">Local only</span> · sign in to sync across devices
-                                            </p>
-                                        </div>
-                                        <Link href="/profile" className="text-xs font-medium text-primary shrink-0 transition-colors hover:text-foreground">
-                                            Sign in
-                                        </Link>
-                                    </motion.div>
-                                )}
 
                                 {/* ── Highlights tab ─────────────────────────── */}
                                 {activeTab === "highlights" && (

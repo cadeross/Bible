@@ -5,9 +5,6 @@ import { motion } from "framer-motion"
 import { BookOpen, Church, Clock, Heart, Share2 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
-import { useAuth, useUser } from "@clerk/nextjs"
-import { useQuery } from "convex/react"
-import { api } from "../../../convex/_generated/api"
 import { getDailyContent, parseVerseRef, getLiturgicalColorClass, DailyContent, FALLBACK_CONTENT } from "@/lib/daily-content"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { useNavMode } from "@/contexts/nav-mode"
@@ -76,13 +73,6 @@ const getFontClass = (font: string) => {
 };
 
 export function HomeClient({ dailyReadings }: HomeClientProps) {
-  const { isSignedIn } = useAuth()
-  const { user } = useUser()
-  const convexProfile = useQuery(
-    api.profiles.getMyProfile,
-    isSignedIn ? {} : "skip"
-  )
-  const [username, setUsername] = useState<string>("")
   const [greeting, setGreeting] = useState<string>("")
   const [todayLabel, setTodayLabel] = useState<string>("")
   const [continueReading, setContinueReading] = useState<{ book: string, chapter: number } | null>(() => {
@@ -106,15 +96,6 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
   const [dailyReadingsIndex, setDailyReadingsIndex] = useState(0)
   const { fontFamily, bibleVersion } = useReadingPreferences()
   const { navMode } = useNavMode()
-
-  useEffect(() => {
-    const name =
-      convexProfile?.username ??
-      user?.username ??
-      user?.firstName ??
-      ""
-    setUsername(name)
-  }, [convexProfile, user])
 
   useEffect(() => {
     setMounted(true)
@@ -263,19 +244,9 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
         created_at: new Date().toISOString()
       })
 
-      if (username) {
-        toast.success("verse highlighted", {
-          description: "added to your library"
-        })
-      } else {
-        toast.success("saved to device", {
-          description: "sign in to sync your library",
-          action: {
-            label: "sign in",
-            onClick: () => window.location.href = "/profile"
-          }
-        })
-      }
+      toast.success("verse highlighted", {
+        description: "added to your library",
+      })
     } catch (error) {
       console.error(error)
       toast.error("failed to save")
@@ -384,7 +355,7 @@ export function HomeClient({ dailyReadings }: HomeClientProps) {
             <div className="flex flex-wrap justify-center items-center gap-3 mt-1">
               {streakDays !== null && (
                 <Link
-                  href="/profile"
+                  href="/library"
                   className="group flex items-center gap-2.5 rounded-full border border-border/30 bg-card px-5 py-2.5 shadow-[var(--shadow-sm)] transition-all duration-200 hover:shadow-[var(--shadow-card)] hover:border-border/50"
                 >
                   <Heart className="h-3.5 w-3.5 text-heart/70 transition-colors group-hover:text-heart" />
