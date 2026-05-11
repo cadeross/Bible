@@ -783,7 +783,6 @@ export function SettingsPanel() {
                                         const cellX = Number((props as any).x) || 0
                                         const cellY = Number((props as any).y) || 0
                                         const cellW = Number((props as any).width) || rectSize
-                                        const isHovered = hoveredCell?.date === data.date
                                         return (
                                             <rect
                                                 {...props}
@@ -793,8 +792,6 @@ export function SettingsPanel() {
                                                 style={{
                                                     ...((props as any).style || {}),
                                                     cursor: "pointer",
-                                                    transition: "opacity 150ms",
-                                                    opacity: hoveredCell && !isHovered ? 0.55 : 1,
                                                     outline: "none",
                                                     WebkitTapHighlightColor: "transparent",
                                                     userSelect: "none",
