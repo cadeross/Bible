@@ -90,7 +90,7 @@ function VersionsSection() {
             <button
                 type="button"
                 onClick={() => setOpen(o => !o)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-foreground/[0.02]"
+                className="flex w-full items-center justify-between px-4 py-3 text-left cursor-pointer transition-colors hover:bg-foreground/[0.02]"
             >
                 <p className="text-[13px] font-medium text-foreground">Bible Versions</p>
                 <div className="flex items-center gap-2">
@@ -183,33 +183,6 @@ const FONT_OPTIONS: { id: FontType; label: string; family: string }[] = [
     { id: "script", label: "Script", family: 'var(--font-moon-dance), "Brush Script MT", "Lucida Handwriting", cursive' },
 ]
 
-function GridHighlight({ containerRef, hoveredIndex }: { containerRef: React.RefObject<HTMLDivElement | null>; hoveredIndex: number | null }) {
-    const [rect, setRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
-
-    /* eslint-disable react-hooks/set-state-in-effect -- intentional: measure DOM rect for hover overlay */
-    useEffect(() => {
-        if (hoveredIndex === null || !containerRef.current) { setRect(null); return }
-        const buttons = containerRef.current.querySelectorAll<HTMLElement>("[data-slide-item]")
-        const el = buttons[hoveredIndex]
-        if (!el) { setRect(null); return }
-        const parentRect = containerRef.current.getBoundingClientRect()
-        const elRect = el.getBoundingClientRect()
-        setRect({ top: elRect.top - parentRect.top, left: elRect.left - parentRect.left, width: elRect.width, height: elRect.height })
-    }, [hoveredIndex, containerRef])
-    /* eslint-enable react-hooks/set-state-in-effect */
-
-    return (
-        <motion.div
-            aria-hidden
-            className="pointer-events-none absolute z-0 rounded-xl bg-foreground/[0.05] dark:bg-white/[0.07]"
-            initial={false}
-            animate={rect ? { opacity: 1, top: rect.top, left: rect.left, width: rect.width, height: rect.height } : { opacity: 0 }}
-            transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
-            style={{ position: "absolute" }}
-        />
-    )
-}
-
 function ToggleRow({
     active,
     onClick,
@@ -230,8 +203,8 @@ function ToggleRow({
             onClick={onClick}
             aria-pressed={active}
             className={cn(
-                "flex w-full items-center justify-between rounded-md py-1 text-[12px] font-medium transition-colors",
-                active ? "text-foreground" : "text-muted-foreground/70 hover:text-foreground"
+                "flex w-full items-center justify-between rounded-md py-1 text-[12px] font-medium cursor-pointer transition-opacity duration-200 hover:opacity-60",
+                active ? "text-foreground" : "text-muted-foreground/70"
             )}
         >
             <span>{label}</span>
@@ -261,10 +234,10 @@ function StepperRow({
     canDecrement: boolean
     canIncrement: boolean
 }) {
-    const btn = "h-5 w-3.5 flex items-center justify-center text-foreground/55 hover:text-foreground transition-colors disabled:opacity-25 disabled:pointer-events-none"
+    const btn = "h-5 w-3.5 flex items-center justify-center cursor-pointer text-foreground transition-opacity duration-200 hover:opacity-60 disabled:opacity-25 disabled:pointer-events-none disabled:cursor-default"
     return (
-        <div className="flex w-full items-center justify-between py-1 text-[12px] font-medium text-muted-foreground/70">
-            <span>{label}</span>
+        <div className="group flex w-full items-center justify-between py-1 text-[12px] font-medium text-foreground">
+            <span className="transition-opacity duration-200 group-hover:opacity-60">{label}</span>
             <div className="flex items-center gap-1.5">
                 <button type="button" onClick={onDecrement} disabled={!canDecrement} className={btn} aria-label={`Decrease ${label.toLowerCase()}`}>
                     <span className="text-[14px] leading-none select-none font-light">−</span>
@@ -290,8 +263,6 @@ function ReadingSection() {
     } = useReadingPreferences()
 
     const [open, setOpen] = useState(true)
-    const gridRef = useRef<HTMLDivElement>(null)
-    const [hoveredFont, setHoveredFont] = useState<number | null>(null)
 
     const activeFontSize = isLoaded ? fontSize : 18
     const activeLineHeight = isLoaded ? lineHeight : 1.6
@@ -302,7 +273,7 @@ function ReadingSection() {
             <button
                 type="button"
                 onClick={() => setOpen(o => !o)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-foreground/[0.02]"
+                className="flex w-full items-center justify-between px-4 py-3 text-left cursor-pointer transition-colors hover:bg-foreground/[0.02]"
             >
                 <p className="text-[13px] font-medium text-foreground">Reading</p>
                 <div className="flex items-center gap-2">
@@ -330,48 +301,58 @@ function ReadingSection() {
                         <div className="px-4 pb-3 pt-1">
 
                             {/* Typeface grid */}
-                            <div
-                                ref={gridRef}
-                                className="relative grid grid-cols-5 gap-1.5"
-                                onPointerLeave={() => setHoveredFont(null)}
-                            >
-                                <GridHighlight containerRef={gridRef} hoveredIndex={hoveredFont} />
-                                {FONT_OPTIONS.map((f, i) => {
+                            <div className="flex gap-1.5">
+                                {FONT_OPTIONS.map((f) => {
                                     const selected = isLoaded ? fontFamily === f.id : f.id === "serif"
                                     return (
                                         <motion.button
                                             key={f.id}
                                             type="button"
                                             suppressHydrationWarning
-                                            data-slide-item
                                             onClick={() => setFontFamily(f.id)}
-                                            onPointerEnter={() => setHoveredFont(i)}
-                                            whileTap={{ scale: 0.93 }}
-                                            className={cn(
-                                                "relative z-10 flex flex-col items-center gap-0.5 rounded-lg py-1.5 cursor-pointer",
-                                                "transition-colors duration-150",
-                                                selected ? "bg-foreground/[0.07] dark:bg-white/[0.09]" : ""
-                                            )}
+                                            whileHover={{ y: -1.5 }}
+                                            whileTap={{ scale: 0.94, y: 0 }}
+                                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                            className="group flex flex-1 flex-col items-center gap-1 min-w-0 cursor-pointer"
+                                            aria-pressed={selected}
+                                            aria-label={`${f.label} typeface`}
                                         >
-                                            {selected && (
-                                                <motion.div
-                                                    layoutId="settings-typeface-ring"
-                                                    className="absolute inset-0 rounded-lg ring-1 ring-foreground/[0.14] dark:ring-white/[0.18]"
-                                                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                                                />
-                                            )}
-                                            <span
-                                                className={cn(
-                                                    "relative z-10 text-[13px] leading-none transition-colors duration-150",
-                                                    selected ? "text-foreground" : "text-foreground/40"
+                                            <div className="relative w-full" style={{ aspectRatio: "4 / 3" }}>
+                                                <div
+                                                    className={cn(
+                                                        "absolute inset-0 flex items-center justify-center overflow-hidden rounded-md border bg-card transition-[box-shadow,border-color,background-color] duration-200",
+                                                        "border-foreground/[0.08] group-hover:border-foreground/[0.22] group-hover:shadow-[var(--shadow-sm)]"
+                                                    )}
+                                                >
+                                                    <span
+                                                        className={cn(
+                                                            "text-[13px] leading-none transition-colors duration-200",
+                                                            selected
+                                                                ? "text-foreground"
+                                                                : "text-foreground/50 group-hover:text-foreground"
+                                                        )}
+                                                        style={{ fontFamily: f.family }}
+                                                    >
+                                                        Aa
+                                                    </span>
+                                                </div>
+                                                {selected && (
+                                                    <motion.div
+                                                        layoutId="settings-font-active"
+                                                        className="pointer-events-none absolute inset-0 rounded-md ring-2 ring-primary/60"
+                                                        transition={{ type: "spring", stiffness: 500, damping: 36, mass: 0.7 }}
+                                                        style={{
+                                                            boxShadow:
+                                                                "0 4px 14px color-mix(in srgb, var(--primary) 20%, transparent)",
+                                                        }}
+                                                    />
                                                 )}
-                                                style={{ fontFamily: f.family }}
-                                            >
-                                                Aa
-                                            </span>
+                                            </div>
                                             <span className={cn(
-                                                "relative z-10 text-[9px] font-medium transition-colors duration-150",
-                                                selected ? "text-foreground/70" : "text-muted-foreground/35"
+                                                "text-[10.5px] font-medium transition-colors duration-200",
+                                                selected
+                                                    ? "text-primary"
+                                                    : "text-muted-foreground/70 group-hover:text-foreground"
                                             )}>
                                                 {f.label}
                                             </span>
@@ -469,7 +450,7 @@ function TintSection({ activeTint, customColor, onActiveTintChange, onCustomColo
                                     type="button"
                                     aria-label={tint.label}
                                     onClick={() => handleSelect(tint.id)}
-                                    className="relative flex items-center justify-center rounded-full transition-transform duration-150 hover:scale-110 active:scale-95"
+                                    className="relative flex items-center justify-center rounded-full cursor-pointer transition-transform duration-150 hover:scale-110 active:scale-95"
                                     style={{ width: 18, height: 18 }}
                                 >
                                     <span
@@ -493,7 +474,7 @@ function TintSection({ activeTint, customColor, onActiveTintChange, onCustomColo
                             type="button"
                             aria-label="Custom color"
                             onClick={handleRainbowClick}
-                            className="relative flex items-center justify-center rounded-full transition-transform duration-150 hover:scale-110 active:scale-95"
+                            className="relative flex items-center justify-center rounded-full cursor-pointer transition-transform duration-150 hover:scale-110 active:scale-95"
                             style={{ width: 18, height: 18 }}
                         >
                             <span
@@ -548,6 +529,14 @@ export function SettingsPanel() {
     const [customColor, setCustomColor] = useState("#2488f2")
     const heatmapContainerRef = useRef<HTMLDivElement | null>(null)
     const [heatmapWidth, setHeatmapWidth] = useState(320)
+    const [hoveredCell, setHoveredCell] = useState<{ date: string; count: number; x: number; y: number } | null>(null)
+
+    const formatHeatmapDate = (raw: string) => {
+        const [y, m, d] = raw.split("/")
+        if (!y || !m || !d) return raw
+        const date = new Date(Number(y), Number(m) - 1, Number(d))
+        return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+    }
     const [versionOpen, setVersionOpen] = useState(false)
     const versionCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -683,31 +672,39 @@ export function SettingsPanel() {
                                             key={id}
                                             type="button"
                                             onClick={() => handleThemeChange(id)}
-                                            whileTap={{ scale: 0.94 }}
+                                            whileHover={{ y: -1.5 }}
+                                            whileTap={{ scale: 0.94, y: 0 }}
                                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                            className="group flex flex-1 flex-col items-center gap-1 min-w-0"
+                                            className="group flex flex-1 flex-col items-center gap-1 min-w-0 cursor-pointer"
                                             aria-pressed={isActive}
                                             aria-label={`${label} theme`}
                                         >
-                                            <div
-                                                className={cn(
-                                                    "relative w-full overflow-hidden rounded-md border transition-[box-shadow,border-color] duration-200",
-                                                    isActive
-                                                        ? "border-primary/60 ring-2 ring-primary/30 shadow-[var(--shadow-sm)]"
-                                                        : "border-foreground/[0.08] group-hover:border-foreground/[0.18]"
-                                                )}
-                                                style={{
-                                                    backgroundColor: bg,
-                                                    color: fg,
-                                                    aspectRatio: "4 / 3",
-                                                }}
-                                            >
-                                                <div className="absolute inset-0 flex items-center justify-center font-serif text-[11px] font-semibold tracking-tight">
-                                                    Aa
+                                            <div className="relative w-full" style={{ aspectRatio: "4 / 3" }}>
+                                                <div
+                                                    className={cn(
+                                                        "absolute inset-0 overflow-hidden rounded-md border transition-[box-shadow,border-color] duration-200",
+                                                        "border-foreground/[0.08] group-hover:border-foreground/[0.22] group-hover:shadow-[var(--shadow-sm)]"
+                                                    )}
+                                                    style={{ backgroundColor: bg, color: fg }}
+                                                >
+                                                    <div className="absolute inset-0 flex items-center justify-center font-serif text-[11px] font-semibold tracking-tight">
+                                                        Aa
+                                                    </div>
                                                 </div>
+                                                {isActive && (
+                                                    <motion.div
+                                                        layoutId="settings-theme-active"
+                                                        className="pointer-events-none absolute inset-0 rounded-md ring-2 ring-primary/60"
+                                                        transition={{ type: "spring", stiffness: 500, damping: 36, mass: 0.7 }}
+                                                        style={{
+                                                            boxShadow:
+                                                                "0 4px 14px color-mix(in srgb, var(--primary) 20%, transparent)",
+                                                        }}
+                                                    />
+                                                )}
                                             </div>
                                             <span className={cn(
-                                                "text-[10.5px] font-medium transition-colors",
+                                                "text-[10.5px] font-medium transition-colors duration-200",
                                                 isActive
                                                     ? "text-primary"
                                                     : "text-muted-foreground/70 group-hover:text-foreground"
@@ -723,10 +720,8 @@ export function SettingsPanel() {
                                 onClick={handleFollowSystemToggle}
                                 aria-pressed={isFollowSystem}
                                 className={cn(
-                                    "flex w-full items-center justify-between rounded-md py-1 text-[12px] font-medium transition-colors",
-                                    isFollowSystem
-                                        ? "text-primary"
-                                        : "text-muted-foreground/70 hover:text-foreground"
+                                    "flex w-full items-center justify-between rounded-md py-1 text-[12px] font-medium cursor-pointer transition-opacity duration-200 hover:opacity-60",
+                                    isFollowSystem ? "text-foreground" : "text-muted-foreground/70"
                                 )}
                             >
                                 <span>Match system theme</span>
@@ -734,7 +729,7 @@ export function SettingsPanel() {
                                     aria-hidden
                                     className={cn(
                                         "h-3.5 w-3.5 transition-opacity duration-200",
-                                        isFollowSystem ? "opacity-100" : "opacity-40"
+                                        isFollowSystem ? "text-primary opacity-100" : "opacity-40"
                                     )}
                                 />
                             </button>
@@ -756,7 +751,17 @@ export function SettingsPanel() {
 
                         {/* Reading Activity */}
                         <div className="pl-[calc(1rem-5px)] pr-4 pt-[calc(0.75rem-5px)] pb-3">
-                            <div ref={heatmapContainerRef} className="w-full">
+                            <div
+                                ref={heatmapContainerRef}
+                                className="relative w-full"
+                                onPointerLeave={() => setHoveredCell(null)}
+                                style={{
+                                    // Override @uiw/react-heat-map's bundled CSS: rect:active defaults to dark green (#196127),
+                                    // rect:hover adds a stroke — replace both with tint-aware values.
+                                    ["--rhm-rect-active" as string]: primaryColor,
+                                    ["--rhm-rect-hover-stroke" as string]: "transparent",
+                                }}
+                            >
                                 <HeatMap
                                     value={heatmapData}
                                     width={heatmapWidth}
@@ -775,17 +780,56 @@ export function SettingsPanel() {
                                     }
                                     rectRender={(props, data) => {
                                         const count = (data as any).count || 0
+                                        const cellX = Number((props as any).x) || 0
+                                        const cellY = Number((props as any).y) || 0
+                                        const cellW = Number((props as any).width) || rectSize
+                                        const isHovered = hoveredCell?.date === data.date
                                         return (
                                             <rect
                                                 {...props}
                                                 rx={2.5}
                                                 ry={2.5}
-                                            >
-                                                {count > 0 && <title>{`${data.date}: ${count} chapter${count !== 1 ? "s" : ""}`}</title>}
-                                            </rect>
+                                                tabIndex={-1}
+                                                style={{
+                                                    ...((props as any).style || {}),
+                                                    cursor: "pointer",
+                                                    transition: "opacity 150ms",
+                                                    opacity: hoveredCell && !isHovered ? 0.55 : 1,
+                                                    outline: "none",
+                                                    WebkitTapHighlightColor: "transparent",
+                                                    userSelect: "none",
+                                                    WebkitUserSelect: "none",
+                                                }}
+                                                onPointerEnter={() => setHoveredCell({
+                                                    date: data.date,
+                                                    count,
+                                                    x: cellX + cellW / 2,
+                                                    y: cellY,
+                                                })}
+                                            />
                                         )
                                     }}
                                 />
+                                <AnimatePresence>
+                                    {hoveredCell && (
+                                        <motion.div
+                                            key={hoveredCell.date}
+                                            initial={{ opacity: 0, y: 2 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 2 }}
+                                            transition={{ duration: 0.12 }}
+                                            className="ow-menu-surface glass pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-2xl border border-white/[0.12] dark:border-white/[0.06] px-2.5 py-1.5 text-[11px] font-medium leading-tight text-popover-foreground shadow-[var(--shadow-elevated)] outline-none"
+                                            style={{ left: hoveredCell.x, top: hoveredCell.y - 8 }}
+                                        >
+                                            <div className="tabular-nums text-foreground">{formatHeatmapDate(hoveredCell.date)}</div>
+                                            <div className="text-muted-foreground/60">
+                                                {hoveredCell.count > 0
+                                                    ? `${hoveredCell.count} chapter${hoveredCell.count !== 1 ? "s" : ""}`
+                                                    : "No reading"}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                             {heatmapData.length === 0 && (
                                 <p className="text-center text-[11px] text-muted-foreground/40 py-2">Start reading to see your activity</p>
@@ -811,7 +855,7 @@ export function SettingsPanel() {
                                             onMouseLeave={scheduleVersionClose}
                                             onFocus={() => { cancelVersionClose(); setVersionOpen(true) }}
                                             onBlur={scheduleVersionClose}
-                                            className="transition-colors duration-200 hover:text-foreground"
+                                            className="cursor-pointer transition-colors duration-200 hover:text-foreground"
                                         >
                                             v{APP_VERSION}
                                         </button>
