@@ -129,7 +129,7 @@ export default function HowToPage() {
                 {/* FOCUS MODE */}
                 <Section title="Focus Mode" icon={Eye}>
                     <p className="text-sm text-foreground/80 leading-relaxed">
-                        Press <kbd className="rounded-md bg-muted/60 px-1.5 py-0.5 border border-border/30 text-xs font-medium">{focusKey}</kbd> while reading to enter focus mode. All navigation and UI elements fade away, leaving only the text. Move your cursor to the edges of the screen to reveal controls when needed.
+                        Press <kbd className="rounded-md bg-muted/60 px-1.5 py-0.5 border border-border/30 text-xs font-medium">{focusKey}</kbd> while reading to enter focus mode. The main navigation fades away while the book, chapter, and version controls stay docked above the passage.
                     </p>
                 </Section>
 

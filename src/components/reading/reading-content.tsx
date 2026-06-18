@@ -646,7 +646,6 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
             case "sans": return "font-sans"
             case "mono": return "font-mono"
             case "pixel": return "font-pixel"
-            case "script": return "font-script"
             case "serif":
             default: return "font-serif"
         }
@@ -658,20 +657,10 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
             case "sans": return "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif"
             case "mono": return "var(--font-geist-mono), ui-monospace, monospace"
             case "pixel": return "var(--font-nunito), ui-rounded, sans-serif"
-            case "script": return 'var(--font-moon-dance), "Brush Script MT", "Lucida Handwriting", cursive'
             case "serif":
             default: return "Merriweather, Georgia, ui-serif, serif"
         }
     })()
-
-    // Beau Rivage has a small x-height — at the same px size it reads noticeably
-    // smaller than the other fonts. Scale up so the user's chosen size lands
-    // visually consistent across faces. The chapter-title header gets an extra
-    // bump so it still reads as a heading (not flush with body text).
-    const isScript = (isLoaded ? fontFamily : "serif") === "script"
-    const fontSizeScale = isScript ? 1.3 : 1
-    const headerSizeScale = isScript ? 1.6 : 1
-    const sectionTitleScale = isScript ? 1.4 : 1
 
     // Imperatively apply styles after preferences load — React's suppressHydrationWarning
     // can cause the initial server-rendered style to persist through reconciliation
@@ -692,7 +681,7 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                 mode === 'default' ? "max-w-[720px] mx-auto px-6 py-8" : "px-0 py-2",
             )}
             style={{
-                fontSize: `${(isLoaded ? fontSize : 18) * fontSizeScale}px`,
+                fontSize: `${isLoaded ? fontSize : 18}px`,
                 lineHeight: isLoaded ? lineHeight : 1.6,
                 fontFamily: fontFamilyStyle,
                 userSelect: 'none',
@@ -790,20 +779,14 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
             {mode === 'default' && (
                 <div className="text-center mb-14">
                     <h1
-                        className={cn(
-                            "font-semibold tracking-tight text-foreground",
-                            isScript && "leading-tight"
-                        )}
-                        style={{ fontSize: `${18 * headerSizeScale}px` }}
+                        className="font-semibold tracking-tight text-foreground"
+                        style={{ fontSize: "18px" }}
                     >
                         {chapter.reference}
                     </h1>
                     <p
-                        className={cn(
-                            "text-muted-foreground",
-                            isScript ? "leading-snug" : "mt-1.5"
-                        )}
-                        style={{ fontSize: `${12 * headerSizeScale}px` }}
+                        className="mt-1.5 text-muted-foreground"
+                        style={{ fontSize: "12px" }}
                     >
                         {chapter.translation_name}
                     </p>
@@ -838,9 +821,8 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                 <h3
                                                     className={cn(
                                                         "max-w-[90%] text-center font-sans font-semibold leading-snug tracking-wide text-foreground/85",
-                                                        !isScript && "text-base md:text-lg"
+                                                        "text-base md:text-lg"
                                                     )}
-                                                    style={isScript ? { fontSize: `${16 * sectionTitleScale}px` } : undefined}
                                                 >
                                                     {verse.heading}
                                                 </h3>
@@ -878,9 +860,8 @@ export function ReadingContent({ chapter, bookName, chapterNum, sharedVerses = [
                                                 <h3
                                                     className={cn(
                                                         "max-w-[90%] text-center font-sans font-semibold leading-snug tracking-wide text-foreground/85",
-                                                        !isScript && "text-base md:text-lg"
+                                                        "text-base md:text-lg"
                                                     )}
-                                                    style={isScript ? { fontSize: `${16 * sectionTitleScale}px` } : undefined}
                                                 >
                                                     {verse.heading}
                                                 </h3>

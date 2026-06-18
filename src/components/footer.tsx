@@ -4,7 +4,6 @@ import * as React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Eye, EyeOff } from "lucide-react"
 import { useFocusMode } from "@/contexts/focus-mode"
 import { motion } from "framer-motion"
 
@@ -12,7 +11,7 @@ export function Footer() {
     const pathname = usePathname()
     const [mounted, setMounted] = React.useState(false)
     const [isPeeking, setIsPeeking] = React.useState(false)
-    const { isFocusMode, toggleFocusMode } = useFocusMode()
+    const { isFocusMode } = useFocusMode()
 
     React.useEffect(() => { setMounted(true) }, [])
     React.useEffect(() => { if (!isFocusMode) setIsPeeking(false) }, [isFocusMode])
@@ -56,20 +55,6 @@ export function Footer() {
             </div>
 
             <div className="flex gap-5 text-xs text-muted-foreground/40">
-                {pathname?.startsWith("/read") && (
-                    <button
-                        onClick={toggleFocusMode}
-                        className="flex items-center gap-1.5 transition-colors duration-200 hover:text-foreground"
-                    >
-                        {isFocusMode ? (
-                            <EyeOff className="h-3 w-3" />
-                        ) : (
-                            <Eye className="h-3 w-3" />
-                        )}
-                        Focus
-                    </button>
-                )}
-
                 <Link href="/how-to" className={cn("transition-colors duration-200 hover:text-foreground", pathname === "/how-to" && "text-foreground/60")}>
                     Help
                 </Link>

@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react"
 
-export type FontType = "sans" | "serif" | "mono" | "pixel" | "script"
+export const FONT_TYPES = ["sans", "serif", "mono", "pixel"] as const
+export type FontType = (typeof FONT_TYPES)[number]
 
 export interface ReadingPreferences {
     fontSize: number
@@ -45,10 +46,15 @@ const defaultPreferences: ReadingPreferences = {
 
 const ReadingPreferencesContext = createContext<ReadingPreferencesContextType | undefined>(undefined)
 
+function isFontType(value: unknown): value is FontType {
+    return typeof value === "string" && (FONT_TYPES as readonly string[]).includes(value)
+}
+
 /** Drop removed keys (e.g. legacy `palette`) from persisted preferences. */
 function sanitizeStoredPreferences(raw: Record<string, unknown>): Partial<ReadingPreferences> {
     const next = { ...raw }
     delete next.palette
+    if (!isFontType(next.fontFamily)) next.fontFamily = defaultPreferences.fontFamily
     return next as Partial<ReadingPreferences>
 }
 

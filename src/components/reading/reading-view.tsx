@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react"
 import { BibleChapter, getChapter } from "@/lib/bible-api"
 import { ReadingContent } from "./reading-content"
 import { ReadingToolbar } from "./reading-toolbar"
-import { ChevronLeft, ChevronRight, Eye } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useFocusMode } from "@/contexts/focus-mode"
 import { useReadingPreferences } from "@/contexts/reading-preferences"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
@@ -13,7 +13,8 @@ import {
     canGoPrevChapter,
     getAdjacentChapter,
 } from "@/lib/chapter-navigation"
-import { hapticMedium, hapticSuccess } from "@/lib/haptics"
+import { hapticMedium } from "@/lib/haptics"
+import { cn } from "@/lib/utils"
 
 interface ReadingViewProps {
     chapter: BibleChapter
@@ -25,7 +26,7 @@ interface ReadingViewProps {
 }
 
 export function ReadingView({ chapter: initialChapter, book: initialBook, chapterNum: initialChapterNum, translation: initialTranslation = "dra", sharedVerses = [], isExplicitTranslation = false }: ReadingViewProps) {
-    const { isFocusMode, toggleFocusMode } = useFocusMode()
+    const { isFocusMode, setFocusMode } = useFocusMode()
     const reduceMotion = useReducedMotion()
     const { bibleVersion, isLoaded } = useReadingPreferences()
 
@@ -34,11 +35,16 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
     const [currentTranslation, setCurrentTranslation] = useState(initialTranslation)
     const [chapter, setChapter] = useState(initialChapter)
     const [isNavigating, setIsNavigating] = useState(false)
+    const [hasScrolled, setHasScrolled] = useState(false)
 
     const hasRedirected = useRef(false)
     const navDirection = useRef(0)
     const contentKey = `${currentBook}-${currentChapterNum}-${currentTranslation}`
     const swipeStartRef = useRef<{ x: number; y: number; t: number } | null>(null)
+    const isFocusModeRef = useRef(isFocusMode)
+    const autoFocusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const focusEnabledAtRef = useRef(0)
+    const focusEnabledYRef = useRef(0)
     const SWIPE_MIN_X = 55
 
     const prevOk = canGoPrevChapter(currentBook, currentChapterNum)
@@ -127,11 +133,17 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
             if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable)) return
             if (e.key === "ArrowRight") { e.preventDefault(); handleNext() }
             if (e.key === "ArrowLeft") { e.preventDefault(); handlePrev() }
-            if (e.altKey && e.code === "KeyF") { e.preventDefault(); toggleFocusMode() }
         }
         window.addEventListener("keydown", handleKeyDown)
         return () => window.removeEventListener("keydown", handleKeyDown)
-    }, [handleNext, handlePrev, toggleFocusMode])
+    }, [handleNext, handlePrev])
+
+    useEffect(() => {
+        const updateScrollState = () => setHasScrolled(window.scrollY > 24)
+        updateScrollState()
+        window.addEventListener("scroll", updateScrollState, { passive: true })
+        return () => window.removeEventListener("scroll", updateScrollState)
+    }, [])
 
     const slideVariants = {
         enter: () => reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, filter: "blur(4px)" },
@@ -143,6 +155,85 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
         ? { duration: 0.15 }
         : { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const }
 
+    useEffect(() => {
+        isFocusModeRef.current = isFocusMode
+        if (isFocusMode && focusEnabledAtRef.current === 0) {
+            focusEnabledAtRef.current = Date.now()
+            focusEnabledYRef.current = window.scrollY
+        }
+        if (!isFocusMode) {
+            focusEnabledAtRef.current = 0
+            focusEnabledYRef.current = 0
+        }
+    }, [isFocusMode])
+
+    useEffect(() => {
+        let lastY = window.scrollY
+        let downDistance = 0
+        let upDistance = 0
+        const enableThreshold = 64
+        const disableThreshold = 36
+        const topThreshold = 32
+        const armDelay = 90
+
+        const clearAutoFocusTimer = () => {
+            if (autoFocusTimerRef.current) {
+                clearTimeout(autoFocusTimerRef.current)
+                autoFocusTimerRef.current = null
+            }
+        }
+
+        const onScroll = () => {
+            const y = Math.max(0, window.scrollY)
+            const delta = y - lastY
+            lastY = y
+
+            if (y <= topThreshold) {
+                downDistance = 0
+                upDistance = 0
+                clearAutoFocusTimer()
+                if (isFocusModeRef.current) setFocusMode(false)
+                return
+            }
+
+            if (Math.abs(delta) < 1) return
+
+            if (delta > 0) {
+                downDistance += delta
+                upDistance = 0
+                if (!isFocusModeRef.current && y > enableThreshold && downDistance > 44 && !autoFocusTimerRef.current) {
+                    autoFocusTimerRef.current = setTimeout(() => {
+                        autoFocusTimerRef.current = null
+                        if (!isFocusModeRef.current && window.scrollY > enableThreshold) {
+                            focusEnabledAtRef.current = Date.now()
+                            focusEnabledYRef.current = window.scrollY
+                            setFocusMode(true)
+                        }
+                    }, armDelay)
+                }
+                return
+            }
+
+            upDistance += Math.abs(delta)
+            downDistance = 0
+            clearAutoFocusTimer()
+            if (Date.now() - focusEnabledAtRef.current < 520) {
+                upDistance = 0
+                return
+            }
+            if (isFocusModeRef.current && upDistance > disableThreshold && y < focusEnabledYRef.current - 12) {
+                setFocusMode(false)
+            }
+        }
+
+        window.addEventListener("scroll", onScroll, { passive: true })
+        return () => {
+            clearAutoFocusTimer()
+            window.removeEventListener("scroll", onScroll)
+            setFocusMode(false)
+        }
+    }, [setFocusMode])
+
     return (
         <div
             className="min-h-screen bg-background flex flex-col items-center py-8"
@@ -153,16 +244,31 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
 
             <motion.div
                 data-reading-chrome
-                animate={isFocusMode ? { opacity: 0.08, y: 0 } : { opacity: 1, y: 0 }}
-                whileHover={isFocusMode ? { opacity: 1 } : undefined}
-                transition={{ duration: 0.3, ease: "easeOut" }}
+                className={cn(
+                    "sticky z-50 w-full will-change-[top,padding] transition-[top,padding] duration-[850ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+                    isFocusMode
+                        ? "top-[calc(var(--maintenance-banner-height,0px)+1.25rem)] px-4"
+                        : "top-[calc(var(--maintenance-banner-height,0px)+5.75rem)] px-0"
+                )}
             >
-                <ReadingToolbar
-                    currentBook={currentBook}
-                    currentChapter={currentChapterNum}
-                    currentTranslation={currentTranslation}
-                    onNavigate={navigateTo}
-                />
+                {isFocusMode && (
+                    <div
+                        aria-hidden
+                        className={cn(
+                            "pointer-events-none absolute inset-x-0 -top-5 h-32 bg-gradient-to-b from-background via-background/90 to-transparent transition-opacity duration-[850ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+                            hasScrolled ? "opacity-100" : "opacity-0"
+                        )}
+                    />
+                )}
+                <div className="relative z-10 mx-auto w-full">
+                    <ReadingToolbar
+                        currentBook={currentBook}
+                        currentChapter={currentChapterNum}
+                        currentTranslation={currentTranslation}
+                        onNavigate={navigateTo}
+                        compact={false}
+                    />
+                </div>
             </motion.div>
 
             {!isFocusMode && (
@@ -191,9 +297,8 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
 
                         {/* Bottom chapter navigation */}
                         <motion.div
-                            animate={isFocusMode ? { opacity: 0 } : { opacity: 1 }}
+                            animate={{ opacity: 1 }}
                             transition={{ duration: 0.25 }}
-                            style={{ pointerEvents: isFocusMode ? "none" : "auto" }}
                             className="w-full max-w-[720px] mx-auto px-6 pt-1 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-20 flex items-center justify-center gap-3"
                         >
                             {prevOk && prevChapter ? (
@@ -229,20 +334,6 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
 
                 {/* Side chevrons temporarily removed */}
             </main>
-
-            <motion.button
-                type="button"
-                onClick={() => { hapticSuccess(); toggleFocusMode() }}
-                aria-label={isFocusMode ? "Exit focus mode" : "Enter focus mode"}
-                animate={isFocusMode ? { opacity: 1 } : { opacity: 0, pointerEvents: "none" }}
-                transition={{ duration: 0.3 }}
-                style={{ pointerEvents: isFocusMode ? "auto" : "none" }}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.93 }}
-                className="fixed right-5 z-50 flex h-9 w-9 items-center justify-center rounded-2xl glass-subtle border border-foreground/[0.10] dark:border-white/[0.08] text-muted-foreground/60 shadow-[var(--shadow-card)] hover:text-foreground hover:shadow-[var(--shadow-elevated)] transition-colors duration-200 top-[calc(4.5rem+var(--maintenance-banner-height,0px))] md:top-[calc(5.5rem+var(--maintenance-banner-height,0px))]"
-            >
-                <Eye className="h-3.5 w-3.5" strokeWidth={1.5} />
-            </motion.button>
         </div>
     )
 }

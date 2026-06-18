@@ -156,6 +156,7 @@ const ChapterInput = ({ currentChapter, maxChapters, onChange }: { currentChapte
     const [isEditing, setIsEditing] = React.useState(false)
     const [value, setValue] = React.useState(currentChapter.toString())
     const inputRef = React.useRef<HTMLInputElement>(null)
+    const chapterWidth = Math.max((isEditing ? value : currentChapter.toString()).length || 1, 1)
 
     React.useEffect(() => { setValue(currentChapter.toString()) }, [currentChapter])
     React.useEffect(() => {
@@ -173,11 +174,15 @@ const ChapterInput = ({ currentChapter, maxChapters, onChange }: { currentChapte
     }
 
     return (
-        <span className="inline-flex w-7 items-center justify-end">
+        <span
+            className="inline-flex items-center justify-center"
+            style={{ width: `${chapterWidth}ch` }}
+        >
             {isEditing ? (
                 <input
                     ref={inputRef}
                     type="text"
+                    inputMode="numeric"
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
                     onBlur={handleSubmit}
@@ -185,13 +190,13 @@ const ChapterInput = ({ currentChapter, maxChapters, onChange }: { currentChapte
                         if (e.key === "Enter") { handleSubmit(); inputRef.current?.blur() }
                         if (e.key === "Escape") { setIsEditing(false); setValue(currentChapter.toString()) }
                     }}
-                    className="w-full text-center text-[13px] font-semibold bg-transparent outline-none text-foreground tabular-nums"
+                    className="w-full min-w-0 bg-transparent text-center text-[13px] font-semibold leading-none text-foreground tabular-nums outline-none"
                 />
             ) : (
                 <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="w-full cursor-pointer text-center text-[13px] font-semibold text-foreground tabular-nums transition-colors hover:text-foreground/70"
+                    className="w-full min-w-0 cursor-pointer text-center text-[13px] font-semibold leading-none text-foreground tabular-nums transition-colors hover:text-foreground/75"
                 >
                     {currentChapter}
                 </button>
@@ -249,6 +254,8 @@ interface ReadingToolbarProps {
     currentChapter?: number
     currentTranslation?: string
     onNavigate?: (book: string, chapter: number, translation?: string) => void
+    compact?: boolean
+    className?: string
 }
 
 export function ReadingToolbar({
@@ -256,6 +263,8 @@ export function ReadingToolbar({
     currentChapter = 1,
     currentTranslation = "dra",
     onNavigate,
+    compact = false,
+    className,
 }: ReadingToolbarProps) {
     const router = useRouter()
     const { setBibleVersion, enabledTranslations } = useReadingPreferences()
@@ -332,8 +341,8 @@ export function ReadingToolbar({
     }, [availableTranslations, currentTranslation])
 
     return (
-        <div className="w-full max-w-3xl mx-auto mb-8">
-            <div className="flex items-center justify-center gap-2 flex-wrap">
+        <div className={cn("w-full max-w-3xl mx-auto", compact ? "mb-0" : "mb-8", className)}>
+            <div className={cn("flex items-center justify-center flex-wrap", compact ? "gap-1.5" : "gap-2")}>
 
                 {/* ── Book Selector ── */}
                 <Popover open={bookOpen} onOpenChange={(o) => { setBookOpen(o); if (o) { hapticLight(); setTimeout(() => bookInputRef.current?.focus(), 50) } }}>
@@ -366,26 +375,31 @@ export function ReadingToolbar({
                 </Popover>
 
                 {/* ── Chapter Nav ── */}
-                <div className="flex items-center gap-0 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-1 py-0.5 shadow-[var(--shadow-sm)]">
+                <div className="flex items-center gap-0 rounded-full border border-white/[0.12] dark:border-white/[0.06] glass-subtle px-0.5 py-0.5 shadow-[var(--shadow-sm)]">
                     <button
                         type="button"
                         onClick={() => { if (prevNav) { hapticLight(); nav(prevNav.book, prevNav.chapter) } }}
                         disabled={!prevOk}
-                        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:bg-muted/50 hover:text-foreground disabled:opacity-20 disabled:pointer-events-none disabled:cursor-default"
+                        className="flex h-7 w-6 cursor-pointer items-center justify-center rounded-full text-muted-foreground/65 transition-all duration-200 hover:bg-muted/50 hover:text-foreground disabled:opacity-20 disabled:pointer-events-none disabled:cursor-default"
                     >
-                        <ChevronLeft className="h-3.5 w-3.5" />
+                        <ChevronLeft className="h-3.5 w-3.5" strokeWidth={1.8} />
                     </button>
-                    <div className="flex items-baseline gap-0 px-1">
+                    <div className="grid min-w-[3.55rem] grid-cols-[auto_auto_auto] items-center justify-center gap-1 px-0.5">
                         <ChapterInput currentChapter={currentChapter} maxChapters={chapterCount} onChange={(v) => handleChapterChange(v.toString())} />
-                        <span className="text-[11px] font-medium text-muted-foreground/35 tabular-nums leading-none">/{chapterCount}</span>
+                        <span className="text-[13px] font-semibold leading-none text-muted-foreground/30 tabular-nums">
+                            /
+                        </span>
+                        <span className="text-left text-[13px] font-semibold leading-none text-muted-foreground/55 tabular-nums">
+                            {chapterCount}
+                        </span>
                     </div>
                     <button
                         type="button"
                         onClick={() => { if (nextNav) { hapticLight(); nav(nextNav.book, nextNav.chapter) } }}
                         disabled={!nextOk}
-                        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-all duration-200 hover:bg-muted/50 hover:text-foreground disabled:opacity-20 disabled:pointer-events-none disabled:cursor-default"
+                        className="flex h-7 w-6 cursor-pointer items-center justify-center rounded-full text-muted-foreground/65 transition-all duration-200 hover:bg-muted/50 hover:text-foreground disabled:opacity-20 disabled:pointer-events-none disabled:cursor-default"
                     >
-                        <ChevronRight className="h-3.5 w-3.5" />
+                        <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.8} />
                     </button>
                 </div>
 

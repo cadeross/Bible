@@ -3,10 +3,8 @@
 import type { ReactNode } from "react"
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
 import { useLastReadUrl } from "@/lib/use-last-read-url"
 import { cn } from "@/lib/utils"
-import { useFocusMode } from "@/contexts/focus-mode"
 import { Search, Settings } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SettingsPanel } from "@/components/settings-panel"
@@ -44,19 +42,13 @@ function NavLink({ href, children }: { href: string; children: ReactNode }) {
 }
 
 export function InlineNav() {
-    const pathname = usePathname() || "/"
-    const { isFocusMode } = useFocusMode()
-    const isReadPage = pathname.startsWith("/read")
     const [settingsOpen, setSettingsOpen] = useState(false)
     const [searchOpen, setSearchOpen] = useState(false)
     const lastReadUrl = useLastReadUrl()
 
     return (
         <nav
-            className={cn(
-                "w-full transition-opacity duration-500",
-                isReadPage && isFocusMode && "pointer-events-none opacity-0"
-            )}
+            className="w-full"
             aria-label="Primary"
         >
             <div className="flex items-center justify-between">

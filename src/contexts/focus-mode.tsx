@@ -31,7 +31,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
                 return
             }
-            if (e.altKey && e.key === 'f') {
+            if (e.altKey && e.code === "KeyF") {
                 e.preventDefault() // Prevent default browser behavior (e.g. typing special char)
                 toggleFocusMode()
             }

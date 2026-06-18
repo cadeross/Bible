@@ -180,8 +180,10 @@ const FONT_OPTIONS: { id: FontType; label: string; family: string }[] = [
     { id: "serif",  label: "Serif",  family: "Merriweather, Georgia, serif" },
     { id: "mono",   label: "Mono",   family: "var(--font-geist-mono), monospace" },
     { id: "pixel",  label: "Round",  family: "var(--font-nunito), system-ui, sans-serif" },
-    { id: "script", label: "Script", family: 'var(--font-moon-dance), "Brush Script MT", "Lucida Handwriting", cursive' },
 ]
+
+const SELECTED_PREVIEW_CLASS = "border-foreground/[0.24] bg-card shadow-[0_3px_12px_rgba(0,0,0,0.08)]"
+const SELECTED_RING_CLASS = "pointer-events-none absolute inset-0 rounded-md ring-1 ring-foreground/30 ring-offset-1 ring-offset-popover"
 
 function ToggleRow({
     active,
@@ -320,13 +322,15 @@ function ReadingSection() {
                                             <div className="relative w-full" style={{ aspectRatio: "4 / 3" }}>
                                                 <div
                                                     className={cn(
-                                                        "absolute inset-0 flex items-center justify-center overflow-hidden rounded-md border bg-card transition-[box-shadow,border-color,background-color] duration-200",
-                                                        "border-foreground/[0.08] group-hover:border-foreground/[0.22] group-hover:shadow-[var(--shadow-sm)]"
+                                                        "absolute inset-0 flex items-center justify-center overflow-hidden rounded-md border transition-[box-shadow,border-color,background-color] duration-200",
+                                                        selected
+                                                            ? SELECTED_PREVIEW_CLASS
+                                                            : "border-foreground/[0.08] bg-card group-hover:border-foreground/[0.22] group-hover:shadow-[var(--shadow-sm)]"
                                                     )}
                                                 >
                                                     <span
                                                         className={cn(
-                                                            "text-[13px] leading-none transition-colors duration-200",
+                                                            "text-[13px] leading-none transition-[color,transform] duration-200",
                                                             selected
                                                                 ? "text-foreground"
                                                                 : "text-foreground/50 group-hover:text-foreground"
@@ -339,19 +343,15 @@ function ReadingSection() {
                                                 {selected && (
                                                     <motion.div
                                                         layoutId="settings-font-active"
-                                                        className="pointer-events-none absolute inset-0 rounded-md ring-2 ring-primary/60"
+                                                        className={SELECTED_RING_CLASS}
                                                         transition={{ type: "spring", stiffness: 500, damping: 36, mass: 0.7 }}
-                                                        style={{
-                                                            boxShadow:
-                                                                "0 4px 14px color-mix(in srgb, var(--primary) 20%, transparent)",
-                                                        }}
                                                     />
                                                 )}
                                             </div>
                                             <span className={cn(
                                                 "text-[10.5px] font-medium transition-colors duration-200",
                                                 selected
-                                                    ? "text-primary"
+                                                    ? "text-foreground"
                                                     : "text-muted-foreground/70 group-hover:text-foreground"
                                             )}>
                                                 {f.label}
@@ -682,8 +682,10 @@ export function SettingsPanel() {
                                             <div className="relative w-full" style={{ aspectRatio: "4 / 3" }}>
                                                 <div
                                                     className={cn(
-                                                        "absolute inset-0 overflow-hidden rounded-md border transition-[box-shadow,border-color] duration-200",
-                                                        "border-foreground/[0.08] group-hover:border-foreground/[0.22] group-hover:shadow-[var(--shadow-sm)]"
+                                                        "absolute inset-0 overflow-hidden rounded-md border transition-[box-shadow,border-color,transform] duration-200",
+                                                        isActive
+                                                            ? SELECTED_PREVIEW_CLASS
+                                                            : "border-foreground/[0.08] group-hover:border-foreground/[0.22] group-hover:shadow-[var(--shadow-sm)]"
                                                     )}
                                                     style={{ backgroundColor: bg, color: fg }}
                                                 >
@@ -694,19 +696,15 @@ export function SettingsPanel() {
                                                 {isActive && (
                                                     <motion.div
                                                         layoutId="settings-theme-active"
-                                                        className="pointer-events-none absolute inset-0 rounded-md ring-2 ring-primary/60"
+                                                        className={SELECTED_RING_CLASS}
                                                         transition={{ type: "spring", stiffness: 500, damping: 36, mass: 0.7 }}
-                                                        style={{
-                                                            boxShadow:
-                                                                "0 4px 14px color-mix(in srgb, var(--primary) 20%, transparent)",
-                                                        }}
                                                     />
                                                 )}
                                             </div>
                                             <span className={cn(
                                                 "text-[10.5px] font-medium transition-colors duration-200",
                                                 isActive
-                                                    ? "text-primary"
+                                                    ? "text-foreground"
                                                     : "text-muted-foreground/70 group-hover:text-foreground"
                                             )}>
                                                 {label}
@@ -729,7 +727,7 @@ export function SettingsPanel() {
                                     aria-hidden
                                     className={cn(
                                         "h-3.5 w-3.5 transition-opacity duration-200",
-                                        isFollowSystem ? "text-primary opacity-100" : "opacity-40"
+                                        isFollowSystem ? "text-foreground/75 opacity-100" : "opacity-40"
                                     )}
                                 />
                             </button>

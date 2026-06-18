@@ -56,6 +56,9 @@ export function HowToDialog({ children }: { children: React.ReactNode }) {
                                     <span>Previous Chapter</span>
                                     <kbd className="rounded-lg bg-muted/60 px-2 py-0.5 border border-border/30 text-xs font-medium text-muted-foreground">Left Arrow</kbd>
 
+                                    <span>Focus Mode</span>
+                                    <kbd className="rounded-lg bg-muted/60 px-2 py-0.5 border border-border/30 text-xs font-medium text-muted-foreground">Option + F</kbd>
+
                                     <span>Command Menu</span>
                                     <kbd className="rounded-lg bg-muted/60 px-2 py-0.5 border border-border/30 text-xs font-medium text-muted-foreground">Cmd + K</kbd>
                                 </div>
@@ -67,7 +70,7 @@ export function HowToDialog({ children }: { children: React.ReactNode }) {
                                     <span>Focus Mode</span>
                                 </div>
                                 <p className="text-foreground/80 leading-relaxed">
-                                    Toggle <strong>Focus Mode</strong> in the footer to hide all distractions. The interface fades away, leaving only the text. Move your mouse to reveal controls.
+                                    Press <strong>Option + F</strong> while reading to hide the nav and keep the passage controls anchored above the text.
                                 </p>
                             </div>
 
