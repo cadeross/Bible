@@ -242,6 +242,15 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
             onTouchEnd={handleSwipeTouchEnd}
         >
 
+            <div
+                aria-hidden
+                className={cn(
+                    "pointer-events-none fixed inset-x-0 top-[var(--maintenance-banner-height,0px)] h-36 bg-gradient-to-b from-background via-background/95 to-transparent transition-opacity ease-out",
+                    isFocusMode ? "z-[45]" : "z-30",
+                    hasScrolled ? "opacity-100 duration-150" : "opacity-0 duration-300"
+                )}
+            />
+
             <motion.div
                 data-reading-chrome
                 className={cn(
@@ -251,15 +260,6 @@ export function ReadingView({ chapter: initialChapter, book: initialBook, chapte
                         : "top-[calc(var(--maintenance-banner-height,0px)+5.75rem)] px-0"
                 )}
             >
-                {isFocusMode && (
-                    <div
-                        aria-hidden
-                        className={cn(
-                            "pointer-events-none absolute inset-x-0 -top-5 h-32 bg-gradient-to-b from-background via-background/90 to-transparent transition-opacity duration-[850ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
-                            hasScrolled ? "opacity-100" : "opacity-0"
-                        )}
-                    />
-                )}
                 <div className="relative z-10 mx-auto w-full">
                     <ReadingToolbar
                         currentBook={currentBook}
